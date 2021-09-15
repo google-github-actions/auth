@@ -1,0 +1,68 @@
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: 'OIDC Authenticate to Google Cloud'
+author: 'sethvargo'
+description: |-
+  Authenticate to Google Cloud from GitHub Actions using an OIDC token and
+  Workload Identity Federation.
+
+inputs:
+  workload_identity_provider:
+    description: |-
+      The full identifier of the Workload Identity Provider, including the
+      project number, pool name, and provider name. This must be the full
+      identifier which includes all parts, for example:
+      "projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider".
+    required: true
+  service_account:
+    description: |-
+      Email address or unique identifier of the Google Cloud service account for
+      which to generate credentials.
+    required: true
+  audience:
+    description: |-
+      The value for the audience (aud) parameter in GitHub's generated OIDC
+      token. At present, the only valid value is "sigstore", but this variable
+      exists in case custom values are permitted in the future.
+    default: 'sigstore'
+    required: false
+  delegates:
+    description: |-
+      List of additional service account emails or unique identities to use for
+      impersonation in the chain.
+    default: ''
+    required: false
+  lifetime:
+    description: |-
+      Desired lifetime duration of the access token, in seconds. This must be
+      specified as the number of seconds with a trailing "s" (e.g. 30s).
+    default: '3600s'
+    required: false
+
+outputs:
+  access_token:
+    description: |-
+      The Google Cloud access token for calling other Google Cloud APIs.
+  expiration:
+    description: |-
+      The expiration timestamp for the access token.
+
+branding:
+  icon: 'lock'
+  color: 'blue'
+
+runs:
+  using: 'node12'
+  main: 'dist/index.js'

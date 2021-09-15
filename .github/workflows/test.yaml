@@ -1,0 +1,45 @@
+name: 'test'
+
+on:
+  push:
+    branches:
+    - 'main'
+  pull_request:
+    branches:
+    - 'main'
+
+jobs:
+  run:
+    name: 'test'
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: '${{ matrix.operating-system }}'
+    strategy:
+      matrix:
+        operating-system:
+        - 'ubuntu-latest'
+        - 'windows-latest'
+        - 'macos-latest'
+    steps:
+    - uses: 'actions/checkout@v2'
+
+    - uses: 'actions/setup-node@master'
+      with:
+        node-version: '12.x'
+
+    - id: 'integration'
+      name: 'integration'
+      uses: './'
+      with:
+        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/github-oidc-auth-google-cloud'
+        service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
+
+    - name: 'npm install'
+      run: 'npm install'
+
+    - name: 'npm lint'
+      run: 'npm run lint'
+
+    - name: 'npm test'
+      run: 'npm run test'

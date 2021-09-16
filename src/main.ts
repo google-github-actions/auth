@@ -37,6 +37,7 @@ async function run(): Promise<void> {
     const audience = core.getInput('audience');
     const delegates = explodeStrings(core.getInput('delegates'));
     const lifetime = core.getInput('lifetime');
+    const idTokenAudience = core.getInput('id_token_audience');
 
     // Extract the GitHub Actions OIDC token.
     const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
@@ -71,6 +72,18 @@ async function run(): Promise<void> {
     core.setSecret(accessToken);
     core.setOutput('access_token', accessToken);
     core.setOutput('expiration', expiration);
+
+    // Exchange the Google Federated Token for an ID token.
+    if (idTokenAudience != null) {
+      const { token } = await Client.googleIDToken({
+        token: googleFederatedToken,
+        serviceAccount: serviceAccount,
+        delegates: delegates,
+        audience: idTokenAudience,
+      });
+      core.setSecret(token);
+      core.setOutput('id_token', token);
+    }
   } catch (err) {
     core.setFailed(`Action failed with error: ${err}`);
   }

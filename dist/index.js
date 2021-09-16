@@ -220,6 +220,7 @@ function run() {
             const audience = core.getInput('audience');
             const delegates = explodeStrings(core.getInput('delegates'));
             const lifetime = core.getInput('lifetime');
+            const idTokenAudience = core.getInput('id_token_audience');
             // Extract the GitHub Actions OIDC token.
             const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
             if (!requestToken) {
@@ -251,6 +252,17 @@ function run() {
             core.setSecret(accessToken);
             core.setOutput('access_token', accessToken);
             core.setOutput('expiration', expiration);
+            // Exchange the Google Federated Token for an ID token.
+            if (idTokenAudience != null) {
+                const { token } = yield client_1.Client.googleIDToken({
+                    token: googleFederatedToken,
+                    serviceAccount: serviceAccount,
+                    delegates: delegates,
+                    audience: idTokenAudience,
+                });
+                core.setSecret(token);
+                core.setOutput('id_token', token);
+            }
         }
         catch (err) {
             core.setFailed(`Action failed with error: ${err}`);
@@ -856,6 +868,42 @@ class Client {
             }
             catch (err) {
                 throw new Error(`failed to generate Google Cloud access token for ${serviceAccount}: ${err}`);
+            }
+        });
+    }
+    /**
+     * googleIDToken generates a Google Cloud ID token for the provided
+     * service account email or unique id.
+     */
+    static googleIDToken({ token, serviceAccount, audience, delegates, }) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
+            const tokenURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateIdToken`);
+            const data = {
+                delegates: delegates,
+                audience: audience,
+                includeEmail: true,
+            };
+            const opts = {
+                hostname: tokenURL.hostname,
+                port: tokenURL.port,
+                path: tokenURL.pathname + tokenURL.search,
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            };
+            try {
+                const resp = yield Client.request(opts, JSON.stringify(data));
+                const parsed = JSON.parse(resp);
+                return {
+                    token: parsed['token'],
+                };
+            }
+            catch (err) {
+                throw new Error(`failed to generate Google Cloud ID token for ${serviceAccount}: ${err}`);
             }
         });
     }

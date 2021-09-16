@@ -82,6 +82,8 @@ jobs:
     seconds. This must be specified as the number of seconds with a trailing "s"
     (e.g. 30s). The default value is 1 hour (3600s).
 
+-   `id_token_audience`: (Optional) The audience for the generated ID Token.
+
 ## Outputs
 
 -   `access_token`: The authenticated Google Cloud access token for calling
@@ -89,6 +91,9 @@ jobs:
 
 -   `expiration`: The RFC3339 UTC "Zulu" format timestamp when the token
     expires.
+
+-   `id_token`: The authenticated Google Cloud ID token. This token is only
+    generated when `id_token_audience` input parameter was provided.
 
 ## Setup
 

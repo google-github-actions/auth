@@ -50,6 +50,11 @@ inputs:
       specified as the number of seconds with a trailing "s" (e.g. 30s).
     default: '3600s'
     required: false
+  id_token_audience:
+    description: |-
+      The audience for the generated Google Cloud ID Token.
+    default: ''
+    required: false
 
 outputs:
   access_token:
@@ -58,6 +63,10 @@ outputs:
   expiration:
     description: |-
       The expiration timestamp for the access token.
+  id_token:
+    description: |-
+      The Google Cloud ID token. This token is only generated when
+      `id_token_audience` input parameter was provided.
 
 branding:
   icon: 'lock'

@@ -64,6 +64,37 @@ interface GoogleAccessTokenResponse {
   expiration: string;
 }
 
+/**
+ * GoogleIDTokenParameters are the parameters to generate a Google Cloud
+ * ID token as described in:
+ *
+ *   https://cloud.google.com/iam/docs/reference/credentials/rest/v1/projects.serviceAccounts/generateIdToken
+ *
+ * @param token OAuth token or Federated access token with permissions to call
+ * the API.
+ * @param serviceAccount Email address or unique identifier of the service
+ * account.
+ * @param audience The audience for the token.
+ * @param delegates Optional sequence of service accounts in the delegation
+ * chain.
+ */
+interface GoogleIDTokenParameters {
+  token: string;
+  serviceAccount: string;
+  audience: string;
+  delegates?: Array<string>;
+}
+
+/**
+ * GoogleIDTokenResponse is the response from generating an ID token.
+ *
+ * @param token ID token.
+ * expires.
+ */
+interface GoogleIDTokenResponse {
+  token: string;
+}
+
 export class Client {
   /**
    * request is a high-level helper that returns a promise from the executed
@@ -216,6 +247,50 @@ export class Client {
       };
     } catch (err) {
       throw new Error(`failed to generate Google Cloud access token for ${serviceAccount}: ${err}`);
+    }
+  }
+
+  /**
+   * googleIDToken generates a Google Cloud ID token for the provided
+   * service account email or unique id.
+   */
+  static async googleIDToken({
+    token,
+    serviceAccount,
+    audience,
+    delegates,
+  }: GoogleIDTokenParameters): Promise<GoogleIDTokenResponse> {
+    const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
+    const tokenURL = new URL(
+      `https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateIdToken`,
+    );
+
+    const data = {
+      delegates: delegates,
+      audience: audience,
+      includeEmail: true,
+    };
+
+    const opts = {
+      hostname: tokenURL.hostname,
+      port: tokenURL.port,
+      path: tokenURL.pathname + tokenURL.search,
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const resp = await Client.request(opts, JSON.stringify(data));
+      const parsed = JSON.parse(resp);
+      return {
+        token: parsed['token'],
+      };
+    } catch (err) {
+      throw new Error(`failed to generate Google Cloud ID token for ${serviceAccount}: ${err}`);
     }
   }
 }

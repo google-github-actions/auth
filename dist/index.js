@@ -253,7 +253,7 @@ function run() {
             core.setOutput('access_token', accessToken);
             core.setOutput('expiration', expiration);
             // Exchange the Google Federated Token for an ID token.
-            if (idTokenAudience != null) {
+            if (idTokenAudience != '') {
                 const { token } = yield client_1.Client.googleIDToken({
                     token: googleFederatedToken,
                     serviceAccount: serviceAccount,

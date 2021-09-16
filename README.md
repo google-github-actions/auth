@@ -93,7 +93,7 @@ jobs:
     expires.
 
 -   `id_token`: The authenticated Google Cloud ID token. This token is only
-    generated when `id_token_audience` input parameter was provided.
+    generated when `id_token_audience` input parameter is provided.
 
 ## Setup
 

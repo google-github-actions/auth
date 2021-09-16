@@ -196,6 +196,36 @@ the [gcloud][gcloud] command-line tool.
     is correct). This all happens without exporting a Google Cloud service
     account key JSON!
 
+## GitHub Token Format
+
+Here is a sample GitHub Token for reference for attribute mappings:
+
+```json
+{
+  "jti": "...",
+  "sub": "repo:username/reponame:ref:refs/heads/master",
+  "aud": "sigstore",
+  "ref": "refs/heads/master",
+  "sha": "d11880f4f451ee35192135525dc974c56a3c1b28",
+  "repository": "username/reponame",
+  "repository_owner": "reponame",
+  "run_id": "1238222155",
+  "run_number": "18",
+  "run_attempt": "1",
+  "actor": "username",
+  "workflow": "OIDC",
+  "head_ref": "",
+  "base_ref": "",
+  "event_name": "push",
+  "ref_type": "branch",
+  "job_workflow_ref": "username/reponame/.github/workflows/token.yml@refs/heads/master",
+  "iss": "https://vstoken.actions.githubusercontent.com",
+  "nbf": 1631718827,
+  "exp": 1631719727,
+  "iat": 1631719427
+}
+```
+
 [wif]: https://cloud.google.com/iam/docs/workload-identity-federation
 [gcloud]: https://cloud.google.com/sdk
 [map-external]: https://cloud.google.com/iam/docs/access-resources-oidc#impersonate

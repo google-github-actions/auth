@@ -74,7 +74,7 @@ async function run(): Promise<void> {
     core.setOutput('expiration', expiration);
 
     // Exchange the Google Federated Token for an ID token.
-    if (idTokenAudience != null) {
+    if (idTokenAudience != '') {
       const { token } = await Client.googleIDToken({
         token: googleFederatedToken,
         serviceAccount: serviceAccount,

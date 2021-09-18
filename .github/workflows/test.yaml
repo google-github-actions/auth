@@ -34,6 +34,7 @@ jobs:
       with:
         workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/github-oidc-auth-google-cloud'
         service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
+        id_token_audience: 'foo'
 
     - name: 'npm install'
       run: 'npm install'

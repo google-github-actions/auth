@@ -2,21 +2,6 @@ import https, { RequestOptions } from 'https';
 import { URL } from 'url';
 
 /**
- * GitHubTokenParameters are the parameters to generate an OIDC token from
- * within a GitHub Action.
- *
- * @param url URL endpoint from which to request the token.
- * @param audience JWT aud value for the token.
- * @param token Temporary token provided by the environment to request the real
- * token.
- */
-interface GitHubTokenParameters {
-  url: string;
-  audience: string;
-  token: string;
-}
-
-/**
  * GoogleFederatedTokenParameters are the parameters to generate a Federated
  * Identity Token as described in:
  *
@@ -98,41 +83,6 @@ export class Client {
 
       req.end();
     });
-  }
-
-  /**
-   * githubToken invokes the given URL, appending the audience parameter, using
-   * the provided token as authentication. This can only be run from inside a
-   * GitHub Action.
-   */
-  static async githubToken({ url, audience, token }: GitHubTokenParameters): Promise<string> {
-    const requestURL = new URL(url);
-
-    // Append the audience value to the request.
-    const params = requestURL.searchParams;
-    params.set('audience', audience);
-    requestURL.search = params.toString();
-
-    // Make the request.
-    const opts = {
-      hostname: requestURL.hostname,
-      port: requestURL.port,
-      path: requestURL.pathname + requestURL.search,
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    };
-
-    try {
-      const resp = await Client.request(opts);
-      const parsed = JSON.parse(resp);
-      return parsed['value'];
-    } catch (err) {
-      throw new Error(`failed to generate GitHub OIDC token via ${url} (aud: ${audience}): ${err}`);
-    }
   }
 
   /**

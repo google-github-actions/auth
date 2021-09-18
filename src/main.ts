@@ -38,21 +38,7 @@ async function run(): Promise<void> {
     const delegates = explodeStrings(core.getInput('delegates'));
     const lifetime = core.getInput('lifetime');
 
-    // Extract the GitHub Actions OIDC token.
-    const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-    if (!requestToken) {
-      throw `missing ACTIONS_ID_TOKEN_REQUEST_TOKEN`;
-    }
-    const requestURL = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-    if (!requestURL) {
-      throw `missing ACTIONS_ID_TOKEN_REQUEST_URL`;
-    }
-    const githubOIDCToken = await Client.githubToken({
-      url: requestURL,
-      token: requestToken,
-      audience: audience,
-    });
-    core.setSecret(githubOIDCToken);
+    const githubOIDCToken = await core.getIDToken(audience);
 
     // Exchange the GitHub OIDC token for a Google Federated Token.
     const googleFederatedToken = await Client.googleFederatedToken({

@@ -35,10 +35,14 @@ async function run(): Promise<void> {
     });
     const serviceAccount = core.getInput('service_account', { required: true });
     const audience = core.getInput('audience');
+    const tokenFormat = core.getInput('token_format', { required: true });
     const delegates = explodeStrings(core.getInput('delegates'));
-    const lifetime = core.getInput('lifetime');
+    const accessTokenLifetime = core.getInput('access_token_lifetime');
+    const accessTokenScopes = explodeStrings(core.getInput('access_token_scopes'));
     const idTokenAudience = core.getInput('id_token_audience');
+    const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
 
+    // Get the GitHub OIDC token.
     const githubOIDCToken = await core.getIDToken(audience);
 
     // Exchange the GitHub OIDC token for a Google Federated Token.
@@ -48,27 +52,37 @@ async function run(): Promise<void> {
     });
     core.setSecret(googleFederatedToken);
 
-    // Exchange the Google Federated Token for an access token.
-    const { accessToken, expiration } = await Client.googleAccessToken({
-      token: googleFederatedToken,
-      serviceAccount: serviceAccount,
-      delegates: delegates,
-      lifetime: lifetime,
-    });
-    core.setSecret(accessToken);
-    core.setOutput('access_token', accessToken);
-    core.setOutput('expiration', expiration);
-
-    // Exchange the Google Federated Token for an ID token.
-    if (idTokenAudience != '') {
-      const { token } = await Client.googleIDToken({
-        token: googleFederatedToken,
-        serviceAccount: serviceAccount,
-        delegates: delegates,
-        audience: idTokenAudience,
-      });
-      core.setSecret(token);
-      core.setOutput('id_token', token);
+    switch (tokenFormat) {
+      case 'access_token': {
+        // Exchange the Google Federated Token for an access token.
+        const { accessToken, expiration } = await Client.googleAccessToken({
+          token: googleFederatedToken,
+          serviceAccount: serviceAccount,
+          delegates: delegates,
+          lifetime: accessTokenLifetime,
+          scopes: accessTokenScopes,
+        });
+        core.setSecret(accessToken);
+        core.setOutput('access_token', accessToken);
+        core.setOutput('access_token_expiration', expiration);
+        break;
+      }
+      case 'id_token': {
+        // Exchange the Google Federated Token for an id token.
+        const { token } = await Client.googleIDToken({
+          token: googleFederatedToken,
+          serviceAccount: serviceAccount,
+          delegates: delegates,
+          audience: idTokenAudience,
+          includeEmail: idTokenIncludeEmail,
+        });
+        core.setSecret(token);
+        core.setOutput('id_token', token);
+        break;
+      }
+      default: {
+        throw new Error(`unknown token format "${tokenFormat}"`);
+      }
     }
   } catch (err) {
     core.setFailed(`Action failed with error: ${err}`);

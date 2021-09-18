@@ -34,6 +34,7 @@ interface GoogleAccessTokenParameters {
   token: string;
   serviceAccount: string;
   delegates?: Array<string>;
+  scopes?: Array<string>;
   lifetime?: string;
 }
 
@@ -68,6 +69,7 @@ interface GoogleIDTokenParameters {
   serviceAccount: string;
   audience: string;
   delegates?: Array<string>;
+  includeEmail?: boolean;
 }
 
 /**
@@ -163,6 +165,7 @@ export class Client {
     token,
     serviceAccount,
     delegates,
+    scopes,
     lifetime,
   }: GoogleAccessTokenParameters): Promise<GoogleAccessTokenResponse> {
     const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
@@ -172,8 +175,8 @@ export class Client {
 
     const data = {
       delegates: delegates,
-      scope: 'https://www.googleapis.com/auth/cloud-platform',
       lifetime: lifetime,
+      scope: scopes,
     };
 
     const opts = {
@@ -209,6 +212,7 @@ export class Client {
     serviceAccount,
     audience,
     delegates,
+    includeEmail,
   }: GoogleIDTokenParameters): Promise<GoogleIDTokenResponse> {
     const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
     const tokenURL = new URL(
@@ -218,7 +222,7 @@ export class Client {
     const data = {
       delegates: delegates,
       audience: audience,
-      includeEmail: true,
+      includeEmail: includeEmail,
     };
 
     const opts = {

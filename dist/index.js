@@ -225,37 +225,51 @@ function run() {
             });
             const serviceAccount = core.getInput('service_account', { required: true });
             const audience = core.getInput('audience');
+            const tokenFormat = core.getInput('token_format', { required: true });
             const delegates = explodeStrings(core.getInput('delegates'));
-            const lifetime = core.getInput('lifetime');
+            const accessTokenLifetime = core.getInput('access_token_lifetime');
+            const accessTokenScopes = explodeStrings(core.getInput('access_token_scopes'));
             const idTokenAudience = core.getInput('id_token_audience');
+            const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
+            // Get the GitHub OIDC token.
             const githubOIDCToken = yield core.getIDToken(audience);
-
             // Exchange the GitHub OIDC token for a Google Federated Token.
             const googleFederatedToken = yield client_1.Client.googleFederatedToken({
                 providerID: workloadIdentityProvider,
                 token: githubOIDCToken,
             });
             core.setSecret(googleFederatedToken);
-            // Exchange the Google Federated Token for an access token.
-            const { accessToken, expiration } = yield client_1.Client.googleAccessToken({
-                token: googleFederatedToken,
-                serviceAccount: serviceAccount,
-                delegates: delegates,
-                lifetime: lifetime,
-            });
-            core.setSecret(accessToken);
-            core.setOutput('access_token', accessToken);
-            core.setOutput('expiration', expiration);
-            // Exchange the Google Federated Token for an ID token.
-            if (idTokenAudience != '') {
-                const { token } = yield client_1.Client.googleIDToken({
-                    token: googleFederatedToken,
-                    serviceAccount: serviceAccount,
-                    delegates: delegates,
-                    audience: idTokenAudience,
-                });
-                core.setSecret(token);
-                core.setOutput('id_token', token);
+            switch (tokenFormat) {
+                case 'access_token': {
+                    // Exchange the Google Federated Token for an access token.
+                    const { accessToken, expiration } = yield client_1.Client.googleAccessToken({
+                        token: googleFederatedToken,
+                        serviceAccount: serviceAccount,
+                        delegates: delegates,
+                        lifetime: accessTokenLifetime,
+                        scopes: accessTokenScopes,
+                    });
+                    core.setSecret(accessToken);
+                    core.setOutput('access_token', accessToken);
+                    core.setOutput('access_token_expiration', expiration);
+                    break;
+                }
+                case 'id_token': {
+                    // Exchange the Google Federated Token for an id token.
+                    const { token } = yield client_1.Client.googleIDToken({
+                        token: googleFederatedToken,
+                        serviceAccount: serviceAccount,
+                        delegates: delegates,
+                        audience: idTokenAudience,
+                        includeEmail: idTokenIncludeEmail,
+                    });
+                    core.setSecret(token);
+                    core.setOutput('id_token', token);
+                    break;
+                }
+                default: {
+                    throw new Error(`unknown token format "${tokenFormat}"`);
+                }
             }
         }
         catch (err) {
@@ -1880,14 +1894,14 @@ class Client {
      * googleAccessToken generates a Google Cloud access token for the provided
      * service account email or unique id.
      */
-    static googleAccessToken({ token, serviceAccount, delegates, lifetime, }) {
+    static googleAccessToken({ token, serviceAccount, delegates, scopes, lifetime, }) {
         return __awaiter(this, void 0, void 0, function* () {
             const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
             const tokenURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateAccessToken`);
             const data = {
                 delegates: delegates,
-                scope: 'https://www.googleapis.com/auth/cloud-platform',
                 lifetime: lifetime,
+                scope: scopes,
             };
             const opts = {
                 hostname: tokenURL.hostname,
@@ -1917,14 +1931,14 @@ class Client {
      * googleIDToken generates a Google Cloud ID token for the provided
      * service account email or unique id.
      */
-    static googleIDToken({ token, serviceAccount, audience, delegates, }) {
+    static googleIDToken({ token, serviceAccount, audience, delegates, includeEmail, }) {
         return __awaiter(this, void 0, void 0, function* () {
             const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
             const tokenURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateIdToken`);
             const data = {
                 delegates: delegates,
                 audience: audience,
-                includeEmail: true,
+                includeEmail: includeEmail,
             };
             const opts = {
                 hostname: tokenURL.hostname,

@@ -41,6 +41,7 @@ jobs:
       name: 'Authenticate to Google Cloud'
       uses: 'github.com/sethvargo/oidc-auth-google-cloud'
       with:
+        token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
@@ -74,23 +75,40 @@ jobs:
     `"sigstore"`, but this variable exists in case custom values are permitted
     in the future. The default value is `"sigstore"`.
 
+-   `token_format`: (Optional) Format of the generated token. For OAuth 2.0
+    access tokens, specify "access_token". For OIDC tokens, specify "id_token".
+    The default value is "access_token".
+
 -   `delegates`: (Optional) List of additional service account emails or unique
     identities to use for impersonation in the chain. By default there are no
     delegates.
 
--   `lifetime`: (Optional) Desired lifetime duration of the access token, in
-    seconds. This must be specified as the number of seconds with a trailing "s"
-    (e.g. 30s). The default value is 1 hour (3600s).
+-   `access_token_lifetime`: (Optional) Desired lifetime duration of the access
+    token, in seconds. This must be specified as the number of seconds with a
+    trailing "s" (e.g. 30s). The default value is 1 hour (3600s).
+
+-   `access_token_scopes`: (Optional) List of OAuth 2.0 access scopes to be
+    included in the generated token. This is only valid when "token_format" is
+    "access_token". The default value is:
+
+    ```text
+    https://www.googleapis.com/auth/cloud-platform
+    ```
 
 -   `id_token_audience`: (Optional) The audience for the generated ID Token.
+
+-   `id_token_include_email`: (Optional) Optional parameter of whether to
+    include the service account email in the generated token. If true, the token
+    will contain "email" and "email_verified" claims. This is only valid when
+    "token_format" is "access_token". The default value is false.
 
 ## Outputs
 
 -   `access_token`: The authenticated Google Cloud access token for calling
     other Google Cloud APIs.
 
--   `expiration`: The RFC3339 UTC "Zulu" format timestamp when the token
-    expires.
+-   `access_token_expiration`: The RFC3339 UTC "Zulu" format timestamp when the
+    token expires.
 
 -   `id_token`: The authenticated Google Cloud ID token. This token is only
     generated when `id_token_audience` input parameter is provided.

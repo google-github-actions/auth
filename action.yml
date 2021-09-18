@@ -15,8 +15,8 @@
 name: 'OIDC Authenticate to Google Cloud'
 author: 'sethvargo'
 description: |-
-  Authenticate to Google Cloud from GitHub Actions using an OIDC token and
-  Workload Identity Federation.
+  Generate credentials to authenticate to Google Cloud from GitHub Actions using
+  an OIDC token and Workload Identity Federation.
 
 inputs:
   workload_identity_provider:
@@ -38,35 +38,62 @@ inputs:
       exists in case custom values are permitted in the future.
     default: 'sigstore'
     required: false
+  token_format:
+    description: |-
+      Format for the generated token. For OAuth 2.0 access tokens, specify
+      "access_token". For OIDC tokens, specify "id_token".
+    default: 'access_token'
+    required: true
   delegates:
     description: |-
       List of additional service account emails or unique identities to use for
       impersonation in the chain.
     default: ''
     required: false
-  lifetime:
+
+  # access token params
+  access_token_lifetime:
     description: |-
       Desired lifetime duration of the access token, in seconds. This must be
-      specified as the number of seconds with a trailing "s" (e.g. 30s).
+      specified as the number of seconds with a trailing "s" (e.g. 30s). This is
+      only valid when "token_format" is "access_token".
     default: '3600s'
     required: false
+  access_token_scopes:
+    description: |-
+      List of OAuth 2.0 access scopes to be included in the generated token.
+      This is only valid when "token_format" is "access_token".
+    default: 'https://www.googleapis.com/auth/cloud-platform'
+
+  # id token params
   id_token_audience:
     description: |-
-      The audience for the generated Google Cloud ID Token.
+      The audience (aud) for the generated Google Cloud ID Token. This is only
+      valid when "token_format" is "id_token".
     default: ''
+    required: false
+  id_token_include_email:
+    description: |-
+      Optional parameter of whether to include the service account email in the
+      generated token. If true, the token will contain "email" and
+      "email_verified" claims. This is only valid when "token_format" is
+      "access_token".
+    default: false
     required: false
 
 outputs:
   access_token:
     description: |-
-      The Google Cloud access token for calling other Google Cloud APIs.
-  expiration:
+      The Google Cloud access token for calling other Google Cloud APIs.  This
+      is only available when "token_format" is "access_token".
+  access_token_expiration:
     description: |-
-      The expiration timestamp for the access token.
+      The expiration timestamp for the access token.  This is only available
+      when "token_format" is "access_token".
   id_token:
     description: |-
-      The Google Cloud ID token. This token is only generated when
-      `id_token_audience` input parameter was provided.
+      The Google Cloud ID token. This is only available when "token_format" is
+      "id_token".
 
 branding:
   icon: 'lock'

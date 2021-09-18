@@ -9,13 +9,34 @@ on:
     - 'main'
 
 jobs:
-  run:
-    name: 'test'
+  unit:
+    name: 'unit'
+    runs-on: 'ubuntu-latest'
+
+    steps:
+    - uses: 'actions/checkout@v2'
+
+    - uses: 'actions/setup-node@master'
+      with:
+        node-version: '12.x'
+
+    - name: 'npm install'
+      run: 'npm install'
+
+    - name: 'npm lint'
+      run: 'npm run lint'
+
+    - name: 'npm test'
+      run: 'npm run test'
+
+  access_token:
+    name: 'access_token'
     permissions:
       id-token: write
       contents: read
     runs-on: '${{ matrix.operating-system }}'
     strategy:
+      fail-fast: false
       matrix:
         operating-system:
         - 'ubuntu-latest'
@@ -28,19 +49,40 @@ jobs:
       with:
         node-version: '12.x'
 
-    - id: 'integration'
+    - id: 'access-token'
       name: 'integration'
       uses: './'
       with:
+        token_format: 'access_token'
         workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/github-oidc-auth-google-cloud'
         service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
-        id_token_audience: 'foo'
 
-    - name: 'npm install'
-      run: 'npm install'
+  id_token:
+    name: 'id_token'
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: '${{ matrix.operating-system }}'
+    strategy:
+      fail-fast: false
+      matrix:
+        operating-system:
+        - 'ubuntu-latest'
+        - 'windows-latest'
+        - 'macos-latest'
+    steps:
+    - uses: 'actions/checkout@v2'
 
-    - name: 'npm lint'
-      run: 'npm run lint'
+    - uses: 'actions/setup-node@master'
+      with:
+        node-version: '12.x'
 
-    - name: 'npm test'
-      run: 'npm run test'
+    - id: 'id-token'
+      name: 'integration'
+      uses: './'
+      with:
+        token_format: 'id_token'
+        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/github-oidc-auth-google-cloud'
+        service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
+        id_token_audience: 'my-aud'
+        id_token_include_email: true

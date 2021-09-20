@@ -22,7 +22,7 @@ and permissions on Google Cloud.
 ## Prerequisites
 
 -   This action requires you to create and configure a Google Cloud Workload
-    Identity Provider. See [#setup] for instructions.
+    Identity Provider. See [#setup](#setup) for instructions.
 
 ## Usage
 

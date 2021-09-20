@@ -49,7 +49,7 @@ jobs:
     - id: 'access-secret'
       run: |-
         curl https://secretmanager.googleapis.com/v1/projects/my-project/secrets/my-secret/versions/1:access \
-          --header "Authorization: Bearer ${{ steps.integration.outputs.access_token }}"
+          --header "Authorization: Bearer ${{ steps.google-cloud-auth.outputs.access_token }}"
 ```
 
 ## Inputs

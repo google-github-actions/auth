@@ -88,6 +88,14 @@ export class Client {
    * request.
    */
   static request(opts: RequestOptions, data?: any): Promise<string> {
+    if (!opts.headers) {
+      opts.headers = {};
+    }
+
+    if (!opts.headers['User-Agent']) {
+      opts.headers['User-Agent'] = 'sethvargo:oidc-auth-google-cloud/0.2.1';
+    }
+
     return new Promise((resolve, reject) => {
       const req = https.request(opts, (res) => {
         res.setEncoding('utf8');

@@ -39,7 +39,7 @@ jobs:
     steps:
     - id: 'google-cloud-auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'github.com/sethvargo/oidc-auth-google-cloud'
+      uses: 'sethvargo/oidc-auth-google-cloud@v0.2.0'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -141,6 +141,13 @@ the [gcloud][gcloud] command-line tool.
     purposes, you could grant access to a Google Secret Manager secret or Google
     Cloud Storage object.
 
+1.  Enable the IAM Credentials API:
+
+    ```sh
+    gcloud services enable iamcredentials.googleapis.com \
+      --project "${PROJECT_ID}"
+    ```
+
 1.  Create a Workload Identity Pool:
 
     ```sh
@@ -149,6 +156,22 @@ the [gcloud][gcloud] command-line tool.
       --location="global" \
       --display-name="Demo pool"
     ```
+
+1.  Get the full ID of the Workload Identity Pool:
+
+    ```sh
+    gcloud iam workload-identity-pools describe "my-pool" \
+      --project="${PROJECT_ID}" \
+      --location="global" \
+      --format="value(name)"
+    ```
+
+    Save this value as an environment variable:
+
+    ```sh
+    export WORKLOAD_IDENTITY_POOL_ID="..." # value from above
+    ```
+
 
 1.  Create a Workload Identity Provider in that pool:
 
@@ -201,8 +224,9 @@ the [gcloud][gcloud] command-line tool.
 
     ```sh
     gcloud iam service-accounts add-iam-policy-binding "my-service-account@${PROJECT_ID}.iam.gserviceaccount.com" \
+      --project="${PROJECT_ID}" \
       --role="roles/iam.workloadIdentityUser" \
-      --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER_ID}/*"
+      --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/*"
     ```
 
     To map to a specific repository:
@@ -210,7 +234,7 @@ the [gcloud][gcloud] command-line tool.
     ```sh
     gcloud iam service-accounts add-iam-policy-binding "my-service-account@${PROJECT_ID}.iam.gserviceaccount.com" \
       --role="roles/iam.workloadIdentityUser" \
-      --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER_ID}/attribute.repo/my-repo"
+      --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/attribute.repository/username/repo"
     ```
 
 1.  Use this GitHub Action with the Workload Identity Provider ID and Service
@@ -218,6 +242,9 @@ the [gcloud][gcloud] command-line tool.
     the GitHub token for a Google Cloud access token (assuming the authorization
     is correct). This all happens without exporting a Google Cloud service
     account key JSON!
+
+    Note: It can take **up to 5 minutes** from when you configure the Workload
+    Identity Pool mapping until the permissions are available.
 
 ## GitHub Token Format
 

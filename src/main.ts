@@ -2,6 +2,7 @@
 
 import * as core from '@actions/core';
 import { Client } from './client';
+import { URL } from 'url';
 
 /**
  * Converts a multi-line or comma-separated collection of strings into an array
@@ -35,26 +36,79 @@ async function run(): Promise<void> {
     });
     const serviceAccount = core.getInput('service_account', { required: true });
     const audience = core.getInput('audience');
-    const tokenFormat = core.getInput('token_format', { required: true });
+    const createCredentialsFile = core.getBooleanInput('create_credentials_file');
+    const activateCredentialsFile = core.getBooleanInput('activate_credentials_file');
+    const tokenFormat = core.getInput('token_format');
     const delegates = explodeStrings(core.getInput('delegates'));
-    const accessTokenLifetime = core.getInput('access_token_lifetime');
-    const accessTokenScopes = explodeStrings(core.getInput('access_token_scopes'));
-    const idTokenAudience = core.getInput('id_token_audience');
-    const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
 
-    // Get the GitHub OIDC token.
-    const githubOIDCToken = await core.getIDToken(audience);
+    // Always write the credentials file first, before trying to generate
+    // tokens. This will ensure the file is written even if token generation
+    // fails, which means continue-on-error actions will still have the file
+    // available.
+    if (createCredentialsFile) {
+      const runnerTempDir = process.env.RUNNER_TEMP!;
 
-    // Exchange the GitHub OIDC token for a Google Federated Token.
-    const googleFederatedToken = await Client.googleFederatedToken({
-      providerID: workloadIdentityProvider,
-      token: githubOIDCToken,
-    });
-    core.setSecret(googleFederatedToken);
+      // Extract the request token and request URL from the environment. These
+      // are only set when an id-token is requested and the submitter has
+      // collaborator permissions.
+      const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+      if (!requestToken) {
+        throw new Error('$ACTIONS_ID_TOKEN_REQUEST_TOKEN is not set');
+      }
+      const requestURLRaw = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+      if (!requestURLRaw) {
+        throw new Error('$ACTIONS_ID_TOKEN_REQUEST_URL is not set');
+      }
+      const requestURL = new URL(requestURLRaw);
+
+      // Append the audience value to the request.
+      const params = requestURL.searchParams;
+      params.set('audience', audience);
+      requestURL.search = params.toString();
+
+      // Create the credentials file.
+      const outputPath = await Client.createCredentialsFile({
+        providerID: workloadIdentityProvider,
+        serviceAccount: serviceAccount,
+        requestToken: requestToken,
+        requestURL: requestURL.toString(),
+        outputDir: runnerTempDir,
+      });
+      core.setOutput('credentials_file_path', outputPath);
+
+      // Also set the magic environment variable for gcloud and SDKs if
+      // requested.
+      if (activateCredentialsFile) {
+        core.exportVariable('GOOGLE_APPLICATION_CREDENTIALS', outputPath);
+      }
+    }
+
+    // getFederatedToken is a closure that gets the federated token.
+    const getFederatedToken = async (): Promise<string> => {
+      // Get the GitHub OIDC token.
+      const githubOIDCToken = await core.getIDToken(audience);
+
+      // Exchange the GitHub OIDC token for a Google Federated Token.
+      const googleFederatedToken = await Client.googleFederatedToken({
+        providerID: workloadIdentityProvider,
+        token: githubOIDCToken,
+      });
+      core.setSecret(googleFederatedToken);
+      return googleFederatedToken;
+    };
 
     switch (tokenFormat) {
+      case '': {
+        break;
+      }
+      case null: {
+        break;
+      }
       case 'access_token': {
-        // Exchange the Google Federated Token for an access token.
+        const accessTokenLifetime = core.getInput('access_token_lifetime');
+        const accessTokenScopes = explodeStrings(core.getInput('access_token_scopes'));
+
+        const googleFederatedToken = await getFederatedToken();
         const { accessToken, expiration } = await Client.googleAccessToken({
           token: googleFederatedToken,
           serviceAccount: serviceAccount,
@@ -68,7 +122,10 @@ async function run(): Promise<void> {
         break;
       }
       case 'id_token': {
-        // Exchange the Google Federated Token for an id token.
+        const idTokenAudience = core.getInput('id_token_audience', { required: true });
+        const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
+
+        const googleFederatedToken = await getFederatedToken();
         const { token } = await Client.googleIDToken({
           token: googleFederatedToken,
           serviceAccount: serviceAccount,

@@ -16,7 +16,7 @@ jobs:
     steps:
     - uses: 'actions/checkout@v2'
 
-    - uses: 'actions/setup-node@master'
+    - uses: 'actions/setup-node@v2'
       with:
         node-version: '12.x'
 
@@ -29,11 +29,11 @@ jobs:
     - name: 'npm test'
       run: 'npm run test'
 
-  access_token:
-    name: 'access_token'
+  credentials_file:
+    name: 'credentials_file'
     permissions:
-      id-token: write
-      contents: read
+      id-token: 'write'
+      contents: 'read'
     runs-on: '${{ matrix.operating-system }}'
     strategy:
       fail-fast: false
@@ -42,15 +42,50 @@ jobs:
         - 'ubuntu-latest'
         - 'windows-latest'
         - 'macos-latest'
+
     steps:
     - uses: 'actions/checkout@v2'
 
-    - uses: 'actions/setup-node@master'
+    - uses: 'actions/setup-node@v2'
       with:
         node-version: '12.x'
 
-    - id: 'access-token'
-      name: 'integration'
+    - uses: 'google-github-actions/setup-gcloud@master'
+      with:
+        project_id: 'actions-oidc-test'
+
+    - id: 'auth'
+      name: 'auth'
+      uses: './'
+      with:
+        create_credentials_file: true
+        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/github-oidc-auth-google-cloud'
+        service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
+
+    - id: 'gcloud'
+      name: 'gcloud'
+      run: |-
+        gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
+        gcloud secrets versions access "latest" --secret "my-secret"
+
+  access_token:
+    name: 'access_token'
+    permissions:
+      id-token: 'write'
+      contents: 'read'
+    runs-on: 'ubuntu-latest'
+    strategy:
+      fail-fast: false
+
+    steps:
+    - uses: 'actions/checkout@v2'
+
+    - uses: 'actions/setup-node@v2'
+      with:
+        node-version: '12.x'
+
+    - id: 'auth'
+      name: 'auth'
       uses: './'
       with:
         token_format: 'access_token'
@@ -60,25 +95,21 @@ jobs:
   id_token:
     name: 'id_token'
     permissions:
-      id-token: write
-      contents: read
-    runs-on: '${{ matrix.operating-system }}'
+      id-token: 'write'
+      contents: 'read'
+    runs-on: 'ubuntu-latest'
     strategy:
       fail-fast: false
-      matrix:
-        operating-system:
-        - 'ubuntu-latest'
-        - 'windows-latest'
-        - 'macos-latest'
+
     steps:
     - uses: 'actions/checkout@v2'
 
-    - uses: 'actions/setup-node@master'
+    - uses: 'actions/setup-node@v2'
       with:
         node-version: '12.x'
 
-    - id: 'id-token'
-      name: 'integration'
+    - id: 'auth'
+      name: 'auth'
       uses: './'
       with:
         token_format: 'id_token'

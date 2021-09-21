@@ -400,7 +400,8 @@ function createApplicationCredentials(workloadIdentityProvider, serviceAccount, 
             credential_source: {
                 file: oidcTokenPath,
                 format: {
-                    type: 'txt',
+                    type: 'text',
+                    subject_token_field_name: '__not_used_but_needed_because_bug__',
                 },
             },
         };

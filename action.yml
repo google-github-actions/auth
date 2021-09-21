@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: 'OIDC Authenticate to Google Cloud'
-author: 'sethvargo'
+name: 'Authenticate to Google Cloud'
+author: 'Google LLC'
 description: |-
   Generate credentials to authenticate to Google Cloud from GitHub Actions using
   an OIDC token and Workload Identity Federation.

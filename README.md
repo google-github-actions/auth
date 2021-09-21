@@ -1,4 +1,4 @@
-# oidc-auth-google-cloud
+# auth
 
 This GitHub Action exchanges a GitHub Actions OIDC token into a Google Cloud
 access token using [Workload Identity Federation][wif]. This obviates the need
@@ -40,7 +40,7 @@ jobs:
     steps:
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'sethvargo/oidc-auth-google-cloud@v0.3.0'
+      uses: 'google-github-actions/auth@v0.3.0'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -164,7 +164,7 @@ jobs:
     # Configure Workload Identity Federation via a credentials file.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'sethvargo/oidc-auth-google-cloud@v0.3.0'
+      uses: 'google-github-actions/auth@v0.3.0'
       with:
         create_credentials_file: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -202,7 +202,7 @@ jobs:
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'sethvargo/oidc-auth-google-cloud@v0.3.0'
+      uses: 'google-github-actions/auth@v0.3.0'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -236,7 +236,7 @@ jobs:
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'sethvargo/oidc-auth-google-cloud@v0.3.0'
+      uses: 'google-github-actions/auth@v0.3.0'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'

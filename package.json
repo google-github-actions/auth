@@ -1,7 +1,7 @@
 {
   "name": "oidc-auth-gcp",
   "version": "0.1.0",
-  "description": "Authenticate to Google Cloud using a GitHub Actions OIDC token.",
+  "description": "Authenticate to Google Cloud using a variety of mechanisms including OIDC tokens.",
   "main": "dist/index.js",
   "scripts": {
     "build": "ncc build src/main.ts",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sethvargo/oidc-auth-gcp"
+    "url": "https://github.com/google-github-actions/auth"
   },
   "keywords": [
     "actions",

@@ -193,6 +193,13 @@ the [gcloud][gcloud] command-line tool.
         to further restrict the authentication using `--attribute-condition`
         flags.
 
+        For example, you can map the attribute repository values (which can be
+        used later to restrict the authentication to specific repositories):
+
+        ```sh
+        --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository"
+        ```
+
 1.  Get the full ID for the Workload Identity Provider:
 
     ```sh

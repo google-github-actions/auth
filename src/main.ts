@@ -2,6 +2,9 @@
 
 import * as core from '@actions/core';
 import { Client } from './client';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Converts a multi-line or comma-separated collection of strings into an array
@@ -24,6 +27,39 @@ function explodeStrings(input: string): Array<string> {
   return list;
 }
 
+async function createApplicationCredentials(
+  workloadIdentityProvider: string,
+  serviceAccount: string,
+  githubOIDCToken: string,
+) {
+  const rootDir = process.env.GITHUB_WORKSPACE;
+  if (!rootDir) {
+    throw new Error('No path for credentials. Set process.env.GITHUB_WORKSPACE');
+  }
+  // Write github OIDC token
+  const oidcTokenPath = path.join(rootDir, uuidv4());
+  await fs.writeFile(oidcTokenPath, githubOIDCToken);
+  // Credential json file
+  const jsonContent = {
+    type: 'external_account',
+    audience: `//iam.googleapis.com/${workloadIdentityProvider}`,
+    subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+    token_url: 'https://sts.googleapis.com/v1/token',
+    service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`,
+    credential_source: {
+      file: oidcTokenPath,
+      format: {
+        type: 'txt',
+      },
+    },
+  };
+
+  const jsonFile = path.join(rootDir, uuidv4());
+  await fs.writeFile(jsonFile, JSON.stringify(jsonContent, null, 2));
+
+  core.exportVariable('GOOGLE_APPLICATION_CREDENTIALS', jsonFile);
+}
+
 /**
  * Executes the main action, documented inline.
  */
@@ -44,6 +80,11 @@ async function run(): Promise<void> {
 
     // Get the GitHub OIDC token.
     const githubOIDCToken = await core.getIDToken(audience);
+
+    if (tokenFormat === 'application_credentials') {
+      await createApplicationCredentials(workloadIdentityProvider, serviceAccount, githubOIDCToken);
+      return;
+    }
 
     // Exchange the GitHub OIDC token for a Google Federated Token.
     const googleFederatedToken = await Client.googleFederatedToken({

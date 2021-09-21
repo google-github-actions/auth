@@ -43,3 +43,9 @@ typings/
 
 # Output of 'npm pack'
 *.tgz
+
+### IntelliJ ###
+.idea
+*.iws
+*.iml
+*.ipr

@@ -42,6 +42,7 @@ inputs:
     description: |-
       Format for the generated token. For OAuth 2.0 access tokens, specify
       "access_token". For OIDC tokens, specify "id_token".
+      To generate a GOOGLE_APPLICATION_CREDENTIALS, specify "application_credentials"
     default: 'access_token'
     required: true
   delegates:
@@ -64,6 +65,7 @@ inputs:
       List of OAuth 2.0 access scopes to be included in the generated token.
       This is only valid when "token_format" is "access_token".
     default: 'https://www.googleapis.com/auth/cloud-platform'
+    required: false
 
   # id token params
   id_token_audience:
@@ -78,7 +80,7 @@ inputs:
       generated token. If true, the token will contain "email" and
       "email_verified" claims. This is only valid when "token_format" is
       "access_token".
-    default: false
+    default: 'false'
     required: false
 
 outputs:

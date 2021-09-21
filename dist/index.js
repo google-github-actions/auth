@@ -1894,7 +1894,7 @@ class Client {
             opts.headers = {};
         }
         if (!opts.headers['User-Agent']) {
-            opts.headers['User-Agent'] = 'sethvargo:oidc-auth-google-cloud/0.2.1';
+            opts.headers['User-Agent'] = 'google-github-actions:auth/0.3.0';
         }
         return new Promise((resolve, reject) => {
             const req = https_1.default.request(opts, (res) => {

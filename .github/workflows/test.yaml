@@ -59,7 +59,7 @@ jobs:
       uses: './'
       with:
         create_credentials_file: true
-        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/github-oidc-auth-google-cloud'
+        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
         service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
 
     - id: 'gcloud'
@@ -89,7 +89,7 @@ jobs:
       uses: './'
       with:
         token_format: 'access_token'
-        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/github-oidc-auth-google-cloud'
+        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
         service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
 
   id_token:
@@ -113,7 +113,7 @@ jobs:
       uses: './'
       with:
         token_format: 'id_token'
-        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/github-oidc-auth-google-cloud'
+        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
         service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
         id_token_audience: 'my-aud'
         id_token_include_email: true

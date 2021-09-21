@@ -64,6 +64,7 @@ inputs:
       List of OAuth 2.0 access scopes to be included in the generated token.
       This is only valid when "token_format" is "access_token".
     default: 'https://www.googleapis.com/auth/cloud-platform'
+    required: false
 
   # id token params
   id_token_audience:

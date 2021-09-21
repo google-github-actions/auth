@@ -110,6 +110,9 @@ async function run(): Promise<void> {
         break;
       }
       case 'id_token': {
+        if (idTokenAudience === '') {
+          throw new Error(`Token audience is mandatory when you select id_token`);
+        }
         // Exchange the Google Federated Token for an id token.
         const { token } = await Client.googleIDToken({
           token: googleFederatedToken,

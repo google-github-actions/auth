@@ -456,6 +456,9 @@ function run() {
                     break;
                 }
                 case 'id_token': {
+                    if (idTokenAudience === '') {
+                        throw new Error(`Token audience is mandatory when you select id_token`);
+                    }
                     // Exchange the Google Federated Token for an id token.
                     const { token } = yield client_1.Client.googleIDToken({
                         token: googleFederatedToken,

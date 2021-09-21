@@ -19,10 +19,12 @@ and permissions on Google Cloud.
 1.  Exchange the GitHub Actions OIDC token for a short-lived Google Cloud access
     token
 
+
 ## Prerequisites
 
 -   This action requires you to create and configure a Google Cloud Workload
     Identity Provider. See [#setup](#setup) for instructions.
+
 
 ## Usage
 
@@ -33,11 +35,10 @@ jobs:
 
     # Add "id-token" with the intended permissions.
     permissions:
-      id-token: write
-      contents: read
+      id-token: 'write'
 
     steps:
-    - id: 'google-cloud-auth'
+    - id: 'auth'
       name: 'Authenticate to Google Cloud'
       uses: 'sethvargo/oidc-auth-google-cloud@v0.2.0'
       with:
@@ -45,12 +46,15 @@ jobs:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
-    # Example of using the output:
-    - id: 'access-secret'
+    # Example of using the token:
+    - name: 'Access secret'
       run: |-
         curl https://secretmanager.googleapis.com/v1/projects/my-project/secrets/my-secret/versions/1:access \
-          --header "Authorization: Bearer ${{ steps.google-cloud-auth.outputs.access_token }}"
+          --header "Authorization: Bearer ${{ steps.auth.outputs.access_token }}"
 ```
+
+See [Examples](#examples) for more examples.
+
 
 ## Inputs
 
@@ -75,9 +79,24 @@ jobs:
     `"sigstore"`, but this variable exists in case custom values are permitted
     in the future. The default value is `"sigstore"`.
 
--   `token_format`: (Optional) Format of the generated token. For OAuth 2.0
-    access tokens, specify "access_token". For OIDC tokens, specify "id_token".
-    The default value is "access_token".
+-   `create_credentials_file`: (Optional) If true, the action will securely
+     generate a credentials file which can be used for authentication via gcloud
+     and Google Cloud SDKs. The default is false.
+
+-   `activate_credentials_file`: (Optional) If true and
+    "create_credentials_file" is also true, this will set the
+    `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path to the
+    credentials file, which gcloud and Google Cloud SDKs automatically consume.
+    The default value is true.
+
+-   `token_format`: (Optional) Output format for the generated authentication
+    token.
+
+    -   For OAuth 2.0 access tokens, specify "access_token".
+    -   For OIDC tokens, specify "id_token".
+    -   To skip token generation, omit or set to the empty string "".
+
+    The default value is "" (skip token creation).
 
 -   `delegates`: (Optional) List of additional service account emails or unique
     identities to use for impersonation in the chain. By default there are no
@@ -95,23 +114,144 @@ jobs:
     https://www.googleapis.com/auth/cloud-platform
     ```
 
--   `id_token_audience`: (Optional) The audience for the generated ID Token.
+-   `id_token_audience`: (Required\*) The audience for the generated ID Token.
+    This option is required when "token_format" is "id_token", but otherwise can
+    be omitted.
 
 -   `id_token_include_email`: (Optional) Optional parameter of whether to
     include the service account email in the generated token. If true, the token
     will contain "email" and "email_verified" claims. This is only valid when
     "token_format" is "access_token". The default value is false.
 
+
 ## Outputs
 
--   `access_token`: The authenticated Google Cloud access token for calling
-    other Google Cloud APIs.
+-   `credentials_file_path`: Path on the local filesystem where the generated
+    credentials file resides. This is only available if
+    "create_credentials_file" was set to true.
 
--   `access_token_expiration`: The RFC3339 UTC "Zulu" format timestamp when the
-    token expires.
+-   `access_token`: The Google Cloud access token for calling other Google Cloud
+    APIs. This is only available when "token_format" is "access_token".
 
--   `id_token`: The authenticated Google Cloud ID token. This token is only
-    generated when `id_token_audience` input parameter is provided.
+-   `access_token_expiration`: The RFC3339 UTC "Zulu" format timestamp for the
+    access token. This is only available when "token_format" is "access_token".
+
+-   `id_token`: The Google Cloud ID token. This is only available when
+    "token_format" is "id_token".
+
+## Examples
+
+#### Cloud SDK (gcloud)
+
+This example demonstrates using this GitHub Action to configure authentication
+for the `gcloud` CLI tool. Note this does **not** work for the `gsutil` tool.
+
+```yaml
+jobs:
+  run:
+    # ...
+
+    # Add "id-token" with the intended permissions.
+    permissions:
+      id-token: 'write'
+
+    steps:
+    # Install gcloud, do not specify authentication.
+    - uses: 'google-github-actions/setup-gcloud@master'
+      with:
+        project_id: 'my-project'
+
+    # Configure Workload Identity Federation via a credentials file.
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'sethvargo/oidc-auth-google-cloud@v0.2.0'
+      with:
+        create_credentials_file: 'access_token'
+        workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+        service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
+
+    # Authenticate using the created credentials file.
+    - id: 'gcloud'
+      name: 'gcloud'
+      run: |-
+        gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
+
+        # Now you can run gcloud commands authenticated as the impersonated service account.
+        gcloud secrets versions access "latest" --secret "my-secret"
+```
+
+#### Access Token (OAuth 2.0)
+
+This example demonstrates using this GitHub Action to generate an OAuth 2.0
+Access Token for authenticating to Google Cloud. Most Google Cloud APIs accept
+this access token as authentication.
+
+The default lifetime is 1 hour, but you can request up to 12 hours if you set
+the [`constraints/iam.allowServiceAccountCredentialLifetimeExtension` organization policy](https://cloud.google.com/resource-manager/docs/organization-policy/org-policy-constraints).
+
+```yaml
+jobs:
+  run:
+    # ...
+
+    # Add "id-token" with the intended permissions.
+    permissions:
+      id-token: 'write'
+
+    steps:
+    # Configure Workload Identity Federation and generate an access token.
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'sethvargo/oidc-auth-google-cloud@v0.2.0'
+      with:
+        token_format: 'access_token'
+        workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+        service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
+        access_token_lifetime: '300s' # optional, default: '3600s' (1 hour)
+
+    # Example of using the output. The token is usually provided as a Bearer
+    # token.
+    - id: 'access-secret'
+      run: |-
+        curl https://secretmanager.googleapis.com/v1/projects/my-project/secrets/my-secret/versions/1:access \
+          --header "Authorization: Bearer ${{ steps.auth.outputs.access_token }}"
+```
+
+#### ID Token (JWT)
+
+This example demonstrates using this GitHub Action to generate a Google Cloud ID
+Token for authenticating to Google Cloud. This is most commonly used when
+invoking a Cloud Run service.
+
+```yaml
+jobs:
+  run:
+    # ...
+
+    # Add "id-token" with the intended permissions.
+    permissions:
+      id-token: 'write'
+
+    steps:
+    # Configure Workload Identity Federation and generate an access token.
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'sethvargo/oidc-auth-google-cloud@v0.2.0'
+      with:
+        token_format: 'access_token'
+        workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+        service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
+        id_token_audience: 'https://myapp-uvehjacqzq.a.run.app' # required, value depends on target
+        id_token_include_email: true # optional
+
+    # Example of using the output. The token is usually provided as a Bearer
+    # token.
+    - id: 'invoke-service'
+      run: |-
+        curl https://myapp-uvehjacqzq.a.run.app \
+          --header "Authorization: Bearer ${{ steps.auth.outputs.id_token }}"
+```
+
 
 ## Setup
 

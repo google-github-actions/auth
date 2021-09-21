@@ -194,6 +194,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
 const client_1 = __webpack_require__(976);
+const url_1 = __webpack_require__(835);
 /**
  * Converts a multi-line or comma-separated collection of strings into an array
  * of trimmed strings.
@@ -225,23 +226,70 @@ function run() {
             });
             const serviceAccount = core.getInput('service_account', { required: true });
             const audience = core.getInput('audience');
-            const tokenFormat = core.getInput('token_format', { required: true });
+            const createCredentialsFile = core.getBooleanInput('create_credentials_file');
+            const activateCredentialsFile = core.getBooleanInput('activate_credentials_file');
+            const tokenFormat = core.getInput('token_format');
             const delegates = explodeStrings(core.getInput('delegates'));
-            const accessTokenLifetime = core.getInput('access_token_lifetime');
-            const accessTokenScopes = explodeStrings(core.getInput('access_token_scopes'));
-            const idTokenAudience = core.getInput('id_token_audience');
-            const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
-            // Get the GitHub OIDC token.
-            const githubOIDCToken = yield core.getIDToken(audience);
-            // Exchange the GitHub OIDC token for a Google Federated Token.
-            const googleFederatedToken = yield client_1.Client.googleFederatedToken({
-                providerID: workloadIdentityProvider,
-                token: githubOIDCToken,
+            // Always write the credentials file first, before trying to generate
+            // tokens. This will ensure the file is written even if token generation
+            // fails, which means continue-on-error actions will still have the file
+            // available.
+            if (createCredentialsFile) {
+                const runnerTempDir = process.env.RUNNER_TEMP;
+                // Extract the request token and request URL from the environment. These
+                // are only set when an id-token is requested and the submitter has
+                // collaborator permissions.
+                const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+                if (!requestToken) {
+                    throw new Error('$ACTIONS_ID_TOKEN_REQUEST_TOKEN is not set');
+                }
+                const requestURLRaw = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+                if (!requestURLRaw) {
+                    throw new Error('$ACTIONS_ID_TOKEN_REQUEST_URL is not set');
+                }
+                const requestURL = new url_1.URL(requestURLRaw);
+                // Append the audience value to the request.
+                const params = requestURL.searchParams;
+                params.set('audience', audience);
+                requestURL.search = params.toString();
+                // Create the credentials file.
+                const outputPath = yield client_1.Client.createCredentialsFile({
+                    providerID: workloadIdentityProvider,
+                    serviceAccount: serviceAccount,
+                    requestToken: requestToken,
+                    requestURL: requestURL.toString(),
+                    outputDir: runnerTempDir,
+                });
+                core.setOutput('credentials_file_path', outputPath);
+                // Also set the magic environment variable for gcloud and SDKs if
+                // requested.
+                if (activateCredentialsFile) {
+                    core.exportVariable('GOOGLE_APPLICATION_CREDENTIALS', outputPath);
+                }
+            }
+            // getFederatedToken is a closure that gets the federated token.
+            const getFederatedToken = () => __awaiter(this, void 0, void 0, function* () {
+                // Get the GitHub OIDC token.
+                const githubOIDCToken = yield core.getIDToken(audience);
+                // Exchange the GitHub OIDC token for a Google Federated Token.
+                const googleFederatedToken = yield client_1.Client.googleFederatedToken({
+                    providerID: workloadIdentityProvider,
+                    token: githubOIDCToken,
+                });
+                core.setSecret(googleFederatedToken);
+                return googleFederatedToken;
             });
-            core.setSecret(googleFederatedToken);
             switch (tokenFormat) {
+                case '': {
+                    break;
+                }
+                case null: {
+                    break;
+                }
                 case 'access_token': {
-                    // Exchange the Google Federated Token for an access token.
+                    const accessTokenLifetime = core.getInput('access_token_lifetime');
+                    const accessTokenScopes = explodeStrings(core.getInput('access_token_scopes'));
+                    const googleFederatedToken = yield getFederatedToken();
                     const { accessToken, expiration } = yield client_1.Client.googleAccessToken({
                         token: googleFederatedToken,
                         serviceAccount: serviceAccount,
@@ -255,7 +303,9 @@ function run() {
                     break;
                 }
                 case 'id_token': {
-                    // Exchange the Google Federated Token for an id token.
+                    const idTokenAudience = core.getInput('id_token_audience', { required: true });
+                    const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
+                    const googleFederatedToken = yield getFederatedToken();
                     const { token } = yield client_1.Client.googleIDToken({
                         token: googleFederatedToken,
                         serviceAccount: serviceAccount,
@@ -639,6 +689,13 @@ module.exports = require("assert");
 
 module.exports = __webpack_require__(141);
 
+
+/***/ }),
+
+/***/ 417:
+/***/ (function(module) {
+
+module.exports = require("crypto");
 
 /***/ }),
 
@@ -1823,6 +1880,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Client = void 0;
 const https_1 = __importDefault(__webpack_require__(211));
+const fs_1 = __webpack_require__(747);
+const crypto_1 = __importDefault(__webpack_require__(417));
+const path_1 = __importDefault(__webpack_require__(622));
 const url_1 = __webpack_require__(835);
 class Client {
     /**
@@ -1830,6 +1890,12 @@ class Client {
      * request.
      */
     static request(opts, data) {
+        if (!opts.headers) {
+            opts.headers = {};
+        }
+        if (!opts.headers['User-Agent']) {
+            opts.headers['User-Agent'] = 'sethvargo:oidc-auth-google-cloud/0.2.1';
+        }
         return new Promise((resolve, reject) => {
             const req = https_1.default.request(opts, (res) => {
                 res.setEncoding('utf8');
@@ -1961,6 +2027,41 @@ class Client {
             catch (err) {
                 throw new Error(`failed to generate Google Cloud ID token for ${serviceAccount}: ${err}`);
             }
+        });
+    }
+    /**
+     * createCredentialsFile creates a Google Cloud credentials file that can be
+     * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
+     */
+    static createCredentialsFile({ providerID, serviceAccount, requestToken, requestURL, outputDir, }) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = {
+                type: 'external_account',
+                audience: `//iam.googleapis.com/${providerID}`,
+                subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+                token_url: 'https://sts.googleapis.com/v1/token',
+                service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`,
+                credential_source: {
+                    url: requestURL,
+                    headers: {
+                        Authorization: `Bearer ${requestToken}`,
+                    },
+                    format: {
+                        type: 'json',
+                        subject_token_field_name: 'value',
+                    },
+                },
+            };
+            // Generate a random filename to store the credential. 12 bytes is 24
+            // characters in hex. It's not the ideal entropy, but we have to be under
+            // the 255 character limit for Windows filenames (which includes their
+            // entire leading path).
+            const uniqueName = crypto_1.default.randomBytes(12).toString('hex');
+            const pth = path_1.default.join(outputDir, uniqueName);
+            // Write the file as 0640 so the owner has RW, group as R, and the file is
+            // otherwise unreadable. Also write with EXCL to prevent a symlink attack.
+            yield fs_1.promises.writeFile(pth, JSON.stringify(data), { mode: 0o640, flag: 'wx' });
+            return pth;
         });
     }
 }

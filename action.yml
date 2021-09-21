@@ -38,12 +38,27 @@ inputs:
       exists in case custom values are permitted in the future.
     default: 'sigstore'
     required: false
+  create_credentials_file:
+    description: |-
+      If true, the action will securely generate a credentials file which can be
+      used for authentication via gcloud and Google Cloud SDKs.
+    default: false
+    required: false
+  activate_credentials_file:
+    description: |-
+      If true and create_credentials_file is also true, this will set the
+      GOOGLE_APPLICATION_CREDENTIALS environment variable to the path to the
+      credentials file, which gcloud and Google Cloud SDKs automatically
+      consume.
+    default: true
+    required: false
   token_format:
     description: |-
-      Format for the generated token. For OAuth 2.0 access tokens, specify
-      "access_token". For OIDC tokens, specify "id_token".
-    default: 'access_token'
-    required: true
+      Output format for the generated authentication token. For OAuth 2.0 access
+      tokens, specify "access_token". For OIDC tokens, specify "id_token". To
+      skip token generation, leave this value empty.
+    default: ''
+    required: false
   delegates:
     description: |-
       List of additional service account emails or unique identities to use for
@@ -78,19 +93,23 @@ inputs:
       Optional parameter of whether to include the service account email in the
       generated token. If true, the token will contain "email" and
       "email_verified" claims. This is only valid when "token_format" is
-      "access_token".
+      "id_token".
     default: false
     required: false
 
 outputs:
+  credentials_file_path:
+    description: |-
+      Path on the local filesystem where the generated credentials file resides.
+      This is only available if "create_credentials_file" was set to true.
   access_token:
     description: |-
-      The Google Cloud access token for calling other Google Cloud APIs.  This
-      is only available when "token_format" is "access_token".
+      The Google Cloud access token for calling other Google Cloud APIs. This is
+      only available when "token_format" is "access_token".
   access_token_expiration:
     description: |-
-      The expiration timestamp for the access token.  This is only available
-      when "token_format" is "access_token".
+      The RFC3339 UTC "Zulu" format timestamp for the access token. This is only
+      available when "token_format" is "access_token".
   id_token:
     description: |-
       The Google Cloud ID token. This is only available when "token_format" is

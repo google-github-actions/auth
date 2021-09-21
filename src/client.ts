@@ -120,7 +120,7 @@ export class Client {
     }
 
     if (!opts.headers['User-Agent']) {
-      opts.headers['User-Agent'] = 'sethvargo:oidc-auth-google-cloud/0.2.1';
+      opts.headers['User-Agent'] = 'sethvargo:oidc-auth-google-cloud/0.3.0';
     }
 
     return new Promise((resolve, reject) => {

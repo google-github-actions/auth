@@ -53,6 +53,9 @@ jobs:
           --header "Authorization: Bearer ${{ steps.auth.outputs.access_token }}"
 ```
 
+Note that changing the `permissions` block may remove some default permissions.
+See the [permissions documentation][github-perms] for more information.
+
 See [Examples](#examples) for more examples.
 
 
@@ -426,3 +429,4 @@ Here is a sample GitHub Token for reference for attribute mappings:
 [wif]: https://cloud.google.com/iam/docs/workload-identity-federation
 [gcloud]: https://cloud.google.com/sdk
 [map-external]: https://cloud.google.com/iam/docs/access-resources-oidc#impersonate
+[github-perms]: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#permissions

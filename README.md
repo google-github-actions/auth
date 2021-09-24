@@ -30,7 +30,7 @@ and permissions on Google Cloud.
 
 ```yaml
 jobs:
-  run:
+  job_id:
     # ...
 
     # Add "id-token" with the intended permissions.
@@ -151,7 +151,7 @@ for the `gcloud` CLI tool. Note this does **not** work for the `gsutil` tool.
 
 ```yaml
 jobs:
-  run:
+  job_id:
     # ...
 
     # Add "id-token" with the intended permissions.
@@ -196,7 +196,7 @@ the [`constraints/iam.allowServiceAccountCredentialLifetimeExtension` organizati
 
 ```yaml
 jobs:
-  run:
+  job_id:
     # ...
 
     # Add "id-token" with the intended permissions.
@@ -230,7 +230,7 @@ invoking a Cloud Run service.
 
 ```yaml
 jobs:
-  run:
+  job_id:
     # ...
 
     # Add "id-token" with the intended permissions.
@@ -344,27 +344,6 @@ the [gcloud][gcloud] command-line tool.
         ```sh
         --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository"
         ```
-
-1.  Get the full ID for the Workload Identity Provider:
-
-    ```sh
-    gcloud iam workload-identity-pools providers describe "my-provider" \
-      --project="${PROJECT_ID}" \
-      --location="global" \
-      --workload-identity-pool="my-pool"
-    ```
-
-    Take note of the `name` attribute. It will be of the format:
-
-    ```text
-    projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider
-    ```
-
-    Save this value as an environment variable:
-
-    ```sh
-    export WORKLOAD_IDENTITY_PROVIDER_ID="..." # value from above
-    ```
 
 1.  Allow authentications from the Workload Identity Provider to impersonate the
     Service Account created above:

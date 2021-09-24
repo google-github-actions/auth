@@ -174,6 +174,8 @@ jobs:
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
     # Authenticate using the created credentials file.
+    #
+    # WARNING: The --cred-file flag is in preview and is subject to change.
     - id: 'gcloud'
       name: 'gcloud'
       run: |-

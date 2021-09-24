@@ -124,7 +124,7 @@ See [Examples](#examples) for more examples.
 -   `id_token_include_email`: (Optional) Optional parameter of whether to
     include the service account email in the generated token. If true, the token
     will contain "email" and "email_verified" claims. This is only valid when
-    "token_format" is "access_token". The default value is false.
+    "token_format" is "id_token". The default value is false.
 
 
 ## Outputs

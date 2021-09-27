@@ -326,7 +326,7 @@ the [gcloud][gcloud] command-line tool.
       --location="global" \
       --workload-identity-pool="my-pool" \
       --display-name="Demo provider" \
-      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud" \
+      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud,attribute.repository=assertion.repository" \
       --issuer-uri="https://vstoken.actions.githubusercontent.com" \
       --allowed-audiences="sigstore"
     ```

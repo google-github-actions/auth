@@ -79,9 +79,9 @@ See [Examples](#examples) for more examples.
     ```
 
 -   `audience`: (Optional) The value for the audience (`aud`) parameter in the
-    generated GitHub Actions OIDC token. At present, the only valid value is
-    `"sigstore"`, but this variable exists in case custom values are permitted
-    in the future. The default value is `"sigstore"`.
+    generated GitHub Actions OIDC token. This value defaults to the value of
+    `workload_identity_provider`, which is also the default value Google Cloud
+    expects for the audience parameter on the token.
 
 -   `create_credentials_file`: (Optional) If true, the action will securely
      generate a credentials file which can be used for authentication via gcloud
@@ -331,23 +331,20 @@ the [gcloud][gcloud] command-line tool.
       --workload-identity-pool="my-pool" \
       --display-name="Demo provider" \
       --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud" \
-      --issuer-uri="https://vstoken.actions.githubusercontent.com" \
-      --allowed-audiences="sigstore"
+      --issuer-uri="https://vstoken.actions.githubusercontent.com"
     ```
 
-    -   The audience of "sigstore" is currently the only value GitHub allows.
-    -   The attribute mappings map claims in the GitHub Actions JWT to
-        assertions you can make about the request (like the repository or GitHub
-        username of the principal invoking the GitHub Action). These can be used
-        to further restrict the authentication using `--attribute-condition`
-        flags.
+    The attribute mappings map claims in the GitHub Actions JWT to assertions
+    you can make about the request (like the repository or GitHub username of
+    the principal invoking the GitHub Action). These can be used to further
+    restrict the authentication using `--attribute-condition` flags.
 
-        For example, you can map the attribute repository values (which can be
-        used later to restrict the authentication to specific repositories):
+    For example, you can map the attribute repository values (which can be used
+    later to restrict the authentication to specific repositories):
 
-        ```sh
-        --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository"
-        ```
+    ```sh
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository"
+    ```
 
 1.  Allow authentications from the Workload Identity Provider to impersonate the
     Service Account created above:
@@ -389,7 +386,7 @@ Here is a sample GitHub Token for reference for attribute mappings:
 {
   "jti": "...",
   "sub": "repo:username/reponame:ref:refs/heads/master",
-  "aud": "sigstore",
+  "aud": "https://iam.googleapis.com/projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider",
   "ref": "refs/heads/master",
   "sha": "d11880f4f451ee35192135525dc974c56a3c1b28",
   "repository": "username/reponame",

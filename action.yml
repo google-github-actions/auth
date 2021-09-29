@@ -34,9 +34,10 @@ inputs:
   audience:
     description: |-
       The value for the audience (aud) parameter in GitHub's generated OIDC
-      token. At present, the only valid value is "sigstore", but this variable
-      exists in case custom values are permitted in the future.
-    default: 'sigstore'
+      token. This value defaults to the value of workload_identity_provider,
+      which is also the default value Google Cloud expects for the audience
+      parameter on the token.
+    default: ''
     required: false
   create_credentials_file:
     description: |-

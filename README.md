@@ -1,4 +1,4 @@
-# auth -test
+# auth - test
 
 This GitHub Action exchanges a GitHub Actions OIDC token into a Google Cloud
 access token using [Workload Identity Federation][wif]. This obviates the need

@@ -46,7 +46,10 @@ async function run(): Promise<void> {
     // fails, which means continue-on-error actions will still have the file
     // available.
     if (createCredentialsFile) {
-      const runnerTempDir = process.env.RUNNER_TEMP!;
+      const runnerTempDir = process.env.RUNNER_TEMP;
+      if (!runnerTempDir) {
+        throw new Error('$RUNNER_TEMP is not set');
+      }
 
       // Extract the request token and request URL from the environment. These
       // are only set when an id-token is requested and the submitter has

@@ -35,7 +35,7 @@ jobs:
 
     # Add "id-token" with the intended permissions.
     permissions:
-      contents: read
+      contents: 'read'
       id-token: 'write'
 
     steps:
@@ -157,7 +157,7 @@ jobs:
 
     # Add "id-token" with the intended permissions.
     permissions:
-      contents: read
+      contents: 'read'
       id-token: 'write'
 
     steps:
@@ -203,7 +203,7 @@ jobs:
 
     # Add "id-token" with the intended permissions.
     permissions:
-      contents: read
+      contents: 'read'
       id-token: 'write'
 
     steps:
@@ -238,7 +238,7 @@ jobs:
 
     # Add "id-token" with the intended permissions.
     permissions:
-      contents: read
+      contents: 'read'
       id-token: 'write'
 
     steps:

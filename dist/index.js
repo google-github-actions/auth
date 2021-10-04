@@ -91,6 +91,7 @@ function toCommandProperties(annotationProperties) {
     }
     return {
         title: annotationProperties.title,
+        file: annotationProperties.file,
         line: annotationProperties.startLine,
         endLine: annotationProperties.endLine,
         col: annotationProperties.startColumn,
@@ -225,7 +226,7 @@ function run() {
                 required: true,
             });
             const serviceAccount = core.getInput('service_account', { required: true });
-            const audience = core.getInput('audience');
+            const audience = core.getInput('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
             const createCredentialsFile = core.getBooleanInput('create_credentials_file');
             const activateCredentialsFile = core.getBooleanInput('activate_credentials_file');
             const tokenFormat = core.getInput('token_format');

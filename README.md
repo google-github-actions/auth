@@ -41,7 +41,7 @@ jobs:
     steps:
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.3.0'
+      uses: 'google-github-actions/auth@v0.3.1'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -169,7 +169,7 @@ jobs:
     # Configure Workload Identity Federation via a credentials file.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.3.0'
+      uses: 'google-github-actions/auth@v0.3.1'
       with:
         create_credentials_file: 'true'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -210,7 +210,7 @@ jobs:
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.3.0'
+      uses: 'google-github-actions/auth@v0.3.1'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -245,7 +245,7 @@ jobs:
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.3.0'
+      uses: 'google-github-actions/auth@v0.3.1'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'

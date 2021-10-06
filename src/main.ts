@@ -1,29 +1,10 @@
 'use strict';
 
 import * as core from '@actions/core';
-import { Client } from './client';
-import { URL } from 'url';
-
-/**
- * Converts a multi-line or comma-separated collection of strings into an array
- * of trimmed strings.
- */
-function explodeStrings(input: string): Array<string> {
-  if (input == null || input.length === 0) {
-    return [];
-  }
-
-  const list = new Array<string>();
-  for (const line of input.split(`\n`)) {
-    for (const piece of line.split(',')) {
-      const entry = piece.trim();
-      if (entry !== '') {
-        list.push(entry);
-      }
-    }
-  }
-  return list;
-}
+import { WIFClient } from './client';
+import { KeyClient } from './key';
+import { ActionAuth } from './actionauth';
+import { explodeStrings } from './common';
 
 /**
  * Executes the main action, documented inline.
@@ -31,16 +12,28 @@ function explodeStrings(input: string): Array<string> {
 async function run(): Promise<void> {
   try {
     // Load configuration.
-    const workloadIdentityProvider = core.getInput('workload_identity_provider', {
-      required: true,
-    });
-    const serviceAccount = core.getInput('service_account', { required: true });
-    const audience =
-      core.getInput('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
+    const workloadIdentityProvider = core.getInput('workload_identity_provider');
+    const serviceAccount = core.getInput('service_account');
+    const audience = core.getInput('audience');
     const createCredentialsFile = core.getBooleanInput('create_credentials_file');
     const activateCredentialsFile = core.getBooleanInput('activate_credentials_file');
     const tokenFormat = core.getInput('token_format');
     const delegates = explodeStrings(core.getInput('delegates'));
+    const credentials = core.getInput('credentials_json');
+
+    if (credentials && workloadIdentityProvider) {
+      throw new Error(
+        'Only one of `credentials_json` or `workload_identity_provider` should be specified.',
+      );
+    }
+
+    const client: ActionAuth = workloadIdentityProvider
+      ? new WIFClient({
+          providerID: workloadIdentityProvider,
+          serviceAccount: serviceAccount,
+          audience: audience,
+        })
+      : new KeyClient({ credentials });
 
     // Always write the credentials file first, before trying to generate
     // tokens. This will ensure the file is written even if token generation
@@ -52,58 +45,17 @@ async function run(): Promise<void> {
         throw new Error('$RUNNER_TEMP is not set');
       }
 
-      // Extract the request token and request URL from the environment. These
-      // are only set when an id-token is requested and the submitter has
-      // collaborator permissions.
-      const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-      const requestURLRaw = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-      if (!requestToken || !requestURLRaw) {
-        throw new Error(
-          'GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOKEN or ' +
-            '$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely ' +
-            'means the GitHub Actions workflow permissions are incorrect, or ' +
-            'this job is being run from a fork. For more information, please ' +
-            'see the GitHub documentation at https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token',
-        );
-      }
-
-      const requestURL = new URL(requestURLRaw);
-
-      // Append the audience value to the request.
-      const params = requestURL.searchParams;
-      params.set('audience', audience);
-      requestURL.search = params.toString();
-
-      // Create the credentials file.
-      const outputPath = await Client.createCredentialsFile({
-        providerID: workloadIdentityProvider,
-        serviceAccount: serviceAccount,
-        requestToken: requestToken,
-        requestURL: requestURL.toString(),
-        outputDir: runnerTempDir,
-      });
-      core.setOutput('credentials_file_path', outputPath);
+      const op = await client.createCredentialsFile(runnerTempDir);
+      core.setOutput('credentials_file_path', op.get('GOOGLE_APPLICATION_CREDENTIALS'));
 
       // Also set the magic environment variable for gcloud and SDKs if
       // requested.
       if (activateCredentialsFile) {
-        core.exportVariable('GOOGLE_APPLICATION_CREDENTIALS', outputPath);
+        for (const [k, v] of op) {
+          core.exportVariable(k, v);
+        }
       }
     }
-
-    // getFederatedToken is a closure that gets the federated token.
-    const getFederatedToken = async (): Promise<string> => {
-      // Get the GitHub OIDC token.
-      const githubOIDCToken = await core.getIDToken(audience);
-
-      // Exchange the GitHub OIDC token for a Google Federated Token.
-      const googleFederatedToken = await Client.googleFederatedToken({
-        providerID: workloadIdentityProvider,
-        token: githubOIDCToken,
-      });
-      core.setSecret(googleFederatedToken);
-      return googleFederatedToken;
-    };
 
     switch (tokenFormat) {
       case '': {
@@ -116,14 +68,13 @@ async function run(): Promise<void> {
         const accessTokenLifetime = core.getInput('access_token_lifetime');
         const accessTokenScopes = explodeStrings(core.getInput('access_token_scopes'));
 
-        const googleFederatedToken = await getFederatedToken();
-        const { accessToken, expiration } = await Client.googleAccessToken({
-          token: googleFederatedToken,
-          serviceAccount: serviceAccount,
-          delegates: delegates,
-          lifetime: accessTokenLifetime,
+        const { accessToken, expiration } = await client.getAccessToken({
+          serviceAccount,
+          delegates,
           scopes: accessTokenScopes,
+          lifetime: accessTokenLifetime,
         });
+
         core.setSecret(accessToken);
         core.setOutput('access_token', accessToken);
         core.setOutput('access_token_expiration', expiration);
@@ -132,13 +83,10 @@ async function run(): Promise<void> {
       case 'id_token': {
         const idTokenAudience = core.getInput('id_token_audience', { required: true });
         const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
-
-        const googleFederatedToken = await getFederatedToken();
-        const { token } = await Client.googleIDToken({
-          token: googleFederatedToken,
-          serviceAccount: serviceAccount,
-          delegates: delegates,
+        const { token } = await client.getIDToken({
+          serviceAccount,
           audience: idTokenAudience,
+          delegates,
           includeEmail: idTokenIncludeEmail,
         });
         core.setSecret(token);

@@ -1,10 +1,10 @@
 'use strict';
 
 import * as core from '@actions/core';
-import { WIFClient } from './client';
+import { WIFClient } from './wif';
 import { KeyClient } from './key';
 import { ActionAuth } from './actionauth';
-import { explodeStrings } from './common';
+import { explodeStrings } from './utils';
 
 /**
  * Executes the main action, documented inline.

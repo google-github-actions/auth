@@ -331,7 +331,7 @@ the [gcloud][gcloud] command-line tool.
       --workload-identity-pool="my-pool" \
       --display-name="Demo provider" \
       --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud" \
-      --issuer-uri="https://vstoken.actions.githubusercontent.com"
+      --issuer-uri="https://token.actions.githubusercontent.com"
     ```
 
     The attribute mappings map claims in the GitHub Actions JWT to assertions
@@ -401,7 +401,7 @@ Here is a sample GitHub Token for reference for attribute mappings:
   "event_name": "push",
   "ref_type": "branch",
   "job_workflow_ref": "username/reponame/.github/workflows/token.yml@refs/heads/master",
-  "iss": "https://vstoken.actions.githubusercontent.com",
+  "iss": "https://token.actions.githubusercontent.com",
   "nbf": 1631718827,
   "exp": 1631719727,
   "iat": 1631719427

@@ -50,6 +50,10 @@ jobs:
       with:
         node-version: '12.x'
 
+    - run: |-
+        npm ci
+        npm run build
+
     - uses: 'google-github-actions/setup-gcloud@master'
       with:
         project_id: 'actions-oidc-test'
@@ -84,6 +88,10 @@ jobs:
       with:
         node-version: '12.x'
 
+    - run: |-
+        npm ci
+        npm run build
+
     - id: 'auth'
       name: 'auth'
       uses: './'
@@ -107,6 +115,10 @@ jobs:
     - uses: 'actions/setup-node@v2'
       with:
         node-version: '12.x'
+
+    - run: |-
+        npm ci
+        npm run build
 
     - id: 'auth'
       name: 'auth'

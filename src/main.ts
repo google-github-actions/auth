@@ -56,13 +56,17 @@ async function run(): Promise<void> {
       // are only set when an id-token is requested and the submitter has
       // collaborator permissions.
       const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-      if (!requestToken) {
-        throw new Error('$ACTIONS_ID_TOKEN_REQUEST_TOKEN is not set');
-      }
       const requestURLRaw = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-      if (!requestURLRaw) {
-        throw new Error('$ACTIONS_ID_TOKEN_REQUEST_URL is not set');
+      if (!requestToken || !requestURLRaw) {
+        throw new Error(
+          'GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOKEN or ' +
+            '$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely ' +
+            'means the GitHub Actions workflow permissions are incorrect, or ' +
+            'this job is being run from a fork. For more information, please ' +
+            'see the GitHub documentation at https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token',
+        );
       }
+
       const requestURL = new URL(requestURLRaw);
 
       // Append the audience value to the request.

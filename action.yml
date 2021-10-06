@@ -25,12 +25,19 @@ inputs:
       project number, pool name, and provider name. This must be the full
       identifier which includes all parts, for example:
       "projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider".
-    required: true
+    required: false
+    default: ''
   service_account:
     description: |-
       Email address or unique identifier of the Google Cloud service account for
       which to generate credentials.
-    required: true
+    required: false
+    default: ''
+  credentials_json:
+    description: |-
+      JSON creds
+    required: false
+    default: ''
   audience:
     description: |-
       The value for the audience (aud) parameter in GitHub's generated OIDC

@@ -12,13 +12,14 @@ export class BaseClient {
    * request is a high-level helper that returns a promise from the executed
    * request.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
   static request(opts: RequestOptions, data?: any): Promise<string> {
     if (!opts.headers) {
       opts.headers = {};
     }
 
     if (!opts.headers['User-Agent']) {
-      opts.headers['User-Agent'] = 'google-github-actions:auth/0.3.0';
+      opts.headers['User-Agent'] = 'google-github-actions:auth/0.3.1';
     }
 
     return new Promise((resolve, reject) => {

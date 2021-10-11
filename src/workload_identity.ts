@@ -123,8 +123,8 @@ export class WIFClient implements ActionAuth {
    * service account email or unique id.
    */
   async getIDToken(tokenParams: GoogleIDTokenParameters): Promise<GoogleIDTokenResponse> {
-    const federatedToken = await this.getFederatedToken();
-    return await BaseClient.googleIDToken(federatedToken, tokenParams);
+    const googleFederatedToken = await this.getFederatedToken();
+    return await BaseClient.googleIDToken(googleFederatedToken, tokenParams);
   }
 
   /**

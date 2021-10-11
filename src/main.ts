@@ -15,6 +15,7 @@ async function run(): Promise<void> {
       required: true,
     });
     const serviceAccount = core.getInput('service_account', { required: true });
+    // audience will default to the WIF provider ID when used with WIF
     const audience = core.getInput('audience');
     const createCredentialsFile = core.getBooleanInput('create_credentials_file');
     const activateCredentialsFile = core.getBooleanInput('activate_credentials_file');
@@ -37,13 +38,13 @@ async function run(): Promise<void> {
         throw new Error('$RUNNER_TEMP is not set');
       }
 
-      const op = await client.createCredentialsFile(runnerTempDir);
-      core.setOutput('credentials_file_path', op.get('GOOGLE_APPLICATION_CREDENTIALS'));
+      const envVars = await client.createCredentialsFile(runnerTempDir);
+      core.setOutput('credentials_file_path', envVars.get('GOOGLE_APPLICATION_CREDENTIALS'));
 
       // Also set the magic environment variable for gcloud and SDKs if
       // requested.
       if (activateCredentialsFile) {
-        for (const [k, v] of op) {
+        for (const [k, v] of envVars) {
           core.exportVariable(k, v);
         }
       }

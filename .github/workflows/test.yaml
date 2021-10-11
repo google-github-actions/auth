@@ -50,7 +50,8 @@ jobs:
       with:
         node-version: '12.x'
 
-    - run: |-
+    - name: 'build'
+      run: |-
         npm ci
         npm run build
 
@@ -88,7 +89,8 @@ jobs:
       with:
         node-version: '12.x'
 
-    - run: |-
+    - name: 'build'
+      run: |-
         npm ci
         npm run build
 
@@ -116,7 +118,8 @@ jobs:
       with:
         node-version: '12.x'
 
-    - run: |-
+    - name: 'build'
+      run: |-
         npm ci
         npm run build
 

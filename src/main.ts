@@ -1,7 +1,7 @@
 'use strict';
 
 import * as core from '@actions/core';
-import { WIFClient } from './wif';
+import { WIFClient } from './workload_identity';
 import { ActionAuth } from './actionauth';
 import { explodeStrings } from './utils';
 

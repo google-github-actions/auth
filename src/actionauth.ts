@@ -4,7 +4,7 @@
 export interface ActionAuth {
   getAccessToken(opts: GoogleAccessTokenParameters): Promise<GoogleAccessTokenResponse>;
   getIDToken(opts: GoogleIDTokenParameters): Promise<GoogleIDTokenResponse>;
-  createCredentialsFile(outputDir: string): Promise<Map<string, string>>;
+  createCredentialsFile(outputDir: string): Promise<CreateCredentialsFileResponse>;
 }
 
 /**
@@ -65,4 +65,15 @@ export interface GoogleIDTokenParameters {
  */
 export interface GoogleIDTokenResponse {
   token: string;
+}
+
+/**
+ * CreateCredentialsFileResponse is the response from creating a credential file.
+ *
+ * @param credentialsPath Path to the created credentials file.
+ * @param envVars Optional key value pairs that can be exported as env variables.
+ */
+export interface CreateCredentialsFileResponse {
+  credentialsPath: string;
+  envVars?: Map<string, string>;
 }

@@ -38,12 +38,12 @@ async function run(): Promise<void> {
         throw new Error('$RUNNER_TEMP is not set');
       }
 
-      const envVars = await client.createCredentialsFile(runnerTempDir);
-      core.setOutput('credentials_file_path', envVars.get('GOOGLE_APPLICATION_CREDENTIALS'));
+      const { credentialsPath, envVars } = await client.createCredentialsFile(runnerTempDir);
+      core.setOutput('credentials_file_path', credentialsPath);
 
       // Also set the magic environment variable for gcloud and SDKs if
       // requested.
-      if (activateCredentialsFile) {
+      if (activateCredentialsFile && envVars) {
         for (const [k, v] of envVars) {
           core.exportVariable(k, v);
         }

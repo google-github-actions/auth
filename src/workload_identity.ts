@@ -4,6 +4,7 @@ import { URL } from 'url';
 import * as core from '@actions/core';
 import {
   ActionAuth,
+  CreateCredentialsFileResponse,
   GoogleAccessTokenParameters,
   GoogleAccessTokenResponse,
   GoogleIDTokenParameters,
@@ -131,7 +132,7 @@ export class WIFClient implements ActionAuth {
    * createCredentialsFile creates a Google Cloud credentials file that can be
    * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
    */
-  async createCredentialsFile(outputDir: string): Promise<Map<string, string>> {
+  async createCredentialsFile(outputDir: string): Promise<CreateCredentialsFileResponse> {
     // Extract the request token and request URL from the environment. These
     // are only set when an id-token is requested and the submitter has
     // collaborator permissions.
@@ -170,7 +171,8 @@ export class WIFClient implements ActionAuth {
       },
     };
 
-    const pth = await writeCredFile(outputDir, JSON.stringify(data));
-    return new Map<string, string>([['GOOGLE_APPLICATION_CREDENTIALS', pth]]);
+    const credentialsPath = await writeCredFile(outputDir, JSON.stringify(data));
+    const envVars = new Map<string, string>([['GOOGLE_APPLICATION_CREDENTIALS', credentialsPath]]);
+    return { credentialsPath, envVars };
   }
 }

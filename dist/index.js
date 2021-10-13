@@ -194,27 +194,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
-const client_1 = __webpack_require__(976);
-const url_1 = __webpack_require__(835);
-/**
- * Converts a multi-line or comma-separated collection of strings into an array
- * of trimmed strings.
- */
-function explodeStrings(input) {
-    if (input == null || input.length === 0) {
-        return [];
-    }
-    const list = new Array();
-    for (const line of input.split(`\n`)) {
-        for (const piece of line.split(',')) {
-            const entry = piece.trim();
-            if (entry !== '') {
-                list.push(entry);
-            }
-        }
-    }
-    return list;
-}
+const workload_identity_1 = __webpack_require__(313);
+const utils_1 = __webpack_require__(163);
 /**
  * Executes the main action, documented inline.
  */
@@ -226,11 +207,17 @@ function run() {
                 required: true,
             });
             const serviceAccount = core.getInput('service_account', { required: true });
-            const audience = core.getInput('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
+            // audience will default to the WIF provider ID when used with WIF
+            const audience = core.getInput('audience');
             const createCredentialsFile = core.getBooleanInput('create_credentials_file');
             const activateCredentialsFile = core.getBooleanInput('activate_credentials_file');
             const tokenFormat = core.getInput('token_format');
-            const delegates = explodeStrings(core.getInput('delegates'));
+            const delegates = (0, utils_1.explodeStrings)(core.getInput('delegates'));
+            const client = new workload_identity_1.WIFClient({
+                providerID: workloadIdentityProvider,
+                serviceAccount: serviceAccount,
+                audience: audience,
+            });
             // Always write the credentials file first, before trying to generate
             // tokens. This will ensure the file is written even if token generation
             // fails, which means continue-on-error actions will still have the file
@@ -240,50 +227,16 @@ function run() {
                 if (!runnerTempDir) {
                     throw new Error('$RUNNER_TEMP is not set');
                 }
-                // Extract the request token and request URL from the environment. These
-                // are only set when an id-token is requested and the submitter has
-                // collaborator permissions.
-                const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-                const requestURLRaw = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-                if (!requestToken || !requestURLRaw) {
-                    throw new Error('GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOKEN or ' +
-                        '$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely ' +
-                        'means the GitHub Actions workflow permissions are incorrect, or ' +
-                        'this job is being run from a fork. For more information, please ' +
-                        'see the GitHub documentation at https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token');
-                }
-                const requestURL = new url_1.URL(requestURLRaw);
-                // Append the audience value to the request.
-                const params = requestURL.searchParams;
-                params.set('audience', audience);
-                requestURL.search = params.toString();
-                // Create the credentials file.
-                const outputPath = yield client_1.Client.createCredentialsFile({
-                    providerID: workloadIdentityProvider,
-                    serviceAccount: serviceAccount,
-                    requestToken: requestToken,
-                    requestURL: requestURL.toString(),
-                    outputDir: runnerTempDir,
-                });
-                core.setOutput('credentials_file_path', outputPath);
+                const { credentialsPath, envVars } = yield client.createCredentialsFile(runnerTempDir);
+                core.setOutput('credentials_file_path', credentialsPath);
                 // Also set the magic environment variable for gcloud and SDKs if
                 // requested.
-                if (activateCredentialsFile) {
-                    core.exportVariable('GOOGLE_APPLICATION_CREDENTIALS', outputPath);
+                if (activateCredentialsFile && envVars) {
+                    for (const [k, v] of envVars) {
+                        core.exportVariable(k, v);
+                    }
                 }
             }
-            // getFederatedToken is a closure that gets the federated token.
-            const getFederatedToken = () => __awaiter(this, void 0, void 0, function* () {
-                // Get the GitHub OIDC token.
-                const githubOIDCToken = yield core.getIDToken(audience);
-                // Exchange the GitHub OIDC token for a Google Federated Token.
-                const googleFederatedToken = yield client_1.Client.googleFederatedToken({
-                    providerID: workloadIdentityProvider,
-                    token: githubOIDCToken,
-                });
-                core.setSecret(googleFederatedToken);
-                return googleFederatedToken;
-            });
             switch (tokenFormat) {
                 case '': {
                     break;
@@ -293,14 +246,12 @@ function run() {
                 }
                 case 'access_token': {
                     const accessTokenLifetime = core.getInput('access_token_lifetime');
-                    const accessTokenScopes = explodeStrings(core.getInput('access_token_scopes'));
-                    const googleFederatedToken = yield getFederatedToken();
-                    const { accessToken, expiration } = yield client_1.Client.googleAccessToken({
-                        token: googleFederatedToken,
-                        serviceAccount: serviceAccount,
-                        delegates: delegates,
-                        lifetime: accessTokenLifetime,
+                    const accessTokenScopes = (0, utils_1.explodeStrings)(core.getInput('access_token_scopes'));
+                    const { accessToken, expiration } = yield client.getAccessToken({
+                        serviceAccount,
+                        delegates,
                         scopes: accessTokenScopes,
+                        lifetime: accessTokenLifetime,
                     });
                     core.setSecret(accessToken);
                     core.setOutput('access_token', accessToken);
@@ -310,12 +261,10 @@ function run() {
                 case 'id_token': {
                     const idTokenAudience = core.getInput('id_token_audience', { required: true });
                     const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
-                    const googleFederatedToken = yield getFederatedToken();
-                    const { token } = yield client_1.Client.googleIDToken({
-                        token: googleFederatedToken,
-                        serviceAccount: serviceAccount,
-                        delegates: delegates,
+                    const { token } = yield client.getIDToken({
+                        serviceAccount,
                         audience: idTokenAudience,
+                        delegates,
                         includeEmail: idTokenIncludeEmail,
                     });
                     core.setSecret(token);
@@ -609,6 +558,75 @@ exports.debug = debug; // for test
 
 /***/ }),
 
+/***/ 163:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.explodeStrings = exports.writeCredFile = void 0;
+const fs_1 = __webpack_require__(747);
+const crypto_1 = __importDefault(__webpack_require__(417));
+const path_1 = __importDefault(__webpack_require__(622));
+/**
+ * writeCredFile writes a file to disk in a given directory with a
+ * random name.
+ *
+ * @param outputDir Directory to create random file in.
+ * @param data Data to write to file.
+ * @returns Path to written file.
+ */
+function writeCredFile(outputDir, data) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Generate a random filename to store the credential. 12 bytes is 24
+        // characters in hex. It's not the ideal entropy, but we have to be under
+        // the 255 character limit for Windows filenames (which includes their
+        // entire leading path).
+        const uniqueName = crypto_1.default.randomBytes(12).toString('hex');
+        const pth = path_1.default.join(outputDir, uniqueName);
+        // Write the file as 0640 so the owner has RW, group as R, and the file is
+        // otherwise unreadable. Also write with EXCL to prevent a symlink attack.
+        yield fs_1.promises.writeFile(pth, data, { mode: 0o640, flag: 'wx' });
+        return pth;
+    });
+}
+exports.writeCredFile = writeCredFile;
+/**
+ * Converts a multi-line or comma-separated collection of strings into an array
+ * of trimmed strings.
+ */
+function explodeStrings(input) {
+    if (input == null || input.length === 0) {
+        return [];
+    }
+    const list = new Array();
+    for (const line of input.split(`\n`)) {
+        for (const piece of line.split(',')) {
+            const entry = piece.trim();
+            if (entry !== '') {
+                list.push(entry);
+            }
+        }
+    }
+    return list;
+}
+exports.explodeStrings = explodeStrings;
+
+
+/***/ }),
+
 /***/ 211:
 /***/ (function(module) {
 
@@ -678,6 +696,174 @@ class PersonalAccessTokenCredentialHandler {
     }
 }
 exports.PersonalAccessTokenCredentialHandler = PersonalAccessTokenCredentialHandler;
+
+
+/***/ }),
+
+/***/ 313:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WIFClient = void 0;
+const url_1 = __webpack_require__(835);
+const core = __importStar(__webpack_require__(470));
+const utils_1 = __webpack_require__(163);
+const base_1 = __webpack_require__(843);
+class WIFClient {
+    constructor(opts) {
+        this.providerID = opts.providerID;
+        this.serviceAccount = opts.serviceAccount;
+        this.audience = opts.audience ? opts.audience : `https://iam.googleapis.com/${this.providerID}`;
+    }
+    /**
+     * googleFederatedToken generates a Google Cloud federated token using the
+     * provided OIDC token and Workload Identity Provider.
+     */
+    static googleFederatedToken({ providerID, token, }) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const stsURL = new url_1.URL('https://sts.googleapis.com/v1/token');
+            const data = {
+                audience: '//iam.googleapis.com/' + providerID,
+                grantType: 'urn:ietf:params:oauth:grant-type:token-exchange',
+                requestedTokenType: 'urn:ietf:params:oauth:token-type:access_token',
+                scope: 'https://www.googleapis.com/auth/cloud-platform',
+                subjectTokenType: 'urn:ietf:params:oauth:token-type:jwt',
+                subjectToken: token,
+            };
+            const opts = {
+                hostname: stsURL.hostname,
+                port: stsURL.port,
+                path: stsURL.pathname + stsURL.search,
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            };
+            try {
+                const resp = yield base_1.BaseClient.request(opts, JSON.stringify(data));
+                const parsed = JSON.parse(resp);
+                return parsed['access_token'];
+            }
+            catch (err) {
+                throw new Error(`failed to generate Google Cloud federated token for ${providerID}: ${err}`);
+            }
+        });
+    }
+    /**
+     * getFederatedToken generates a Google Cloud federated token using the
+     * GitHub OIDC token.
+     */
+    getFederatedToken() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Get the GitHub OIDC token.
+            const githubOIDCToken = yield core.getIDToken(this.audience);
+            // Exchange the GitHub OIDC token for a Google Federated Token.
+            const googleFederatedToken = yield WIFClient.googleFederatedToken({
+                providerID: this.providerID,
+                token: githubOIDCToken,
+            });
+            core.setSecret(googleFederatedToken);
+            return googleFederatedToken;
+        });
+    }
+    /**
+     * getAccessToken generates a Google Cloud access token for the provided
+     * service account email or unique id.
+     */
+    getAccessToken(opts) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const googleFederatedToken = yield this.getFederatedToken();
+            return yield base_1.BaseClient.googleAccessToken(googleFederatedToken, opts);
+        });
+    }
+    /**
+     * getIDToken generates a Google Cloud ID token for the provided
+     * service account email or unique id.
+     */
+    getIDToken(tokenParams) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const googleFederatedToken = yield this.getFederatedToken();
+            return yield base_1.BaseClient.googleIDToken(googleFederatedToken, tokenParams);
+        });
+    }
+    /**
+     * createCredentialsFile creates a Google Cloud credentials file that can be
+     * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
+     */
+    createCredentialsFile(outputDir) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Extract the request token and request URL from the environment. These
+            // are only set when an id-token is requested and the submitter has
+            // collaborator permissions.
+            const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+            const requestURLRaw = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+            if (!requestToken || !requestURLRaw) {
+                throw new Error('GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOKEN or ' +
+                    '$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely ' +
+                    'means the GitHub Actions workflow permissions are incorrect, or ' +
+                    'this job is being run from a fork. For more information, please ' +
+                    'see the GitHub documentation at https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token');
+            }
+            const requestURL = new url_1.URL(requestURLRaw);
+            // Append the audience value to the request.
+            const params = requestURL.searchParams;
+            params.set('audience', this.audience);
+            requestURL.search = params.toString();
+            const data = {
+                type: 'external_account',
+                audience: `//iam.googleapis.com/${this.providerID}`,
+                subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+                token_url: 'https://sts.googleapis.com/v1/token',
+                service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${this.serviceAccount}:generateAccessToken`,
+                credential_source: {
+                    url: requestURL,
+                    headers: {
+                        Authorization: `Bearer ${requestToken}`,
+                    },
+                    format: {
+                        type: 'json',
+                        subject_token_field_name: 'value',
+                    },
+                },
+            };
+            const credentialsPath = yield (0, utils_1.writeCredFile)(outputDir, JSON.stringify(data));
+            const envVars = new Map([['GOOGLE_APPLICATION_CREDENTIALS', credentialsPath]]);
+            return { credentialsPath, envVars };
+        });
+    }
+}
+exports.WIFClient = WIFClient;
 
 
 /***/ }),
@@ -1800,6 +1986,144 @@ module.exports = require("url");
 
 /***/ }),
 
+/***/ 843:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BaseClient = void 0;
+const https_1 = __importDefault(__webpack_require__(211));
+const url_1 = __webpack_require__(835);
+class BaseClient {
+    /**
+     * request is a high-level helper that returns a promise from the executed
+     * request.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
+    static request(opts, data) {
+        if (!opts.headers) {
+            opts.headers = {};
+        }
+        if (!opts.headers['User-Agent']) {
+            opts.headers['User-Agent'] = 'google-github-actions:auth/0.3.1';
+        }
+        return new Promise((resolve, reject) => {
+            const req = https_1.default.request(opts, (res) => {
+                res.setEncoding('utf8');
+                let body = '';
+                res.on('data', (data) => {
+                    body += data;
+                });
+                res.on('end', () => {
+                    if (res.statusCode && res.statusCode >= 400) {
+                        reject(body);
+                    }
+                    else {
+                        resolve(body);
+                    }
+                });
+            });
+            req.on('error', (err) => {
+                reject(err);
+            });
+            if (data != null) {
+                req.write(data);
+            }
+            req.end();
+        });
+    }
+    /**
+     * googleIDToken generates a Google Cloud ID token for the provided
+     * service account email or unique id.
+     */
+    static googleIDToken(token, { serviceAccount, audience, delegates, includeEmail }) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
+            const tokenURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateIdToken`);
+            const data = {
+                delegates: delegates,
+                audience: audience,
+                includeEmail: includeEmail,
+            };
+            const opts = {
+                hostname: tokenURL.hostname,
+                port: tokenURL.port,
+                path: tokenURL.pathname + tokenURL.search,
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            };
+            try {
+                const resp = yield BaseClient.request(opts, JSON.stringify(data));
+                const parsed = JSON.parse(resp);
+                return {
+                    token: parsed['token'],
+                };
+            }
+            catch (err) {
+                throw new Error(`failed to generate Google Cloud ID token for ${serviceAccount}: ${err}`);
+            }
+        });
+    }
+    /**
+     * googleAccessToken generates a Google Cloud access token for the provided
+     * service account email or unique id.
+     */
+    static googleAccessToken(token, { serviceAccount, delegates, scopes, lifetime }) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
+            const tokenURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateAccessToken`);
+            const data = {
+                delegates: delegates,
+                lifetime: lifetime,
+                scope: scopes,
+            };
+            const opts = {
+                hostname: tokenURL.hostname,
+                port: tokenURL.port,
+                path: tokenURL.pathname + tokenURL.search,
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            };
+            try {
+                const resp = yield BaseClient.request(opts, JSON.stringify(data));
+                const parsed = JSON.parse(resp);
+                return {
+                    accessToken: parsed['accessToken'],
+                    expiration: parsed['expireTime'],
+                };
+            }
+            catch (err) {
+                throw new Error(`failed to generate Google Cloud access token for ${serviceAccount}: ${err}`);
+            }
+        });
+    }
+}
+exports.BaseClient = BaseClient;
+
+
+/***/ }),
+
 /***/ 950:
 /***/ (function(__unusedmodule, exports) {
 
@@ -1861,216 +2185,6 @@ function checkBypass(reqUrl) {
     return false;
 }
 exports.checkBypass = checkBypass;
-
-
-/***/ }),
-
-/***/ 976:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.Client = void 0;
-const https_1 = __importDefault(__webpack_require__(211));
-const fs_1 = __webpack_require__(747);
-const crypto_1 = __importDefault(__webpack_require__(417));
-const path_1 = __importDefault(__webpack_require__(622));
-const url_1 = __webpack_require__(835);
-class Client {
-    /**
-     * request is a high-level helper that returns a promise from the executed
-     * request.
-     */
-    static request(opts, data) {
-        if (!opts.headers) {
-            opts.headers = {};
-        }
-        if (!opts.headers['User-Agent']) {
-            opts.headers['User-Agent'] = 'google-github-actions:auth/0.3.0';
-        }
-        return new Promise((resolve, reject) => {
-            const req = https_1.default.request(opts, (res) => {
-                res.setEncoding('utf8');
-                let body = '';
-                res.on('data', (data) => {
-                    body += data;
-                });
-                res.on('end', () => {
-                    if (res.statusCode && res.statusCode >= 400) {
-                        reject(body);
-                    }
-                    else {
-                        resolve(body);
-                    }
-                });
-            });
-            req.on('error', (err) => {
-                reject(err);
-            });
-            if (data != null) {
-                req.write(data);
-            }
-            req.end();
-        });
-    }
-    /**
-     * googleFederatedToken generates a Google Cloud federated token using the
-     * provided OIDC token and Workload Identity Provider.
-     */
-    static googleFederatedToken({ providerID, token, }) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const stsURL = new url_1.URL('https://sts.googleapis.com/v1/token');
-            const data = {
-                audience: '//iam.googleapis.com/' + providerID,
-                grantType: 'urn:ietf:params:oauth:grant-type:token-exchange',
-                requestedTokenType: 'urn:ietf:params:oauth:token-type:access_token',
-                scope: 'https://www.googleapis.com/auth/cloud-platform',
-                subjectTokenType: 'urn:ietf:params:oauth:token-type:jwt',
-                subjectToken: token,
-            };
-            const opts = {
-                hostname: stsURL.hostname,
-                port: stsURL.port,
-                path: stsURL.pathname + stsURL.search,
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            };
-            try {
-                const resp = yield Client.request(opts, JSON.stringify(data));
-                const parsed = JSON.parse(resp);
-                return parsed['access_token'];
-            }
-            catch (err) {
-                throw new Error(`failed to generate Google Cloud federated token for ${providerID}: ${err}`);
-            }
-        });
-    }
-    /**
-     * googleAccessToken generates a Google Cloud access token for the provided
-     * service account email or unique id.
-     */
-    static googleAccessToken({ token, serviceAccount, delegates, scopes, lifetime, }) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
-            const tokenURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateAccessToken`);
-            const data = {
-                delegates: delegates,
-                lifetime: lifetime,
-                scope: scopes,
-            };
-            const opts = {
-                hostname: tokenURL.hostname,
-                port: tokenURL.port,
-                path: tokenURL.pathname + tokenURL.search,
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            };
-            try {
-                const resp = yield Client.request(opts, JSON.stringify(data));
-                const parsed = JSON.parse(resp);
-                return {
-                    accessToken: parsed['accessToken'],
-                    expiration: parsed['expireTime'],
-                };
-            }
-            catch (err) {
-                throw new Error(`failed to generate Google Cloud access token for ${serviceAccount}: ${err}`);
-            }
-        });
-    }
-    /**
-     * googleIDToken generates a Google Cloud ID token for the provided
-     * service account email or unique id.
-     */
-    static googleIDToken({ token, serviceAccount, audience, delegates, includeEmail, }) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
-            const tokenURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateIdToken`);
-            const data = {
-                delegates: delegates,
-                audience: audience,
-                includeEmail: includeEmail,
-            };
-            const opts = {
-                hostname: tokenURL.hostname,
-                port: tokenURL.port,
-                path: tokenURL.pathname + tokenURL.search,
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            };
-            try {
-                const resp = yield Client.request(opts, JSON.stringify(data));
-                const parsed = JSON.parse(resp);
-                return {
-                    token: parsed['token'],
-                };
-            }
-            catch (err) {
-                throw new Error(`failed to generate Google Cloud ID token for ${serviceAccount}: ${err}`);
-            }
-        });
-    }
-    /**
-     * createCredentialsFile creates a Google Cloud credentials file that can be
-     * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
-     */
-    static createCredentialsFile({ providerID, serviceAccount, requestToken, requestURL, outputDir, }) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = {
-                type: 'external_account',
-                audience: `//iam.googleapis.com/${providerID}`,
-                subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
-                token_url: 'https://sts.googleapis.com/v1/token',
-                service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`,
-                credential_source: {
-                    url: requestURL,
-                    headers: {
-                        Authorization: `Bearer ${requestToken}`,
-                    },
-                    format: {
-                        type: 'json',
-                        subject_token_field_name: 'value',
-                    },
-                },
-            };
-            // Generate a random filename to store the credential. 12 bytes is 24
-            // characters in hex. It's not the ideal entropy, but we have to be under
-            // the 255 character limit for Windows filenames (which includes their
-            // entire leading path).
-            const uniqueName = crypto_1.default.randomBytes(12).toString('hex');
-            const pth = path_1.default.join(outputDir, uniqueName);
-            // Write the file as 0640 so the owner has RW, group as R, and the file is
-            // otherwise unreadable. Also write with EXCL to prevent a symlink attack.
-            yield fs_1.promises.writeFile(pth, JSON.stringify(data), { mode: 0o640, flag: 'wx' });
-            return pth;
-        });
-    }
-}
-exports.Client = Client;
 
 
 /***/ })

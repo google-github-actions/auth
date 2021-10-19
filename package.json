@@ -23,7 +23,8 @@
   "author": "GoogleCloudPlatform",
   "license": "Apache-2.0",
   "dependencies": {
-    "@actions/core": "^1.6.0"
+    "@actions/core": "^1.6.0",
+    "google-auth-library": "^7.10.1"
   },
   "devDependencies": {
     "@types/chai": "^4.2.21",

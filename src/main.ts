@@ -4,6 +4,7 @@ import * as core from '@actions/core';
 import { WIFClient } from './workload_identity';
 import { ActionAuth } from './actionauth';
 import { explodeStrings } from './utils';
+import { KeyClient } from './key';
 
 /**
  * Executes the main action, documented inline.
@@ -11,22 +12,35 @@ import { explodeStrings } from './utils';
 async function run(): Promise<void> {
   try {
     // Load configuration.
-    const workloadIdentityProvider = core.getInput('workload_identity_provider', {
-      required: true,
-    });
-    const serviceAccount = core.getInput('service_account', { required: true });
+    const workloadIdentityProvider = core.getInput('workload_identity_provider');
+    const serviceAccount = core.getInput('service_account');
     // audience will default to the WIF provider ID when used with WIF
     const audience = core.getInput('audience');
     const createCredentialsFile = core.getBooleanInput('create_credentials_file');
     const activateCredentialsFile = core.getBooleanInput('activate_credentials_file');
     const tokenFormat = core.getInput('token_format');
     const delegates = explodeStrings(core.getInput('delegates'));
+    const credentials = core.getInput('credentials_json');
 
-    const client: ActionAuth = new WIFClient({
-      providerID: workloadIdentityProvider,
-      serviceAccount: serviceAccount,
-      audience: audience,
-    });
+    if (credentials && workloadIdentityProvider) {
+      throw new Error(
+        'Only one of `credentials_json` or `workload_identity_provider` should be specified.',
+      );
+    }
+
+    if (!credentials && !workloadIdentityProvider) {
+      throw new Error(
+        'One of `credentials_json` or `workload_identity_provider` must be specified.',
+      );
+    }
+
+    const client: ActionAuth = workloadIdentityProvider
+      ? new WIFClient({
+          providerID: workloadIdentityProvider,
+          serviceAccount: serviceAccount,
+          audience: audience,
+        })
+      : new KeyClient({ credentials });
 
     // Always write the credentials file first, before trying to generate
     // tokens. This will ensure the file is written even if token generation

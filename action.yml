@@ -25,12 +25,18 @@ inputs:
       project number, pool name, and provider name. This must be the full
       identifier which includes all parts, for example:
       "projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider".
-    required: true
+    required: false
   service_account:
     description: |-
       Email address or unique identifier of the Google Cloud service account for
       which to generate credentials.
-    required: true
+    required: false
+  credentials_json:
+    description: |-
+      Optional service account key to use for authentication. This should be the JSON
+      formatted private key which can be exported from the Cloud Console. The
+      value can be raw or base64-encoded. Required if not using Workload Identity Federation.
+    required: false
   audience:
     description: |-
       The value for the audience (aud) parameter in GitHub's generated OIDC

@@ -62,7 +62,7 @@ See [Examples](#examples) for more examples.
 
 ## Inputs
 
--   `workload_identity_provider`: (Required) The full identifier of the Workload
+-   `workload_identity_provider`: The full identifier of the Workload
     Identity Provider, including the project number, pool name, and provider
     name. This must be the full identifier which includes all parts, for
     example:
@@ -71,12 +71,16 @@ See [Examples](#examples) for more examples.
     projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider
     ```
 
--   `service_account`: (Required) Email address or unique identifier of the
+-   `service_account`: Email address or unique identifier of the
     Google Cloud service account for which to generate credentials. For example:
 
     ```text
     my-service-account@my-project.iam.gserviceaccount.com
     ```
+
+-   `credentials_json`: Optional service account key to use for authentication. This should be the JSON
+      formatted private key which can be exported from the Cloud Console. The
+      value can be raw or base64-encoded. Required if not using Workload Identity Federation.
 
 -   `audience`: (Optional) The value for the audience (`aud`) parameter in the
     generated GitHub Actions OIDC token. This value defaults to the value of
@@ -216,6 +220,32 @@ jobs:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
         access_token_lifetime: '300s' # optional, default: '3600s' (1 hour)
+
+    # Example of using the output. The token is usually provided as a Bearer
+    # token.
+    - id: 'access-secret'
+      run: |-
+        curl https://secretmanager.googleapis.com/v1/projects/my-project/secrets/my-secret/versions/1:access \
+          --header "Authorization: Bearer ${{ steps.auth.outputs.access_token }}"
+```
+
+This example demonstrates using this GitHub Action to generate an OAuth 2.0
+Access Token for authenticating to Google Cloud using a service account key. When possible Workload Identity Federation
+is preffered to this method which involves exporting static long-lived credentials.
+
+```yaml
+jobs:
+  job_id:
+    # ...
+
+    steps:
+    # Use service account key to generate an access token.
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v0.3.1'
+      with:
+        token_format: 'access_token'
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
 
     # Example of using the output. The token is usually provided as a Bearer
     # token.

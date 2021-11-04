@@ -1,8 +1,10 @@
 'use strict';
 
 import * as core from '@actions/core';
-import { WIFClient } from './workload_identity';
-import { ActionAuth } from './actionauth';
+import { WorkloadIdentityClient } from './client/workload_identity_client';
+import { CredentialsJSONClient } from './client/credentials_json_client';
+import { AuthClient } from './client/auth_client';
+import { BaseClient } from './base';
 import { explodeStrings } from './utils';
 
 /**
@@ -11,22 +13,53 @@ import { explodeStrings } from './utils';
 async function run(): Promise<void> {
   try {
     // Load configuration.
-    const workloadIdentityProvider = core.getInput('workload_identity_provider', {
-      required: true,
-    });
-    const serviceAccount = core.getInput('service_account', { required: true });
-    // audience will default to the WIF provider ID when used with WIF
-    const audience = core.getInput('audience');
+    const projectID = core.getInput('project_id');
+    const workloadIdentityProvider = core.getInput('workload_identity_provider');
+    const serviceAccount = core.getInput('service_account');
+    const audience =
+      core.getInput('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
+    const credentialsJSON = core.getInput('credentials_json');
     const createCredentialsFile = core.getBooleanInput('create_credentials_file');
-    const activateCredentialsFile = core.getBooleanInput('activate_credentials_file');
     const tokenFormat = core.getInput('token_format');
     const delegates = explodeStrings(core.getInput('delegates'));
 
-    const client: ActionAuth = new WIFClient({
-      providerID: workloadIdentityProvider,
-      serviceAccount: serviceAccount,
-      audience: audience,
-    });
+    // Ensure exactly one of workload_identity_provider and credentials_json was
+    // provided.
+    if (
+      (!workloadIdentityProvider && !credentialsJSON) ||
+      (workloadIdentityProvider && credentialsJSON)
+    ) {
+      throw new Error(
+        'The GitHub Action workflow must specify exactly one of ' +
+          '"workload_identity_provider" or "credentials_json"!',
+      );
+    }
+
+    // Ensure a service_account was provided if using WIF.
+    if (workloadIdentityProvider && !serviceAccount) {
+      throw new Error(
+        'The GitHub Action workflow must specify a "service_account" to ' +
+          'impersonate when using "workload_identity_provider"!',
+      );
+    }
+
+    // Instantiate the correct client based on the provided input parameters.
+    let client: AuthClient;
+    if (workloadIdentityProvider) {
+      const token = await core.getIDToken(audience);
+      client = new WorkloadIdentityClient({
+        projectID: projectID,
+        providerID: workloadIdentityProvider,
+        serviceAccount: serviceAccount,
+        token: token,
+        audience: audience,
+      });
+    } else {
+      client = new CredentialsJSONClient({
+        projectID: projectID,
+        credentialsJSON: credentialsJSON,
+      });
+    }
 
     // Always write the credentials file first, before trying to generate
     // tokens. This will ensure the file is written even if token generation
@@ -38,17 +71,20 @@ async function run(): Promise<void> {
         throw new Error('$RUNNER_TEMP is not set');
       }
 
-      const { credentialsPath, envVars } = await client.createCredentialsFile(runnerTempDir);
+      const credentialsPath = await client.createCredentialsFile(runnerTempDir);
       core.setOutput('credentials_file_path', credentialsPath);
-
-      // Also set the magic environment variable for gcloud and SDKs if
-      // requested.
-      if (activateCredentialsFile && envVars) {
-        for (const [k, v] of envVars) {
-          core.exportVariable(k, v);
-        }
-      }
+      core.exportVariable('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
+      core.exportVariable('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
     }
+
+    // Set the project ID environment variables to the computed values.
+    const computedProjectID = await client.getProjectID();
+    core.setOutput('project_id', computedProjectID);
+    core.exportVariable('CLOUDSDK_PROJECT', computedProjectID);
+    core.exportVariable('CLOUDSDK_CORE_PROJECT', computedProjectID);
+    core.exportVariable('GCP_PROJECT', computedProjectID);
+    core.exportVariable('GCLOUD_PROJECT', computedProjectID);
+    core.exportVariable('GOOGLE_CLOUD_PROJECT', computedProjectID);
 
     switch (tokenFormat) {
       case '': {
@@ -60,8 +96,10 @@ async function run(): Promise<void> {
       case 'access_token': {
         const accessTokenLifetime = core.getInput('access_token_lifetime');
         const accessTokenScopes = explodeStrings(core.getInput('access_token_scopes'));
+        const serviceAccount = await client.getServiceAccount();
 
-        const { accessToken, expiration } = await client.getAccessToken({
+        const authToken = await client.getAuthToken();
+        const { accessToken, expiration } = await BaseClient.googleAccessToken(authToken, {
           serviceAccount,
           delegates,
           scopes: accessTokenScopes,
@@ -76,7 +114,10 @@ async function run(): Promise<void> {
       case 'id_token': {
         const idTokenAudience = core.getInput('id_token_audience', { required: true });
         const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
-        const { token } = await client.getIDToken({
+        const serviceAccount = await client.getServiceAccount();
+
+        const authToken = await client.getAuthToken();
+        const { token } = await BaseClient.googleIDToken(authToken, {
           serviceAccount,
           audience: idTokenAudience,
           delegates,
@@ -87,7 +128,7 @@ async function run(): Promise<void> {
         break;
       }
       default: {
-        throw new Error(`unknown token format "${tokenFormat}"`);
+        throw new Error(`Unknown token format "${tokenFormat}"`);
       }
     }
   } catch (err) {

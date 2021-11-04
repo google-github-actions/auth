@@ -194,7 +194,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
-const workload_identity_1 = __webpack_require__(313);
+const workload_identity_client_1 = __webpack_require__(911);
+const credentials_json_client_1 = __webpack_require__(627);
+const base_1 = __webpack_require__(843);
 const utils_1 = __webpack_require__(163);
 /**
  * Executes the main action, documented inline.
@@ -203,21 +205,44 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             // Load configuration.
-            const workloadIdentityProvider = core.getInput('workload_identity_provider', {
-                required: true,
-            });
-            const serviceAccount = core.getInput('service_account', { required: true });
-            // audience will default to the WIF provider ID when used with WIF
-            const audience = core.getInput('audience');
+            const projectID = core.getInput('project_id');
+            const workloadIdentityProvider = core.getInput('workload_identity_provider');
+            const serviceAccount = core.getInput('service_account');
+            const audience = core.getInput('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
+            const credentialsJSON = core.getInput('credentials_json');
             const createCredentialsFile = core.getBooleanInput('create_credentials_file');
-            const activateCredentialsFile = core.getBooleanInput('activate_credentials_file');
             const tokenFormat = core.getInput('token_format');
             const delegates = (0, utils_1.explodeStrings)(core.getInput('delegates'));
-            const client = new workload_identity_1.WIFClient({
-                providerID: workloadIdentityProvider,
-                serviceAccount: serviceAccount,
-                audience: audience,
-            });
+            // Ensure exactly one of workload_identity_provider and credentials_json was
+            // provided.
+            if ((!workloadIdentityProvider && !credentialsJSON) ||
+                (workloadIdentityProvider && credentialsJSON)) {
+                throw new Error('The GitHub Action workflow must specify exactly one of ' +
+                    '"workload_identity_provider" or "credentials_json"!');
+            }
+            // Ensure a service_account was provided if using WIF.
+            if (workloadIdentityProvider && !serviceAccount) {
+                throw new Error('The GitHub Action workflow must specify a "service_account" to ' +
+                    'impersonate when using "workload_identity_provider"!');
+            }
+            // Instantiate the correct client based on the provided input parameters.
+            let client;
+            if (workloadIdentityProvider) {
+                const token = yield core.getIDToken(audience);
+                client = new workload_identity_client_1.WorkloadIdentityClient({
+                    projectID: projectID,
+                    providerID: workloadIdentityProvider,
+                    serviceAccount: serviceAccount,
+                    token: token,
+                    audience: audience,
+                });
+            }
+            else {
+                client = new credentials_json_client_1.CredentialsJSONClient({
+                    projectID: projectID,
+                    credentialsJSON: credentialsJSON,
+                });
+            }
             // Always write the credentials file first, before trying to generate
             // tokens. This will ensure the file is written even if token generation
             // fails, which means continue-on-error actions will still have the file
@@ -227,16 +252,19 @@ function run() {
                 if (!runnerTempDir) {
                     throw new Error('$RUNNER_TEMP is not set');
                 }
-                const { credentialsPath, envVars } = yield client.createCredentialsFile(runnerTempDir);
+                const credentialsPath = yield client.createCredentialsFile(runnerTempDir);
                 core.setOutput('credentials_file_path', credentialsPath);
-                // Also set the magic environment variable for gcloud and SDKs if
-                // requested.
-                if (activateCredentialsFile && envVars) {
-                    for (const [k, v] of envVars) {
-                        core.exportVariable(k, v);
-                    }
-                }
+                core.exportVariable('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
+                core.exportVariable('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
             }
+            // Set the project ID environment variables to the computed values.
+            const computedProjectID = yield client.getProjectID();
+            core.setOutput('project_id', computedProjectID);
+            core.exportVariable('CLOUDSDK_PROJECT', computedProjectID);
+            core.exportVariable('CLOUDSDK_CORE_PROJECT', computedProjectID);
+            core.exportVariable('GCP_PROJECT', computedProjectID);
+            core.exportVariable('GCLOUD_PROJECT', computedProjectID);
+            core.exportVariable('GOOGLE_CLOUD_PROJECT', computedProjectID);
             switch (tokenFormat) {
                 case '': {
                     break;
@@ -247,7 +275,9 @@ function run() {
                 case 'access_token': {
                     const accessTokenLifetime = core.getInput('access_token_lifetime');
                     const accessTokenScopes = (0, utils_1.explodeStrings)(core.getInput('access_token_scopes'));
-                    const { accessToken, expiration } = yield client.getAccessToken({
+                    const serviceAccount = yield client.getServiceAccount();
+                    const authToken = yield client.getAuthToken();
+                    const { accessToken, expiration } = yield base_1.BaseClient.googleAccessToken(authToken, {
                         serviceAccount,
                         delegates,
                         scopes: accessTokenScopes,
@@ -261,7 +291,9 @@ function run() {
                 case 'id_token': {
                     const idTokenAudience = core.getInput('id_token_audience', { required: true });
                     const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
-                    const { token } = yield client.getIDToken({
+                    const serviceAccount = yield client.getServiceAccount();
+                    const authToken = yield client.getAuthToken();
+                    const { token } = yield base_1.BaseClient.googleIDToken(authToken, {
                         serviceAccount,
                         audience: idTokenAudience,
                         delegates,
@@ -272,7 +304,7 @@ function run() {
                     break;
                 }
                 default: {
-                    throw new Error(`unknown token format "${tokenFormat}"`);
+                    throw new Error(`Unknown token format "${tokenFormat}"`);
                 }
             }
         }
@@ -576,19 +608,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.explodeStrings = exports.writeCredFile = void 0;
+exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.writeSecureFile = void 0;
 const fs_1 = __webpack_require__(747);
 const crypto_1 = __importDefault(__webpack_require__(417));
 const path_1 = __importDefault(__webpack_require__(622));
 /**
- * writeCredFile writes a file to disk in a given directory with a
+ * writeSecureFile writes a file to disk in a given directory with a
  * random name.
  *
  * @param outputDir Directory to create random file in.
  * @param data Data to write to file.
  * @returns Path to written file.
  */
-function writeCredFile(outputDir, data) {
+function writeSecureFile(outputDir, data) {
     return __awaiter(this, void 0, void 0, function* () {
         // Generate a random filename to store the credential. 12 bytes is 24
         // characters in hex. It's not the ideal entropy, but we have to be under
@@ -602,7 +634,7 @@ function writeCredFile(outputDir, data) {
         return pth;
     });
 }
-exports.writeCredFile = writeCredFile;
+exports.writeSecureFile = writeSecureFile;
 /**
  * Converts a multi-line or comma-separated collection of strings into an array
  * of trimmed strings.
@@ -623,6 +655,28 @@ function explodeStrings(input) {
     return list;
 }
 exports.explodeStrings = explodeStrings;
+/**
+ * toBase64 base64 URL encodes the result.
+ */
+function toBase64(s) {
+    return Buffer.from(s)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+exports.toBase64 = toBase64;
+/**
+ * fromBase64 base64 decodes the result, taking into account URL and standard
+ * encoding with and without padding.
+ */
+function fromBase64(s) {
+    const str = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4)
+        s += '=';
+    return Buffer.from(str, 'base64').toString('utf8');
+}
+exports.fromBase64 = fromBase64;
 
 
 /***/ }),
@@ -696,174 +750,6 @@ class PersonalAccessTokenCredentialHandler {
     }
 }
 exports.PersonalAccessTokenCredentialHandler = PersonalAccessTokenCredentialHandler;
-
-
-/***/ }),
-
-/***/ 313:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.WIFClient = void 0;
-const url_1 = __webpack_require__(835);
-const core = __importStar(__webpack_require__(470));
-const utils_1 = __webpack_require__(163);
-const base_1 = __webpack_require__(843);
-class WIFClient {
-    constructor(opts) {
-        this.providerID = opts.providerID;
-        this.serviceAccount = opts.serviceAccount;
-        this.audience = opts.audience ? opts.audience : `https://iam.googleapis.com/${this.providerID}`;
-    }
-    /**
-     * googleFederatedToken generates a Google Cloud federated token using the
-     * provided OIDC token and Workload Identity Provider.
-     */
-    static googleFederatedToken({ providerID, token, }) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const stsURL = new url_1.URL('https://sts.googleapis.com/v1/token');
-            const data = {
-                audience: '//iam.googleapis.com/' + providerID,
-                grantType: 'urn:ietf:params:oauth:grant-type:token-exchange',
-                requestedTokenType: 'urn:ietf:params:oauth:token-type:access_token',
-                scope: 'https://www.googleapis.com/auth/cloud-platform',
-                subjectTokenType: 'urn:ietf:params:oauth:token-type:jwt',
-                subjectToken: token,
-            };
-            const opts = {
-                hostname: stsURL.hostname,
-                port: stsURL.port,
-                path: stsURL.pathname + stsURL.search,
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            };
-            try {
-                const resp = yield base_1.BaseClient.request(opts, JSON.stringify(data));
-                const parsed = JSON.parse(resp);
-                return parsed['access_token'];
-            }
-            catch (err) {
-                throw new Error(`failed to generate Google Cloud federated token for ${providerID}: ${err}`);
-            }
-        });
-    }
-    /**
-     * getFederatedToken generates a Google Cloud federated token using the
-     * GitHub OIDC token.
-     */
-    getFederatedToken() {
-        return __awaiter(this, void 0, void 0, function* () {
-            // Get the GitHub OIDC token.
-            const githubOIDCToken = yield core.getIDToken(this.audience);
-            // Exchange the GitHub OIDC token for a Google Federated Token.
-            const googleFederatedToken = yield WIFClient.googleFederatedToken({
-                providerID: this.providerID,
-                token: githubOIDCToken,
-            });
-            core.setSecret(googleFederatedToken);
-            return googleFederatedToken;
-        });
-    }
-    /**
-     * getAccessToken generates a Google Cloud access token for the provided
-     * service account email or unique id.
-     */
-    getAccessToken(opts) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const googleFederatedToken = yield this.getFederatedToken();
-            return yield base_1.BaseClient.googleAccessToken(googleFederatedToken, opts);
-        });
-    }
-    /**
-     * getIDToken generates a Google Cloud ID token for the provided
-     * service account email or unique id.
-     */
-    getIDToken(tokenParams) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const googleFederatedToken = yield this.getFederatedToken();
-            return yield base_1.BaseClient.googleIDToken(googleFederatedToken, tokenParams);
-        });
-    }
-    /**
-     * createCredentialsFile creates a Google Cloud credentials file that can be
-     * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
-     */
-    createCredentialsFile(outputDir) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // Extract the request token and request URL from the environment. These
-            // are only set when an id-token is requested and the submitter has
-            // collaborator permissions.
-            const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-            const requestURLRaw = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-            if (!requestToken || !requestURLRaw) {
-                throw new Error('GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOKEN or ' +
-                    '$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely ' +
-                    'means the GitHub Actions workflow permissions are incorrect, or ' +
-                    'this job is being run from a fork. For more information, please ' +
-                    'see the GitHub documentation at https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token');
-            }
-            const requestURL = new url_1.URL(requestURLRaw);
-            // Append the audience value to the request.
-            const params = requestURL.searchParams;
-            params.set('audience', this.audience);
-            requestURL.search = params.toString();
-            const data = {
-                type: 'external_account',
-                audience: `//iam.googleapis.com/${this.providerID}`,
-                subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
-                token_url: 'https://sts.googleapis.com/v1/token',
-                service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${this.serviceAccount}:generateAccessToken`,
-                credential_source: {
-                    url: requestURL,
-                    headers: {
-                        Authorization: `Bearer ${requestToken}`,
-                    },
-                    format: {
-                        type: 'json',
-                        subject_token_field_name: 'value',
-                    },
-                },
-            };
-            const credentialsPath = yield (0, utils_1.writeCredFile)(outputDir, JSON.stringify(data));
-            const envVars = new Map([['GOOGLE_APPLICATION_CREDENTIALS', credentialsPath]]);
-            return { credentialsPath, envVars };
-        });
-    }
-}
-exports.WIFClient = WIFClient;
 
 
 /***/ }),
@@ -1874,6 +1760,130 @@ module.exports = require("path");
 
 /***/ }),
 
+/***/ 627:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+};
+var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
+var _CredentialsJSONClient_projectID, _CredentialsJSONClient_credentials;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CredentialsJSONClient = void 0;
+const crypto_1 = __webpack_require__(417);
+const utils_1 = __webpack_require__(163);
+class CredentialsJSONClient {
+    constructor(opts) {
+        _CredentialsJSONClient_projectID.set(this, void 0);
+        _CredentialsJSONClient_credentials.set(this, void 0);
+        __classPrivateFieldSet(this, _CredentialsJSONClient_credentials, this.parseServiceAccountKeyJSON(opts.credentialsJSON), "f");
+        __classPrivateFieldSet(this, _CredentialsJSONClient_projectID, opts.projectID || __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['project_id'], "f");
+    }
+    /**
+     * parseServiceAccountKeyJSON attempts to parse the given string as a service
+     * account key JSON. It handles if the string is base64-encoded.
+     */
+    parseServiceAccountKeyJSON(str) {
+        if (!str) {
+            return {};
+        }
+        str = str.trim();
+        // If the string doesn't start with a JSON object character, it is probably
+        // base64-encoded.
+        if (!str.startsWith('{')) {
+            str = (0, utils_1.fromBase64)(str);
+        }
+        try {
+            return JSON.parse(str);
+        }
+        catch (e) {
+            throw new SyntaxError(`Failed to parse credentials as JSON: ${e}`);
+        }
+    }
+    /**
+     * getAuthToken generates a token capable of calling the iamcredentials API.
+     */
+    getAuthToken() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const header = {
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['private_key_id'],
+            };
+            const now = Math.floor(new Date().getTime() / 1000);
+            const body = {
+                iss: __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['client_email'],
+                sub: __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['client_email'],
+                aud: 'https://iamcredentials.googleapis.com/',
+                iat: now,
+                exp: now + 3599,
+            };
+            const message = (0, utils_1.toBase64)(JSON.stringify(header)) + '.' + (0, utils_1.toBase64)(JSON.stringify(body));
+            try {
+                const signer = (0, crypto_1.createSign)('RSA-SHA256');
+                signer.write(message);
+                signer.end();
+                const signature = signer.sign(__classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['private_key']);
+                return message + '.' + (0, utils_1.toBase64)(signature);
+            }
+            catch (e) {
+                throw new Error(`Failed to sign auth token: ${e}`);
+            }
+        });
+    }
+    /**
+     * getProjectID returns the project ID. If an override was given, the override
+     * is returned. Otherwise, this will be the project ID that was extracted from
+     * the service account key JSON.
+     */
+    getProjectID() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return __classPrivateFieldGet(this, _CredentialsJSONClient_projectID, "f");
+        });
+    }
+    /**
+     * getServiceAccount returns the service account email for the authentication,
+     * extracted from the Service Account Key JSON.
+     */
+    getServiceAccount() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['client_email'];
+        });
+    }
+    /**
+     * createCredentialsFile creates a Google Cloud credentials file that can be
+     * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
+     */
+    createCredentialsFile(outputDir) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield (0, utils_1.writeSecureFile)(outputDir, JSON.stringify(__classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")));
+        });
+    }
+}
+exports.CredentialsJSONClient = CredentialsJSONClient;
+_CredentialsJSONClient_projectID = new WeakMap(), _CredentialsJSONClient_credentials = new WeakMap();
+
+
+/***/ }),
+
 /***/ 631:
 /***/ (function(module) {
 
@@ -2113,13 +2123,178 @@ class BaseClient {
                     expiration: parsed['expireTime'],
                 };
             }
-            catch (err) {
-                throw new Error(`failed to generate Google Cloud access token for ${serviceAccount}: ${err}`);
+            catch (e) {
+                throw new Error(`Failed to generate Google Cloud access token for ${serviceAccount}: ${e}`);
             }
         });
     }
 }
 exports.BaseClient = BaseClient;
+
+
+/***/ }),
+
+/***/ 911:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+};
+var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
+var _WorkloadIdentityClient_projectID, _WorkloadIdentityClient_providerID, _WorkloadIdentityClient_serviceAccount, _WorkloadIdentityClient_token, _WorkloadIdentityClient_audience;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WorkloadIdentityClient = void 0;
+const url_1 = __webpack_require__(835);
+const utils_1 = __webpack_require__(163);
+const base_1 = __webpack_require__(843);
+class WorkloadIdentityClient {
+    constructor(opts) {
+        _WorkloadIdentityClient_projectID.set(this, void 0);
+        _WorkloadIdentityClient_providerID.set(this, void 0);
+        _WorkloadIdentityClient_serviceAccount.set(this, void 0);
+        _WorkloadIdentityClient_token.set(this, void 0);
+        _WorkloadIdentityClient_audience.set(this, void 0);
+        __classPrivateFieldSet(this, _WorkloadIdentityClient_providerID, opts.providerID, "f");
+        __classPrivateFieldSet(this, _WorkloadIdentityClient_serviceAccount, opts.serviceAccount, "f");
+        __classPrivateFieldSet(this, _WorkloadIdentityClient_token, opts.token, "f");
+        __classPrivateFieldSet(this, _WorkloadIdentityClient_audience, opts.audience, "f");
+        __classPrivateFieldSet(this, _WorkloadIdentityClient_projectID, opts.projectID || this.extractProjectIDFromServiceAccountEmail(__classPrivateFieldGet(this, _WorkloadIdentityClient_serviceAccount, "f")), "f");
+    }
+    /**
+     * extractProjectIDFromServiceAccountEmail extracts the project ID from the
+     * service account email address.
+     */
+    extractProjectIDFromServiceAccountEmail(str) {
+        if (!str) {
+            return '';
+        }
+        const [, dn] = str.split('@', 2);
+        if (!str.endsWith('.iam.gserviceaccount.com')) {
+            throw new Error(`Service account email ${str} is not of the form ` +
+                `"[name]@[project].iam.gserviceaccount.com. You must manually ` +
+                `specify the "project_id" parameter in your GitHub Actions workflow.`);
+        }
+        const [project] = dn.split('.', 2);
+        return project;
+    }
+    /**
+     * getAuthToken generates a Google Cloud federated token using the provided OIDC
+     * token and Workload Identity Provider.
+     */
+    getAuthToken() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const stsURL = new url_1.URL('https://sts.googleapis.com/v1/token');
+            const data = {
+                audience: '//iam.googleapis.com/' + __classPrivateFieldGet(this, _WorkloadIdentityClient_providerID, "f"),
+                grantType: 'urn:ietf:params:oauth:grant-type:token-exchange',
+                requestedTokenType: 'urn:ietf:params:oauth:token-type:access_token',
+                scope: 'https://www.googleapis.com/auth/cloud-platform',
+                subjectTokenType: 'urn:ietf:params:oauth:token-type:jwt',
+                subjectToken: __classPrivateFieldGet(this, _WorkloadIdentityClient_token, "f"),
+            };
+            const opts = {
+                hostname: stsURL.hostname,
+                port: stsURL.port,
+                path: stsURL.pathname + stsURL.search,
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            };
+            try {
+                const resp = yield base_1.BaseClient.request(opts, JSON.stringify(data));
+                const parsed = JSON.parse(resp);
+                return parsed['access_token'];
+            }
+            catch (err) {
+                throw new Error(`Failed to generate Google Cloud federated token for ${__classPrivateFieldGet(this, _WorkloadIdentityClient_providerID, "f")}: ${err}`);
+            }
+        });
+    }
+    /**
+     * getProjectID returns the project ID. If an override was given, the override
+     * is returned. Otherwise, this will be the project ID that was extracted from
+     * the service account key JSON.
+     */
+    getProjectID() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return __classPrivateFieldGet(this, _WorkloadIdentityClient_projectID, "f");
+        });
+    }
+    /**
+     * getServiceAccount returns the service account email for the authentication,
+     * extracted from the input parameter.
+     */
+    getServiceAccount() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return __classPrivateFieldGet(this, _WorkloadIdentityClient_serviceAccount, "f");
+        });
+    }
+    /**
+     * createCredentialsFile creates a Google Cloud credentials file that can be
+     * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
+     */
+    createCredentialsFile(outputDir) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Extract the request token and request URL from the environment. These
+            // are only set when an id-token is requested and the submitter has
+            // collaborator permissions.
+            const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+            const requestURLRaw = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+            if (!requestToken || !requestURLRaw) {
+                throw new Error('GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOKEN or ' +
+                    '$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely ' +
+                    'means the GitHub Actions workflow permissions are incorrect, or ' +
+                    'this job is being run from a fork. For more information, please ' +
+                    'see the GitHub documentation at https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token');
+            }
+            const requestURL = new url_1.URL(requestURLRaw);
+            // Append the audience value to the request.
+            const params = requestURL.searchParams;
+            params.set('audience', __classPrivateFieldGet(this, _WorkloadIdentityClient_audience, "f"));
+            requestURL.search = params.toString();
+            const data = {
+                type: 'external_account',
+                audience: `//iam.googleapis.com/${__classPrivateFieldGet(this, _WorkloadIdentityClient_providerID, "f")}`,
+                subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+                token_url: 'https://sts.googleapis.com/v1/token',
+                service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${__classPrivateFieldGet(this, _WorkloadIdentityClient_serviceAccount, "f")}:generateAccessToken`,
+                credential_source: {
+                    url: requestURL,
+                    headers: {
+                        Authorization: `Bearer ${requestToken}`,
+                    },
+                    format: {
+                        type: 'json',
+                        subject_token_field_name: 'value',
+                    },
+                },
+            };
+            return yield (0, utils_1.writeSecureFile)(outputDir, JSON.stringify(data));
+        });
+    }
+}
+exports.WorkloadIdentityClient = WorkloadIdentityClient;
+_WorkloadIdentityClient_projectID = new WeakMap(), _WorkloadIdentityClient_providerID = new WeakMap(), _WorkloadIdentityClient_serviceAccount = new WeakMap(), _WorkloadIdentityClient_token = new WeakMap(), _WorkloadIdentityClient_audience = new WeakMap();
 
 
 /***/ }),

@@ -136,7 +136,7 @@ Cloud as an output for use in future steps in the workflow.
 -   `token_format`: This value must be `"id_token"` to generate ID tokens. To
     skip token generation, omit or set to the empty string "".
 
--   `id_token_audience`: (Required\*) The audience for the generated ID Token.
+-   `id_token_audience`: (Required) The audience for the generated ID Token.
     This option is required when "token_format" is "id_token", but otherwise can
     be omitted.
 

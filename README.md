@@ -137,8 +137,6 @@ Cloud as an output for use in future steps in the workflow.
     skip token generation, omit or set to the empty string "".
 
 -   `id_token_audience`: (Required) The audience for the generated ID Token.
-    This option is required when "token_format" is "id_token", but otherwise can
-    be omitted.
 
 -   `id_token_include_email`: (Optional) Optional parameter of whether to
     include the service account email in the generated token. If true, the token

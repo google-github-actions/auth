@@ -6,7 +6,7 @@ import { writeSecureFile } from '../utils';
 import { BaseClient } from '../base';
 
 /**
- * Available options to create the WorkloadIdentity client.
+ * Available options to create the WorkloadIdentityClient.
  *
  * @param projectID User-supplied value for project ID. If not provided, the
  * project ID is extracted from the service account email.
@@ -27,6 +27,10 @@ interface WorkloadIdentityClientOptions {
   audience: string;
 }
 
+/**
+ * WorkloadIdentityClient is a client that uses the GitHub Actions runtime to
+ * authentication via Workload Identity.
+ */
 export class WorkloadIdentityClient implements AuthClient {
   readonly #projectID: string;
   readonly #providerID: string;

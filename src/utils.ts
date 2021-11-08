@@ -66,3 +66,11 @@ export function fromBase64(s: string): string {
   while (str.length % 4) s += '=';
   return Buffer.from(str, 'base64').toString('utf8');
 }
+
+/**
+ * trimmedString returns a string trimmed of whitespace. If the input string is
+ * null, then it returns the empty string.
+ */
+export function trimmedString(s: string): string {
+  return s ? s.trim() : '';
+}

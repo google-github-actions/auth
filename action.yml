@@ -15,42 +15,48 @@
 name: 'Authenticate to Google Cloud'
 author: 'Google LLC'
 description: |-
-  Generate credentials to authenticate to Google Cloud from GitHub Actions using
-  an OIDC token and Workload Identity Federation.
+  Authenticate to Google Cloud from GitHub Actions via Workload Identity
+  Federation and GitHub Actions OIDC tokens or via exported Google Cloud service
+  account keys.
 
 inputs:
+  project_id:
+    description: |-
+      ID of the default project to use for future API calls and invocations. If
+      unspecified, this action will attempt to extract the value from other
+      inputs such as "service_account" or "credentials_json".
+    required: false
   workload_identity_provider:
     description: |-
       The full identifier of the Workload Identity Provider, including the
-      project number, pool name, and provider name. This must be the full
-      identifier which includes all parts, for example:
+      project number, pool name, and provider name. If provided, this must be
+      the full identifier which includes all parts, for example:
       "projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider".
-    required: true
+      This is mutually exclusive with "credentials_json".
+    required: false
   service_account:
     description: |-
       Email address or unique identifier of the Google Cloud service account for
-      which to generate credentials.
-    required: true
+      which to generate credentials. This is required if
+      "workload_identity_provider" is specified.
+    required: false
   audience:
     description: |-
       The value for the audience (aud) parameter in GitHub's generated OIDC
-      token. This value defaults to the value of workload_identity_provider,
+      token. This value defaults to the value of "workload_identity_provider",
       which is also the default value Google Cloud expects for the audience
       parameter on the token.
     default: ''
+    required: false
+  credentials_json:
+    description: |-
+      The Google Cloud JSON service account key to use for authentication. This
+      is mutually exclusive with "workload_identity_provider".
     required: false
   create_credentials_file:
     description: |-
       If true, the action will securely generate a credentials file which can be
       used for authentication via gcloud and Google Cloud SDKs.
-    default: false
-    required: false
-  activate_credentials_file:
-    description: |-
-      If true and create_credentials_file is also true, this will set the
-      GOOGLE_APPLICATION_CREDENTIALS environment variable to the path to the
-      credentials file, which gcloud and Google Cloud SDKs automatically
-      consume.
     default: true
     required: false
   token_format:
@@ -99,6 +105,9 @@ inputs:
     required: false
 
 outputs:
+  project_id:
+    description: |-
+      Provided or extracted value for the Google Cloud project ID.
   credentials_file_path:
     description: |-
       Path on the local filesystem where the generated credentials file resides.

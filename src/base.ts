@@ -5,7 +5,7 @@ import {
   GoogleAccessTokenResponse,
   GoogleIDTokenParameters,
   GoogleIDTokenResponse,
-} from './actionauth';
+} from './client/auth_client';
 
 export class BaseClient {
   /**
@@ -132,8 +132,8 @@ export class BaseClient {
         accessToken: parsed['accessToken'],
         expiration: parsed['expireTime'],
       };
-    } catch (err) {
-      throw new Error(`failed to generate Google Cloud access token for ${serviceAccount}: ${err}`);
+    } catch (e) {
+      throw new Error(`Failed to generate Google Cloud access token for ${serviceAccount}: ${e}`);
     }
   }
 }

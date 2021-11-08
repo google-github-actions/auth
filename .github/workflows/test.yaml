@@ -29,16 +29,14 @@ jobs:
     - name: 'npm test'
       run: 'npm run test'
 
-  credentials_file:
-    name: 'credentials_file'
-    permissions:
-      id-token: 'write'
-      contents: 'read'
-    runs-on: '${{ matrix.operating-system }}'
+
+  credentials_json:
+    name: 'credentials_json'
+    runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
       matrix:
-        operating-system:
+        os:
         - 'ubuntu-latest'
         - 'windows-latest'
         - 'macos-latest'
@@ -50,66 +48,62 @@ jobs:
       with:
         node-version: '12.x'
 
-    - name: 'build'
-      run: |-
-        npm ci
-        npm run build
-
-    - uses: 'google-github-actions/setup-gcloud@master'
-      with:
-        project_id: 'actions-oidc-test'
-
-    - id: 'auth'
-      name: 'auth'
+    - id: 'auth-default'
+      name: 'auth-default'
       uses: './'
       with:
-        create_credentials_file: true
-        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
-        service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+
+    - id: 'setup-gcloud'
+      name: 'setup-gcloud'
+      uses: 'google-github-actions/setup-gcloud@master'
 
     - id: 'gcloud'
       name: 'gcloud'
+      shell: 'bash'
       run: |-
-        gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
         gcloud secrets versions access "latest" --secret "my-secret"
 
-  access_token:
-    name: 'access_token'
-    permissions:
-      id-token: 'write'
-      contents: 'read'
-    runs-on: 'ubuntu-latest'
-    strategy:
-      fail-fast: false
-
-    steps:
-    - uses: 'actions/checkout@v2'
-
-    - uses: 'actions/setup-node@v2'
-      with:
-        node-version: '12.x'
-
-    - name: 'build'
-      run: |-
-        npm ci
-        npm run build
-
-    - id: 'auth'
-      name: 'auth'
+    - id: 'auth-access-token'
+      name: 'auth-access-token'
       uses: './'
       with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
         token_format: 'access_token'
-        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
-        service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
 
-  id_token:
-    name: 'id_token'
-    permissions:
-      id-token: 'write'
-      contents: 'read'
-    runs-on: 'ubuntu-latest'
+    - id: 'access-token'
+      name: 'access-token'
+      shell: 'bash'
+      run: |-
+        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/my-secret/versions/latest:access \
+          --silent \
+          --show-error \
+          --fail \
+          --header "Authorization: Bearer ${{ steps.auth-access-token.outputs.access_token }}"
+
+    - id: 'auth-id-token'
+      name: 'auth-id-token'
+      uses: './'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+        token_format: 'id_token'
+        id_token_audience: 'https://secretmanager.googleapis.com/'
+        id_token_include_email: true
+
+
+  workload_identity_federation:
+    name: 'workload_identity_federation'
+    runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
+      matrix:
+        os:
+        - 'ubuntu-latest'
+        - 'windows-latest'
+        - 'macos-latest'
+
+    permissions:
+      id-token: 'write'
 
     steps:
     - uses: 'actions/checkout@v2'
@@ -118,17 +112,47 @@ jobs:
       with:
         node-version: '12.x'
 
-    - name: 'build'
-      run: |-
-        npm ci
-        npm run build
-
-    - id: 'auth'
-      name: 'auth'
+    - id: 'auth-default'
+      name: 'auth-default'
       uses: './'
       with:
-        token_format: 'id_token'
         workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
         service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
-        id_token_audience: 'my-aud'
+
+    - id: 'setup-gcloud'
+      name: 'setup-gcloud'
+      uses: 'google-github-actions/setup-gcloud@master'
+
+    - id: 'gcloud'
+      name: 'gcloud'
+      shell: 'bash'
+      run: |-
+        gcloud secrets versions access "latest" --secret "my-secret"
+
+    - id: 'auth-access-token'
+      name: 'auth-access-token'
+      uses: './'
+      with:
+        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
+        service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
+        token_format: 'access_token'
+
+    - id: 'access-token'
+      name: 'access-token'
+      shell: 'bash'
+      run: |-
+        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/my-secret/versions/latest:access \
+          --silent \
+          --show-error \
+          --fail \
+          --header "Authorization: Bearer ${{ steps.auth-access-token.outputs.access_token }}"
+
+    - id: 'auth-id-token'
+      name: 'auth-id-token'
+      uses: './'
+      with:
+        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
+        service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
+        token_format: 'id_token'
+        id_token_audience: 'https://secretmanager.googleapis.com/'
         id_token_include_email: true

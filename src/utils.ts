@@ -3,14 +3,14 @@ import crypto from 'crypto';
 import path from 'path';
 
 /**
- * writeCredFile writes a file to disk in a given directory with a
+ * writeSecureFile writes a file to disk in a given directory with a
  * random name.
  *
  * @param outputDir Directory to create random file in.
  * @param data Data to write to file.
  * @returns Path to written file.
  */
-export async function writeCredFile(outputDir: string, data: string): Promise<string> {
+export async function writeSecureFile(outputDir: string, data: string): Promise<string> {
   // Generate a random filename to store the credential. 12 bytes is 24
   // characters in hex. It's not the ideal entropy, but we have to be under
   // the 255 character limit for Windows filenames (which includes their
@@ -44,4 +44,33 @@ export function explodeStrings(input: string): Array<string> {
     }
   }
   return list;
+}
+
+/**
+ * toBase64 base64 URL encodes the result.
+ */
+export function toBase64(s: string | Buffer): string {
+  return Buffer.from(s)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+/**
+ * fromBase64 base64 decodes the result, taking into account URL and standard
+ * encoding with and without padding.
+ */
+export function fromBase64(s: string): string {
+  const str = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) s += '=';
+  return Buffer.from(str, 'base64').toString('utf8');
+}
+
+/**
+ * trimmedString returns a string trimmed of whitespace. If the input string is
+ * null, then it returns the empty string.
+ */
+export function trimmedString(s: string): string {
+  return s ? s.trim() : '';
 }

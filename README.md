@@ -102,10 +102,10 @@ Account Key JSON. **We recommend using Workload Identity Federation instead as
 exporting a long-lived Service Account Key JSON credential poses a security
 risk.**
 
--   `credentials_json`: (Required) The Google Cloud JSON service account key to use for
-    authentication. To generate access tokens or ID tokens using this service
-    account, you must grant the underlying service account
-    `roles/iam.workloadIdentityUser` permissions on itself.
+-   `credentials_json`: (Required) The Google Cloud JSON service account key to
+    use for authentication. To generate access tokens or ID tokens using this
+    service account, you must grant the underlying service account
+    `roles/iam.serviceAccountTokenCreator` permissions on itself.
 
 ### Generating OAuth 2.0 access tokens
 
@@ -281,7 +281,7 @@ The default lifetime is 1 hour, but you can request up to 12 hours if you set
 the [`constraints/iam.allowServiceAccountCredentialLifetimeExtension` organization policy](https://cloud.google.com/resource-manager/docs/organization-policy/org-policy-constraints).
 
 Note: If you authenticate via `credentials_json`, the service account must have
-`roles/iam.workloadIdentityUser` or `roles/iam.serviceAccountUser` on itself.
+`roles/iam.serviceAccountTokenCreator` on itself.
 
 ```yaml
 jobs:
@@ -319,7 +319,7 @@ Token for authenticating to Google Cloud. This is most commonly used when
 invoking a Cloud Run service.
 
 Note: If you authenticate via `credentials_json`, the service account must have
-`roles/iam.workloadIdentityUser` or `roles/iam.serviceAccountUser` on itself.
+`roles/iam.serviceAccountTokenCreator` on itself.
 
 ```yaml
 jobs:

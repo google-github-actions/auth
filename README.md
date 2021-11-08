@@ -29,7 +29,7 @@ and permissions on Google Cloud.
     export a Google Cloud Service Account Key in JSON format.
 
 -   For authenticating via Workload Identity Federation, you must create and
-    configure a Google Cloud Workload Identity Provider. See [#setup](#setup)
+    configure a Google Cloud Workload Identity Provider. See [setup](#setup)
     for instructions.
 
 

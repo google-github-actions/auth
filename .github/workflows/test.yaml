@@ -94,7 +94,7 @@ jobs:
       name: 'gcloud'
       shell: 'bash'
       run: |-
-        gcloud secrets versions access "latest" --secret "my-secret"
+        gcloud secrets versions access "latest" --secret "${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}"
 
     - id: 'auth-access-token'
       name: 'auth-access-token'
@@ -107,7 +107,7 @@ jobs:
       name: 'access-token'
       shell: 'bash'
       run: |-
-        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/my-secret/versions/latest:access \
+        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}/versions/latest:access \
           --silent \
           --show-error \
           --fail \
@@ -160,7 +160,7 @@ jobs:
       name: 'gcloud'
       shell: 'bash'
       run: |-
-        gcloud secrets versions access "latest" --secret "my-secret"
+        gcloud secrets versions access "latest" --secret "${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}"
 
     - id: 'auth-access-token'
       name: 'auth-access-token'
@@ -174,7 +174,7 @@ jobs:
       name: 'access-token'
       shell: 'bash'
       run: |-
-        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/my-secret/versions/latest:access \
+        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}/versions/latest:access \
           --silent \
           --show-error \
           --fail \

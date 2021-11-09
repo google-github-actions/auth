@@ -16,8 +16,7 @@ name: 'Authenticate to Google Cloud'
 author: 'Google LLC'
 description: |-
   Authenticate to Google Cloud from GitHub Actions via Workload Identity
-  Federation and GitHub Actions OIDC tokens or via exported Google Cloud service
-  account keys.
+  Federation or service account keys.
 
 inputs:
   project_id:

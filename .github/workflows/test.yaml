@@ -8,9 +8,39 @@ on:
     branches:
     - 'main'
 
+concurrency:
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
+  install_and_compile:
+    name: 'install_and_compile'
+    runs-on: 'ubuntu-latest'
+    steps:
+    - uses: 'actions/checkout@v2'
+
+    - uses: 'actions/setup-node@v2'
+      with:
+        node-version: '12.x'
+
+    - name: 'npm ci'
+      run: 'npm ci'
+
+    - name: 'npm build'
+      run: 'npm build'
+
+    - name: 'verify compiled'
+      shell: 'bash'
+      run: |-
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "TypeScript is not compiled!"
+          exit 1
+        fi
+
+
   unit:
     name: 'unit'
+    needs: install_and_compile
     runs-on: 'ubuntu-latest'
 
     steps:
@@ -19,9 +49,6 @@ jobs:
     - uses: 'actions/setup-node@v2'
       with:
         node-version: '12.x'
-
-    - name: 'npm install'
-      run: 'npm install'
 
     - name: 'npm lint'
       run: 'npm run lint'
@@ -32,6 +59,7 @@ jobs:
 
   credentials_json:
     name: 'credentials_json'
+    needs: install_and_compile
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
@@ -93,6 +121,7 @@ jobs:
 
   workload_identity_federation:
     name: 'workload_identity_federation'
+    needs: install_and_compile
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false

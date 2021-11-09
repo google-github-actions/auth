@@ -608,7 +608,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.writeSecureFile = void 0;
+exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.writeSecureFile = void 0;
 const fs_1 = __webpack_require__(747);
 const crypto_1 = __importDefault(__webpack_require__(417));
 const path_1 = __importDefault(__webpack_require__(622));
@@ -677,6 +677,14 @@ function fromBase64(s) {
     return Buffer.from(str, 'base64').toString('utf8');
 }
 exports.fromBase64 = fromBase64;
+/**
+ * trimmedString returns a string trimmed of whitespace. If the input string is
+ * null, then it returns the empty string.
+ */
+function trimmedString(s) {
+    return s ? s.trim() : '';
+}
+exports.trimmedString = trimmedString;
 
 
 /***/ }),
@@ -1790,6 +1798,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CredentialsJSONClient = void 0;
 const crypto_1 = __webpack_require__(417);
 const utils_1 = __webpack_require__(163);
+/**
+ * CredentialsJSONClient is a client that accepts a service account key JSON
+ * credential.
+ */
 class CredentialsJSONClient {
     constructor(opts) {
         _CredentialsJSONClient_projectID.set(this, void 0);
@@ -1802,21 +1814,33 @@ class CredentialsJSONClient {
      * account key JSON. It handles if the string is base64-encoded.
      */
     parseServiceAccountKeyJSON(str) {
+        str = (0, utils_1.trimmedString)(str);
         if (!str) {
-            return {};
+            throw new Error(`Missing service account key JSON (got empty value)`);
         }
-        str = str.trim();
         // If the string doesn't start with a JSON object character, it is probably
         // base64-encoded.
         if (!str.startsWith('{')) {
             str = (0, utils_1.fromBase64)(str);
         }
+        let creds;
         try {
-            return JSON.parse(str);
+            creds = JSON.parse(str);
         }
         catch (e) {
             throw new SyntaxError(`Failed to parse credentials as JSON: ${e}`);
         }
+        const requireValue = (key) => {
+            const val = (0, utils_1.trimmedString)(creds[key]);
+            if (!val) {
+                throw new Error(`Service account key JSON is missing required field "${key}"`);
+            }
+        };
+        requireValue('project_id');
+        requireValue('private_key_id');
+        requireValue('private_key');
+        requireValue('client_email');
+        return creds;
     }
     /**
      * getAuthToken generates a token capable of calling the iamcredentials API.
@@ -2165,6 +2189,10 @@ exports.WorkloadIdentityClient = void 0;
 const url_1 = __webpack_require__(835);
 const utils_1 = __webpack_require__(163);
 const base_1 = __webpack_require__(843);
+/**
+ * WorkloadIdentityClient is a client that uses the GitHub Actions runtime to
+ * authentication via Workload Identity.
+ */
 class WorkloadIdentityClient {
     constructor(opts) {
         _WorkloadIdentityClient_projectID.set(this, void 0);

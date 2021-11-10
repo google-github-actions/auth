@@ -84,7 +84,7 @@ jobs:
       name: 'auth-default'
       uses: './'
       with:
-        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+        credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
 
     - id: 'setup-gcloud'
       name: 'setup-gcloud'
@@ -94,20 +94,20 @@ jobs:
       name: 'gcloud'
       shell: 'bash'
       run: |-
-        gcloud secrets versions access "latest" --secret "my-secret"
+        gcloud secrets versions access "latest" --secret "${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}"
 
     - id: 'auth-access-token'
       name: 'auth-access-token'
       uses: './'
       with:
-        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+        credentials_json: '${{ secrets.AUTH_SA_KEY_B64 }}'
         token_format: 'access_token'
 
     - id: 'access-token'
       name: 'access-token'
       shell: 'bash'
       run: |-
-        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/my-secret/versions/latest:access \
+        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}/versions/latest:access \
           --silent \
           --show-error \
           --fail \
@@ -117,7 +117,7 @@ jobs:
       name: 'auth-id-token'
       uses: './'
       with:
-        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+        credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
         token_format: 'id_token'
         id_token_audience: 'https://secretmanager.googleapis.com/'
         id_token_include_email: true
@@ -149,8 +149,8 @@ jobs:
       name: 'auth-default'
       uses: './'
       with:
-        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
-        service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
+        workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
+        service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
 
     - id: 'setup-gcloud'
       name: 'setup-gcloud'
@@ -160,21 +160,21 @@ jobs:
       name: 'gcloud'
       shell: 'bash'
       run: |-
-        gcloud secrets versions access "latest" --secret "my-secret"
+        gcloud secrets versions access "latest" --secret "${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}"
 
     - id: 'auth-access-token'
       name: 'auth-access-token'
       uses: './'
       with:
-        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
-        service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
+        workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
+        service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
         token_format: 'access_token'
 
     - id: 'access-token'
       name: 'access-token'
       shell: 'bash'
       run: |-
-        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/my-secret/versions/latest:access \
+        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}/versions/latest:access \
           --silent \
           --show-error \
           --fail \
@@ -184,8 +184,8 @@ jobs:
       name: 'auth-id-token'
       uses: './'
       with:
-        workload_identity_provider: 'projects/469401941463/locations/global/workloadIdentityPools/github-actions/providers/google-github-actions'
-        service_account: 'github-secret-accessor@actions-oidc-test.iam.gserviceaccount.com'
+        workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
+        service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
         token_format: 'id_token'
         id_token_audience: 'https://secretmanager.googleapis.com/'
         id_token_include_email: true

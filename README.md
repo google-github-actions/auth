@@ -48,7 +48,7 @@ jobs:
     steps:
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.3.1'
+      uses: 'google-github-actions/auth@v0.4.0'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -199,7 +199,7 @@ jobs:
     steps:
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: `google-github-actions/auth@v0.3.1'
+      uses: `google-github-actions/auth@v0.4.0'
       with:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
@@ -225,7 +225,7 @@ jobs:
     steps:
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: `google-github-actions/auth@v0.3.1'
+      uses: `google-github-actions/auth@v0.4.0'
       with:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 ```
@@ -254,7 +254,7 @@ jobs:
     # Configure Workload Identity Federation via a credentials file.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.3.1'
+      uses: 'google-github-actions/auth@v0.4.0'
       with:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
@@ -297,7 +297,7 @@ jobs:
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.3.1'
+      uses: 'google-github-actions/auth@v0.4.0'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -335,7 +335,7 @@ jobs:
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.3.1'
+      uses: 'google-github-actions/auth@v0.4.0'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'

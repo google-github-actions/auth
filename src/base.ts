@@ -7,6 +7,10 @@ import {
   GoogleIDTokenResponse,
 } from './client/auth_client';
 
+// Do not listen to the linter - this can NOT be rewritten as an ES6 import statement.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { version: appVersion } = require('../package.json');
+
 export class BaseClient {
   /**
    * request is a high-level helper that returns a promise from the executed
@@ -19,7 +23,7 @@ export class BaseClient {
     }
 
     if (!opts.headers['User-Agent']) {
-      opts.headers['User-Agent'] = 'google-github-actions:auth/0.3.1';
+      opts.headers['User-Agent'] = `google-github-actions:auth/${appVersion}`;
     }
 
     return new Promise((resolve, reject) => {

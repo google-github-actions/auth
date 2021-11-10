@@ -1922,6 +1922,13 @@ module.exports = require("util");
 
 /***/ }),
 
+/***/ 731:
+/***/ (function(module) {
+
+module.exports = {"name":"@google-github-actions/auth","version":"0.4.0","description":"Authenticate to Google Cloud using OIDC tokens or JSON service account keys.","main":"dist/index.js","scripts":{"build":"ncc build src/main.ts","lint":"eslint . --ext .ts,.tsx","format":"prettier --write **/*.ts","test":"mocha -r ts-node/register -t 120s 'tests/**/*.test.ts'"},"repository":{"type":"git","url":"https://github.com/google-github-actions/auth"},"keywords":["actions","google cloud","identity","auth","oidc"],"author":"GoogleCloudPlatform","license":"Apache-2.0","dependencies":{"@actions/core":"^1.6.0"},"devDependencies":{"@types/chai":"^4.2.21","@types/mocha":"^9.0.0","@types/node":"^16.9.1","@typescript-eslint/eslint-plugin":"^4.31.0","@typescript-eslint/parser":"^4.31.0","@zeit/ncc":"^0.22.3","chai":"^4.3.4","eslint":"^7.32.0","eslint-config-prettier":"^8.3.0","eslint-plugin-prettier":"^4.0.0","husky":"^7.0.2","mocha":"^9.1.1","prettier":"^2.4.0","ts-node":"^10.2.1","typescript":"^4.3.5"}};
+
+/***/ }),
+
 /***/ 742:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -2041,6 +2048,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BaseClient = void 0;
 const https_1 = __importDefault(__webpack_require__(211));
 const url_1 = __webpack_require__(835);
+// Do not listen to the linter - this can NOT be rewritten as an ES6 import statement.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { version: appVersion } = __webpack_require__(731);
 class BaseClient {
     /**
      * request is a high-level helper that returns a promise from the executed
@@ -2052,7 +2062,7 @@ class BaseClient {
             opts.headers = {};
         }
         if (!opts.headers['User-Agent']) {
-            opts.headers['User-Agent'] = 'google-github-actions:auth/0.3.1';
+            opts.headers['User-Agent'] = `google-github-actions:auth/${appVersion}`;
         }
         return new Promise((resolve, reject) => {
             const req = https_1.default.request(opts, (res) => {

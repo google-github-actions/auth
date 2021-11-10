@@ -1,7 +1,7 @@
 {
-  "name": "oidc-auth-gcp",
-  "version": "0.1.0",
-  "description": "Authenticate to Google Cloud using a variety of mechanisms including OIDC tokens.",
+  "name": "@google-github-actions/auth",
+  "version": "0.4.0",
+  "description": "Authenticate to Google Cloud using OIDC tokens or JSON service account keys.",
   "main": "dist/index.js",
   "scripts": {
     "build": "ncc build src/main.ts",

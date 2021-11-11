@@ -33,7 +33,7 @@ body:
     label: 'Action YAML'
     description: 'Paste your complete GitHub Actions YAML here, removing any sensitive values.'
     render: 'yaml'
-  validation:
+  validations:
     required: true
 
 - id: 'additional'

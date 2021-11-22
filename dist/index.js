@@ -242,6 +242,7 @@ function run() {
                 (0, core_1.setOutput)('credentials_file_path', credentialsPath);
                 (0, core_1.exportVariable)('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
                 (0, core_1.exportVariable)('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
+                (0, core_1.exportVariable)('GOOGLE_GHA_CREDS_PATH', credentialsPath);
             }
             // Set the project ID environment variables to the computed values.
             const computedProjectID = yield client.getProjectID();

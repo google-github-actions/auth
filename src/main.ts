@@ -90,6 +90,7 @@ async function run(): Promise<void> {
       setOutput('credentials_file_path', credentialsPath);
       exportVariable('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
       exportVariable('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
+      exportVariable('GOOGLE_GHA_CREDS_PATH', credentialsPath);
     }
 
     // Set the project ID environment variables to the computed values.

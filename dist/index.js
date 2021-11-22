@@ -164,25 +164,6 @@ exports.issueCommand = issueCommand;
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -193,11 +174,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const core = __importStar(__webpack_require__(470));
+const core_1 = __webpack_require__(470);
 const workload_identity_client_1 = __webpack_require__(911);
 const credentials_json_client_1 = __webpack_require__(627);
 const base_1 = __webpack_require__(843);
 const utils_1 = __webpack_require__(163);
+const secretsWarning = 'If you are specifying input values via GitHub secrets, ensure the secret ' +
+    'is being injected into the environment. By default, secrets are not passed ' +
+    'to workflows triggered from forks, including Dependabot.';
 /**
  * Executes the main action, documented inline.
  */
@@ -205,30 +189,32 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             // Load configuration.
-            const projectID = core.getInput('project_id');
-            const workloadIdentityProvider = core.getInput('workload_identity_provider');
-            const serviceAccount = core.getInput('service_account');
-            const audience = core.getInput('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
-            const credentialsJSON = core.getInput('credentials_json');
-            const createCredentialsFile = core.getBooleanInput('create_credentials_file');
-            const tokenFormat = core.getInput('token_format');
-            const delegates = (0, utils_1.explodeStrings)(core.getInput('delegates'));
+            const projectID = (0, core_1.getInput)('project_id');
+            const workloadIdentityProvider = (0, core_1.getInput)('workload_identity_provider');
+            const serviceAccount = (0, core_1.getInput)('service_account');
+            const audience = (0, core_1.getInput)('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
+            const credentialsJSON = (0, core_1.getInput)('credentials_json');
+            const createCredentialsFile = (0, core_1.getBooleanInput)('create_credentials_file');
+            const tokenFormat = (0, core_1.getInput)('token_format');
+            const delegates = (0, utils_1.explodeStrings)((0, core_1.getInput)('delegates'));
             // Ensure exactly one of workload_identity_provider and credentials_json was
             // provided.
             if ((!workloadIdentityProvider && !credentialsJSON) ||
                 (workloadIdentityProvider && credentialsJSON)) {
                 throw new Error('The GitHub Action workflow must specify exactly one of ' +
-                    '"workload_identity_provider" or "credentials_json"!');
+                    '"workload_identity_provider" or "credentials_json"! ' +
+                    secretsWarning);
             }
             // Ensure a service_account was provided if using WIF.
             if (workloadIdentityProvider && !serviceAccount) {
                 throw new Error('The GitHub Action workflow must specify a "service_account" to ' +
-                    'impersonate when using "workload_identity_provider"!');
+                    'impersonate when using "workload_identity_provider"! ' +
+                    secretsWarning);
             }
             // Instantiate the correct client based on the provided input parameters.
             let client;
             if (workloadIdentityProvider) {
-                const token = yield core.getIDToken(audience);
+                const token = yield (0, core_1.getIDToken)(audience);
                 client = new workload_identity_client_1.WorkloadIdentityClient({
                     projectID: projectID,
                     providerID: workloadIdentityProvider,
@@ -253,18 +239,18 @@ function run() {
                     throw new Error('$RUNNER_TEMP is not set');
                 }
                 const credentialsPath = yield client.createCredentialsFile(runnerTempDir);
-                core.setOutput('credentials_file_path', credentialsPath);
-                core.exportVariable('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
-                core.exportVariable('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
+                (0, core_1.setOutput)('credentials_file_path', credentialsPath);
+                (0, core_1.exportVariable)('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
+                (0, core_1.exportVariable)('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
             }
             // Set the project ID environment variables to the computed values.
             const computedProjectID = yield client.getProjectID();
-            core.setOutput('project_id', computedProjectID);
-            core.exportVariable('CLOUDSDK_PROJECT', computedProjectID);
-            core.exportVariable('CLOUDSDK_CORE_PROJECT', computedProjectID);
-            core.exportVariable('GCP_PROJECT', computedProjectID);
-            core.exportVariable('GCLOUD_PROJECT', computedProjectID);
-            core.exportVariable('GOOGLE_CLOUD_PROJECT', computedProjectID);
+            (0, core_1.setOutput)('project_id', computedProjectID);
+            (0, core_1.exportVariable)('CLOUDSDK_PROJECT', computedProjectID);
+            (0, core_1.exportVariable)('CLOUDSDK_CORE_PROJECT', computedProjectID);
+            (0, core_1.exportVariable)('GCP_PROJECT', computedProjectID);
+            (0, core_1.exportVariable)('GCLOUD_PROJECT', computedProjectID);
+            (0, core_1.exportVariable)('GOOGLE_CLOUD_PROJECT', computedProjectID);
             switch (tokenFormat) {
                 case '': {
                     break;
@@ -273,8 +259,8 @@ function run() {
                     break;
                 }
                 case 'access_token': {
-                    const accessTokenLifetime = core.getInput('access_token_lifetime');
-                    const accessTokenScopes = (0, utils_1.explodeStrings)(core.getInput('access_token_scopes'));
+                    const accessTokenLifetime = (0, core_1.getInput)('access_token_lifetime');
+                    const accessTokenScopes = (0, utils_1.explodeStrings)((0, core_1.getInput)('access_token_scopes'));
                     const serviceAccount = yield client.getServiceAccount();
                     const authToken = yield client.getAuthToken();
                     const { accessToken, expiration } = yield base_1.BaseClient.googleAccessToken(authToken, {
@@ -283,14 +269,14 @@ function run() {
                         scopes: accessTokenScopes,
                         lifetime: accessTokenLifetime,
                     });
-                    core.setSecret(accessToken);
-                    core.setOutput('access_token', accessToken);
-                    core.setOutput('access_token_expiration', expiration);
+                    (0, core_1.setSecret)(accessToken);
+                    (0, core_1.setOutput)('access_token', accessToken);
+                    (0, core_1.setOutput)('access_token_expiration', expiration);
                     break;
                 }
                 case 'id_token': {
-                    const idTokenAudience = core.getInput('id_token_audience', { required: true });
-                    const idTokenIncludeEmail = core.getBooleanInput('id_token_include_email');
+                    const idTokenAudience = (0, core_1.getInput)('id_token_audience', { required: true });
+                    const idTokenIncludeEmail = (0, core_1.getBooleanInput)('id_token_include_email');
                     const serviceAccount = yield client.getServiceAccount();
                     const authToken = yield client.getAuthToken();
                     const { token } = yield base_1.BaseClient.googleIDToken(authToken, {
@@ -299,8 +285,8 @@ function run() {
                         delegates,
                         includeEmail: idTokenIncludeEmail,
                     });
-                    core.setSecret(token);
-                    core.setOutput('id_token', token);
+                    (0, core_1.setSecret)(token);
+                    (0, core_1.setOutput)('id_token', token);
                     break;
                 }
                 default: {
@@ -309,7 +295,7 @@ function run() {
             }
         }
         catch (err) {
-            core.setFailed(`Action failed with error: ${err}`);
+            (0, core_1.setFailed)(`Action failed with error: ${err}`);
         }
     });
 }

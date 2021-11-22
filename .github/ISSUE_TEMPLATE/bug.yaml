@@ -35,6 +35,15 @@ body:
     render: 'yaml'
   validations:
     required: true
+    
+- id: 'log_output'
+  type: 'textarea'
+  attributes:
+    label: 'Log output'
+    description: 'Paste your log output here. Please do not paste a link to your run because logs expire.'
+    render: 'text'
+  validations:
+    required: true
 
 - id: 'additional'
   type: 'textarea'

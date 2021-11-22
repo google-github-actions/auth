@@ -52,6 +52,7 @@ inputs:
       The Google Cloud JSON service account key to use for authentication. This
       is mutually exclusive with "workload_identity_provider".
     required: false
+    default: ~
   create_credentials_file:
     description: |-
       If true, the action will securely generate a credentials file which can be

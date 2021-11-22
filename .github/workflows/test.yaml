@@ -13,65 +13,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  install_and_compile:
-    name: 'install_and_compile'
+  # install_and_compile:
+  #   name: 'install_and_compile'
+  #   runs-on: 'ubuntu-latest'
+  #   steps:
+  #   - uses: 'actions/checkout@v2'
+
+  #   - uses: 'actions/setup-node@v2'
+  #     with:
+  #       node-version: '12.x'
+
+  #   - name: 'npm ci'
+  #     run: 'npm ci'
+
+  #   - name: 'npm build'
+  #     run: 'npm run build'
+
+  #   - name: 'verify compiled'
+  #     shell: 'bash'
+  #     run: |-
+  #       if [ -n "$(git status --porcelain)" ]; then
+  #         echo "TypeScript is not compiled!"
+  #         git diff
+  #         exit 1
+  #       fi
+
+
+  experiment1:
+    name: 'experiment1'
     runs-on: 'ubuntu-latest'
-    steps:
-    - uses: 'actions/checkout@v2'
-
-    - uses: 'actions/setup-node@v2'
-      with:
-        node-version: '12.x'
-
-    - name: 'npm ci'
-      run: 'npm ci'
-
-    - name: 'npm build'
-      run: 'npm run build'
-
-    - name: 'verify compiled'
-      shell: 'bash'
-      run: |-
-        if [ -n "$(git status --porcelain)" ]; then
-          echo "TypeScript is not compiled!"
-          git diff
-          exit 1
-        fi
-
-
-  unit:
-    name: 'unit'
-    needs: install_and_compile
-    runs-on: 'ubuntu-latest'
-
-    steps:
-    - uses: 'actions/checkout@v2'
-
-    - uses: 'actions/setup-node@v2'
-      with:
-        node-version: '12.x'
-
-    - name: 'npm ci'
-      run: 'npm ci'
-
-    - name: 'npm lint'
-      run: 'npm run lint'
-
-    - name: 'npm test'
-      run: 'npm run test'
-
-
-  credentials_json:
-    name: 'credentials_json'
-    needs: install_and_compile
-    runs-on: '${{ matrix.os }}'
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-        - 'ubuntu-latest'
-        - 'windows-latest'
-        - 'macos-latest'
 
     steps:
     - uses: 'actions/checkout@v2'
@@ -84,59 +54,26 @@ jobs:
       name: 'auth-default'
       uses: './'
       with:
-        credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
+        credentials_json: ''
 
-    - id: 'setup-gcloud'
-      name: 'setup-gcloud'
-      uses: 'google-github-actions/setup-gcloud@master'
+  experiment2:
+    name: 'experiment2'
+    runs-on: 'ubuntu-latest'
 
-    - id: 'gcloud'
-      name: 'gcloud'
-      shell: 'bash'
-      run: |-
-        gcloud secrets versions access "latest" --secret "${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}"
+    steps:
+    - uses: 'actions/checkout@v2'
 
-    - id: 'auth-access-token'
-      name: 'auth-access-token'
-      uses: './'
+    - uses: 'actions/setup-node@v2'
       with:
-        credentials_json: '${{ secrets.AUTH_SA_KEY_B64 }}'
-        token_format: 'access_token'
+        node-version: '12.x'
 
-    - id: 'access-token'
-      name: 'access-token'
-      shell: 'bash'
-      run: |-
-        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}/versions/latest:access \
-          --silent \
-          --show-error \
-          --fail \
-          --header "Authorization: Bearer ${{ steps.auth-access-token.outputs.access_token }}"
-
-    - id: 'auth-id-token'
-      name: 'auth-id-token'
+    - id: 'auth-default'
+      name: 'auth-default'
       uses: './'
-      with:
-        credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
-        token_format: 'id_token'
-        id_token_audience: 'https://secretmanager.googleapis.com/'
-        id_token_include_email: true
 
-
-  workload_identity_federation:
-    name: 'workload_identity_federation'
-    needs: install_and_compile
-    runs-on: '${{ matrix.os }}'
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-        - 'ubuntu-latest'
-        - 'windows-latest'
-        - 'macos-latest'
-
-    permissions:
-      id-token: 'write'
+  experiment3:
+    name: 'experiment3'
+    runs-on: 'ubuntu-latest'
 
     steps:
     - uses: 'actions/checkout@v2'
@@ -149,43 +86,157 @@ jobs:
       name: 'auth-default'
       uses: './'
       with:
-        workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-        service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
+        credentials_json: ${{secrets.NOT_A_REAL_SECRET}}
 
-    - id: 'setup-gcloud'
-      name: 'setup-gcloud'
-      uses: 'google-github-actions/setup-gcloud@master'
 
-    - id: 'gcloud'
-      name: 'gcloud'
-      shell: 'bash'
-      run: |-
-        gcloud secrets versions access "latest" --secret "${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}"
 
-    - id: 'auth-access-token'
-      name: 'auth-access-token'
-      uses: './'
-      with:
-        workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-        service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
-        token_format: 'access_token'
+  # unit:
+  #   name: 'unit'
+  #   needs: install_and_compile
+  #   runs-on: 'ubuntu-latest'
 
-    - id: 'access-token'
-      name: 'access-token'
-      shell: 'bash'
-      run: |-
-        curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}/versions/latest:access \
-          --silent \
-          --show-error \
-          --fail \
-          --header "Authorization: Bearer ${{ steps.auth-access-token.outputs.access_token }}"
+  #   steps:
+  #   - uses: 'actions/checkout@v2'
 
-    - id: 'auth-id-token'
-      name: 'auth-id-token'
-      uses: './'
-      with:
-        workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-        service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
-        token_format: 'id_token'
-        id_token_audience: 'https://secretmanager.googleapis.com/'
-        id_token_include_email: true
+  #   - uses: 'actions/setup-node@v2'
+  #     with:
+  #       node-version: '12.x'
+
+  #   - name: 'npm ci'
+  #     run: 'npm ci'
+
+  #   - name: 'npm lint'
+  #     run: 'npm run lint'
+
+  #   - name: 'npm test'
+  #     run: 'npm run test'
+
+
+  # credentials_json:
+  #   name: 'credentials_json'
+  #   needs: install_and_compile
+  #   runs-on: '${{ matrix.os }}'
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os:
+  #       - 'ubuntu-latest'
+  #       - 'windows-latest'
+  #       - 'macos-latest'
+
+  #   steps:
+  #   - uses: 'actions/checkout@v2'
+
+  #   - uses: 'actions/setup-node@v2'
+  #     with:
+  #       node-version: '12.x'
+
+  #   - id: 'auth-default'
+  #     name: 'auth-default'
+  #     uses: './'
+  #     with:
+  #       credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
+
+  #   - id: 'setup-gcloud'
+  #     name: 'setup-gcloud'
+  #     uses: 'google-github-actions/setup-gcloud@master'
+
+  #   - id: 'gcloud'
+  #     name: 'gcloud'
+  #     shell: 'bash'
+  #     run: |-
+  #       gcloud secrets versions access "latest" --secret "${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}"
+
+  #   - id: 'auth-access-token'
+  #     name: 'auth-access-token'
+  #     uses: './'
+  #     with:
+  #       credentials_json: '${{ secrets.AUTH_SA_KEY_B64 }}'
+  #       token_format: 'access_token'
+
+  #   - id: 'access-token'
+  #     name: 'access-token'
+  #     shell: 'bash'
+  #     run: |-
+  #       curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}/versions/latest:access \
+  #         --silent \
+  #         --show-error \
+  #         --fail \
+  #         --header "Authorization: Bearer ${{ steps.auth-access-token.outputs.access_token }}"
+
+  #   - id: 'auth-id-token'
+  #     name: 'auth-id-token'
+  #     uses: './'
+  #     with:
+  #       credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
+  #       token_format: 'id_token'
+  #       id_token_audience: 'https://secretmanager.googleapis.com/'
+  #       id_token_include_email: true
+
+
+  # workload_identity_federation:
+  #   name: 'workload_identity_federation'
+  #   needs: install_and_compile
+  #   runs-on: '${{ matrix.os }}'
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os:
+  #       - 'ubuntu-latest'
+  #       - 'windows-latest'
+  #       - 'macos-latest'
+
+  #   permissions:
+  #     id-token: 'write'
+
+  #   steps:
+  #   - uses: 'actions/checkout@v2'
+
+  #   - uses: 'actions/setup-node@v2'
+  #     with:
+  #       node-version: '12.x'
+
+  #   - id: 'auth-default'
+  #     name: 'auth-default'
+  #     uses: './'
+  #     with:
+  #       workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
+  #       service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
+
+  #   - id: 'setup-gcloud'
+  #     name: 'setup-gcloud'
+  #     uses: 'google-github-actions/setup-gcloud@master'
+
+  #   - id: 'gcloud'
+  #     name: 'gcloud'
+  #     shell: 'bash'
+  #     run: |-
+  #       gcloud secrets versions access "latest" --secret "${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}"
+
+  #   - id: 'auth-access-token'
+  #     name: 'auth-access-token'
+  #     uses: './'
+  #     with:
+  #       workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
+  #       service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
+  #       token_format: 'access_token'
+
+  #   - id: 'access-token'
+  #     name: 'access-token'
+  #     shell: 'bash'
+  #     run: |-
+  #       curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}/versions/latest:access \
+  #         --silent \
+  #         --show-error \
+  #         --fail \
+  #         --header "Authorization: Bearer ${{ steps.auth-access-token.outputs.access_token }}"
+
+  #   - id: 'auth-id-token'
+  #     name: 'auth-id-token'
+  #     uses: './'
+  #     with:
+  #       workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
+  #       service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
+  #       token_format: 'id_token'
+  #       id_token_audience: 'https://secretmanager.googleapis.com/'
+  #       id_token_include_email: true

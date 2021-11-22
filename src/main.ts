@@ -6,6 +6,28 @@ import { CredentialsJSONClient } from './client/credentials_json_client';
 import { AuthClient } from './client/auth_client';
 import { BaseClient } from './base';
 import { explodeStrings } from './utils';
+import { inspect } from 'util';
+
+/**
+ * getInputOK is like getInput in actions/toolkit, but it returns a secondary
+ * boolean value indicating whether the input was present. The default getInput
+ * function automatically converts null/undefined to the empty string, so it's
+ * impossible to differentiate between "unset value" and "value is explicitly
+ * the empty string". Based on:
+ *
+ *     https://github.com/actions/toolkit/blob/27f76dfe1afb2b7e5e679cd8e97192d34d8320e6/packages/core/src/core.ts#L128
+ *
+ * @param name Name of the input to retrieve.
+ */
+function getInputOK(name: string, options?: core.InputOptions): [string, boolean] {
+  const envName = `INPUT_${name.replace(/ /g, '_').toUpperCase()}`;
+  const ok = envName in process.env;
+  const value = core.getInput(name, options);
+
+  console.log('process.env', process.env);
+
+  return [value, ok];
+}
 
 /**
  * Executes the main action, documented inline.
@@ -18,10 +40,25 @@ async function run(): Promise<void> {
     const serviceAccount = core.getInput('service_account');
     const audience =
       core.getInput('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
-    const credentialsJSON = core.getInput('credentials_json');
+    // const credentialsJSON = core.getInput('credentials_json');
     const createCredentialsFile = core.getBooleanInput('create_credentials_file');
     const tokenFormat = core.getInput('token_format');
     const delegates = explodeStrings(core.getInput('delegates'));
+
+    const [credentialsJSON, hasCredentialsJSON] = getInputOK('credentials_json');
+
+    console.log('credentialsJSON', inspect(credentialsJSON));
+    console.log('credentialsJSON == null', credentialsJSON == null);
+    console.log('credentialsJSON === null', credentialsJSON === null);
+    console.log('credentialsJSON == undefined', credentialsJSON == undefined);
+    console.log('credentialsJSON === undefined', credentialsJSON === undefined);
+    console.log('credentialsJSON === ""', credentialsJSON === '');
+    console.log('credentialsJSON == ""', credentialsJSON == '');
+    console.log('hasCredentialsJSON', hasCredentialsJSON);
+
+    if (!credentialsJSON) {
+      throw new Error('tmp');
+    }
 
     // Ensure exactly one of workload_identity_provider and credentials_json was
     // provided.

@@ -472,7 +472,8 @@ the [gcloud][gcloud] command-line tool.
 
 ## GitHub Token Format
 
-Here is a sample GitHub Token for reference for attribute mappings:
+Below is a sample GitHub Token for reference for attribute mappings. For a list of all
+mappings, see the [GitHub OIDC token documentation](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#understanding-the-oidc-token).
 
 ```json
 {

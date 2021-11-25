@@ -147,7 +147,7 @@ async function run(): Promise<void> {
       }
     }
   } catch (err) {
-    setFailed(`Action failed with error: ${err}`);
+    setFailed(`google-github-actions/auth failed with: ${err}`);
   }
 }
 

@@ -482,7 +482,7 @@ Here is a sample GitHub Token for reference for attribute mappings:
   "ref": "refs/heads/master",
   "sha": "d11880f4f451ee35192135525dc974c56a3c1b28",
   "repository": "username/reponame",
-  "repository_owner": "reponame",
+  "repository_owner": "username",
   "run_id": "1238222155",
   "run_number": "18",
   "run_attempt": "1",

@@ -295,7 +295,7 @@ function run() {
             }
         }
         catch (err) {
-            (0, core_1.setFailed)(`Action failed with error: ${err}`);
+            (0, core_1.setFailed)(`google-github-actions/auth failed with: ${err}`);
         }
     });
 }

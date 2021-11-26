@@ -240,8 +240,14 @@ function run() {
                 }
                 const credentialsPath = yield client.createCredentialsFile(runnerTempDir);
                 (0, core_1.setOutput)('credentials_file_path', credentialsPath);
+                // CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE is picked up by gcloud to use
+                // a specific credential file (subject to change and equivalent to auth/credential_file_override)
                 (0, core_1.exportVariable)('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
+                // GOOGLE_APPLICATION_CREDENTIALS is used by Application Default Credentials
+                // in all GCP client libraries
                 (0, core_1.exportVariable)('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
+                // GOOGLE_GHA_CREDS_PATH is used by other Google GitHub Actions
+                (0, core_1.exportVariable)('GOOGLE_GHA_CREDS_PATH', credentialsPath);
             }
             // Set the project ID environment variables to the computed values.
             const computedProjectID = yield client.getProjectID();

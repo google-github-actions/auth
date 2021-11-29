@@ -31,6 +31,11 @@ and permissions on Google Cloud.
 -   For authenticating via Workload Identity Federation, you must create and
     configure a Google Cloud Workload Identity Provider. See [setup](#setup)
     for instructions.
+    
+## Limitations
+
+-   This library does not support authenticating through service accounts via
+    Domain-Wide Delegation.
 
 
 ## Usage

@@ -199,7 +199,7 @@ jobs:
     steps:
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: `google-github-actions/auth@v0.4.1'
+      uses: 'google-github-actions/auth@v0.4.1'
       with:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
@@ -225,7 +225,7 @@ jobs:
     steps:
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: `google-github-actions/auth@v0.4.1'
+      uses: 'google-github-actions/auth@v0.4.1'
       with:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 ```

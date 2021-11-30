@@ -34,7 +34,7 @@ and permissions on Google Cloud.
     
 ## Limitations
 
--   This library does not support authenticating through service accounts via
+-   This Action does not support authenticating through service accounts via
     Domain-Wide Delegation.
 
 

@@ -449,7 +449,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.removeCachedCredentials = exports.writeSecureFile = void 0;
+exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.removeExportedCredentials = exports.writeSecureFile = void 0;
 const fs_1 = __webpack_require__(747);
 const crypto_1 = __importDefault(__webpack_require__(417));
 const path_1 = __importDefault(__webpack_require__(622));
@@ -477,9 +477,12 @@ function writeSecureFile(outputDir, data) {
 }
 exports.writeSecureFile = writeSecureFile;
 /**
- * removeCachedCredentials removes any cached credentials file.
+ * removeExportedCredentials removes any exported credentials file. If the file
+ * does not exist, it does nothing.
+ *
+ * @returns Path of the file that was removed.
  */
-function removeCachedCredentials() {
+function removeExportedCredentials() {
     return __awaiter(this, void 0, void 0, function* () {
         // Look up the credentials path, if one exists. Note that we only check the
         // environment variable set by our action, since we don't want to
@@ -487,13 +490,23 @@ function removeCachedCredentials() {
         // another environment variable manually.
         const credentialsPath = process.env['GOOGLE_GHA_CREDS_PATH'];
         if (!credentialsPath) {
-            return;
+            return '';
         }
         // Delete the file.
-        yield fs_1.promises.unlink(credentialsPath);
+        try {
+            yield fs_1.promises.unlink(credentialsPath);
+            return credentialsPath;
+        }
+        catch (err) {
+            if (err instanceof Error)
+                if (err && err.message && err.message.includes('ENOENT')) {
+                    return '';
+                }
+            throw new Error(`failed to remove exported credentials: ${err}`);
+        }
     });
 }
-exports.removeCachedCredentials = removeCachedCredentials;
+exports.removeExportedCredentials = removeExportedCredentials;
 /**
  * Converts a multi-line or comma-separated collection of strings into an array
  * of trimmed strings.
@@ -1757,10 +1770,16 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const cleanupCredentials = (0, core_1.getBooleanInput)('cleanup_credentials');
-            if (cleanupCredentials) {
+            if (!cleanupCredentials) {
                 return;
             }
-            yield (0, utils_1.removeCachedCredentials)();
+            const exportedPath = yield (0, utils_1.removeExportedCredentials)();
+            if (exportedPath) {
+                (0, core_1.info)(`Removed exported credentials at ${exportedPath}`);
+            }
+            else {
+                (0, core_1.info)('No exported credentials found');
+            }
         }
         catch (err) {
             (0, core_1.setFailed)(`google-github-actions/auth post failed with: ${err}`);

@@ -234,11 +234,21 @@ function run() {
             // fails, which means continue-on-error actions will still have the file
             // available.
             if (createCredentialsFile) {
-                const runnerTempDir = process.env.RUNNER_TEMP;
-                if (!runnerTempDir) {
-                    throw new Error('$RUNNER_TEMP is not set');
+                // Note: We explicitly and intentionally export to GITHUB_WORKSPACE
+                // instead of RUNNER_TEMP, because RUNNER_TEMP is not shared with
+                // Docker-based actions on the filesystem. Exporting to GITHUB_WORKSPACE
+                // ensures that the exported credentials are automatically available to
+                // Docker-based actions without user modification.
+                //
+                // This has the unintended side-effect of leaking credentials over time,
+                // because GITHUB_WORKSPACE is not automatically cleaned up on self-hosted
+                // runners. To mitigate this issue, this action defines a post step to
+                // remove any created credentials.
+                const githubWorkspace = process.env.GITHUB_WORKSPACE;
+                if (!githubWorkspace) {
+                    throw new Error('$GITHUB_WORKSPACE is not set');
                 }
-                const credentialsPath = yield client.createCredentialsFile(runnerTempDir);
+                const credentialsPath = yield client.createCredentialsFile(githubWorkspace);
                 (0, core_1.setOutput)('credentials_file_path', credentialsPath);
                 // CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE is picked up by gcloud to use
                 // a specific credential file (subject to change and equivalent to auth/credential_file_override)
@@ -600,7 +610,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.removeCachedCredentials = exports.writeSecureFile = void 0;
+exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.removeExportedCredentials = exports.writeSecureFile = void 0;
 const fs_1 = __webpack_require__(747);
 const crypto_1 = __importDefault(__webpack_require__(417));
 const path_1 = __importDefault(__webpack_require__(622));
@@ -628,9 +638,12 @@ function writeSecureFile(outputDir, data) {
 }
 exports.writeSecureFile = writeSecureFile;
 /**
- * removeCachedCredentials removes any cached credentials file.
+ * removeExportedCredentials removes any exported credentials file. If the file
+ * does not exist, it does nothing.
+ *
+ * @returns Path of the file that was removed.
  */
-function removeCachedCredentials() {
+function removeExportedCredentials() {
     return __awaiter(this, void 0, void 0, function* () {
         // Look up the credentials path, if one exists. Note that we only check the
         // environment variable set by our action, since we don't want to
@@ -638,13 +651,23 @@ function removeCachedCredentials() {
         // another environment variable manually.
         const credentialsPath = process.env['GOOGLE_GHA_CREDS_PATH'];
         if (!credentialsPath) {
-            return;
+            return '';
         }
         // Delete the file.
-        yield fs_1.promises.unlink(credentialsPath);
+        try {
+            yield fs_1.promises.unlink(credentialsPath);
+            return credentialsPath;
+        }
+        catch (err) {
+            if (err instanceof Error)
+                if (err && err.message && err.message.includes('ENOENT')) {
+                    return '';
+                }
+            throw new Error(`failed to remove exported credentials: ${err}`);
+        }
     });
 }
-exports.removeCachedCredentials = removeCachedCredentials;
+exports.removeExportedCredentials = removeExportedCredentials;
 /**
  * Converts a multi-line or comma-separated collection of strings into an array
  * of trimmed strings.

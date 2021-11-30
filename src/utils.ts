@@ -28,20 +28,33 @@ export async function writeSecureFile(outputDir: string, data: string): Promise<
 }
 
 /**
- * removeCachedCredentials removes any cached credentials file.
+ * removeExportedCredentials removes any exported credentials file. If the file
+ * does not exist, it does nothing.
+ *
+ * @returns Path of the file that was removed.
  */
-export async function removeCachedCredentials(): Promise<void> {
+export async function removeExportedCredentials(): Promise<string> {
   // Look up the credentials path, if one exists. Note that we only check the
   // environment variable set by our action, since we don't want to
   // accidentially clean up if someone set GOOGLE_APPLICATION_CREDENTIALS or
   // another environment variable manually.
   const credentialsPath = process.env['GOOGLE_GHA_CREDS_PATH'];
   if (!credentialsPath) {
-    return;
+    return '';
   }
 
   // Delete the file.
-  await fs.unlink(credentialsPath);
+  try {
+    await fs.unlink(credentialsPath);
+    return credentialsPath;
+  } catch (err) {
+    if (err instanceof Error)
+      if (err && err.message && err.message.includes('ENOENT')) {
+        return '';
+      }
+
+    throw new Error(`failed to remove exported credentials: ${err}`);
+  }
 }
 
 /**

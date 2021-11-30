@@ -9,7 +9,7 @@ on:
     - 'main'
 
 concurrency:
-  group: '${{ github.head_ref || github.ref }}'
+  group: '${{github.workflow}}-${{ github.head_ref || github.ref }}'
   cancel-in-progress: true
 
 jobs:
@@ -41,7 +41,7 @@ jobs:
 
   unit:
     name: 'unit'
-    needs: install_and_compile
+    needs: 'install_and_compile'
     runs-on: 'ubuntu-latest'
 
     steps:
@@ -63,7 +63,7 @@ jobs:
 
   credentials_json:
     name: 'credentials_json'
-    needs: install_and_compile
+    needs: 'install_and_compile'
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
@@ -125,7 +125,7 @@ jobs:
 
   workload_identity_federation:
     name: 'workload_identity_federation'
-    needs: install_and_compile
+    needs: 'install_and_compile'
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
@@ -189,3 +189,37 @@ jobs:
         token_format: 'id_token'
         id_token_audience: 'https://secretmanager.googleapis.com/'
         id_token_include_email: true
+
+  # This test ensures that the GOOGLE_APPLICATION_CREDENTIALS environment
+  # variable is shared with the container and that the path of the file is on
+  # the shared filesystem with the container and that the USER for the container
+  # has permissions to read the file.
+  docker:
+    name: 'docker'
+    needs: 'install_and_compile'
+    runs-on: 'ubuntu-latest'
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: 'actions/checkout@v2'
+
+    - uses: 'actions/setup-node@v2'
+      with:
+        node-version: '12.x'
+
+    - name: 'npm ci'
+      run: 'npm ci'
+
+    - name: 'npm build'
+      run: 'npm run build'
+
+    - name: 'auth-default'
+      uses: './'
+      with:
+        credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
+
+    - name: 'docker'
+      uses: 'docker://alpine:3'
+      with:
+        entrypoint: '/bin/sh'
+        args: '-euc "test -n "${GOOGLE_APPLICATION_CREDENTIALS}" && test -r "${GOOGLE_APPLICATION_CREDENTIALS}"'

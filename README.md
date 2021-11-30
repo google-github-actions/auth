@@ -31,7 +31,7 @@ and permissions on Google Cloud.
 -   For authenticating via Workload Identity Federation, you must create and
     configure a Google Cloud Workload Identity Provider. See [setup](#setup)
     for instructions.
-    
+
 ## Limitations
 
 -   This Action does not support authenticating through service accounts via
@@ -165,6 +165,9 @@ regardless of the authentication mechanism.
     identities to use for impersonation in the chain. By default there are no
     delegates.
 
+-   `cleanup_credentials`: (Optional) If true, the action will remove any
+    generated credentials from the filesystem upon completion. The default is
+    true.
 
 ## Outputs
 

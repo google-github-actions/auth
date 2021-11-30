@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Defines the main interface for all clients that generate credentials.
  */

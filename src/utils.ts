@@ -1,3 +1,5 @@
+'use strict';
+
 import { promises as fs } from 'fs';
 import crypto from 'crypto';
 import path from 'path';

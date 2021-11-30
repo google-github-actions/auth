@@ -1,3 +1,5 @@
+'use strict';
+
 import https, { RequestOptions } from 'https';
 import { URL } from 'url';
 import {

@@ -138,8 +138,8 @@ export class BaseClient {
         accessToken: parsed['accessToken'],
         expiration: parsed['expireTime'],
       };
-    } catch (e) {
-      throw new Error(`Failed to generate Google Cloud access token for ${serviceAccount}: ${e}`);
+    } catch (err) {
+      throw new Error(`Failed to generate Google Cloud access token for ${serviceAccount}: ${err}`);
     }
   }
 }

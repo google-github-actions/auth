@@ -71,8 +71,8 @@ export class WorkloadIdentityClient implements AuthClient {
   }
 
   /**
-   * getAuthToken generates a Google Cloud federated token using the provided OIDC
-   * token and Workload Identity Provider.
+   * getAuthToken generates a Google Cloud federated token using the provided
+   * OIDC token and Workload Identity Provider.
    */
   async getAuthToken(): Promise<string> {
     const stsURL = new URL('https://sts.googleapis.com/v1/token');

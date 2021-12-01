@@ -449,7 +449,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.removeExportedCredentials = exports.writeSecureFile = void 0;
+exports.parseDuration = exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.removeExportedCredentials = exports.writeSecureFile = void 0;
 const fs_1 = __webpack_require__(747);
 const crypto_1 = __importDefault(__webpack_require__(417));
 const path_1 = __importDefault(__webpack_require__(622));
@@ -512,17 +512,38 @@ exports.removeExportedCredentials = removeExportedCredentials;
  * of trimmed strings.
  */
 function explodeStrings(input) {
-    if (input == null || input.length === 0) {
+    if (!input || input.trim().length === 0) {
         return [];
     }
     const list = new Array();
-    for (const line of input.split(`\n`)) {
-        for (const piece of line.split(',')) {
-            const entry = piece.trim();
-            if (entry !== '') {
-                list.push(entry);
-            }
+    let curr = '';
+    let escaped = false;
+    for (const ch of input) {
+        if (escaped) {
+            curr += ch;
+            escaped = false;
+            continue;
         }
+        switch (ch) {
+            case '\\':
+                escaped = true;
+                continue;
+            case ',':
+            case '\n': {
+                const val = curr.trim();
+                if (val) {
+                    list.push(val);
+                }
+                curr = '';
+                break;
+            }
+            default:
+                curr += ch;
+        }
+    }
+    const val = curr.trim();
+    if (val) {
+        list.push(val);
     }
     return list;
 }
@@ -544,7 +565,7 @@ exports.toBase64 = toBase64;
  */
 function fromBase64(s) {
     const str = s.replace(/-/g, '+').replace(/_/g, '/');
-    while (str.length % 4)
+    while (s.length % 4)
         s += '=';
     return Buffer.from(str, 'base64').toString('utf8');
 }
@@ -557,6 +578,65 @@ function trimmedString(s) {
     return s ? s.trim() : '';
 }
 exports.trimmedString = trimmedString;
+/**
+ * parseDuration parses a user-supplied string duration with optional suffix and
+ * returns a number representing the number of seconds. It returns 0 when given
+ * the empty string.
+ *
+ * @param str Duration string
+ */
+function parseDuration(str) {
+    const given = (str || '').trim();
+    if (!given) {
+        return 0;
+    }
+    let total = 0;
+    let curr = '';
+    for (let i = 0; i < str.length; i++) {
+        const ch = str[i];
+        switch (ch) {
+            case ' ':
+                continue;
+            case ',':
+                continue;
+            case 's': {
+                total += +curr;
+                curr = '';
+                break;
+            }
+            case 'm': {
+                total += +curr * 60;
+                curr = '';
+                break;
+            }
+            case 'h': {
+                total += +curr * 60 * 60;
+                curr = '';
+                break;
+            }
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                curr += ch;
+                break;
+            default:
+                throw new SyntaxError(`Unsupported character "${ch}" at position ${i}`);
+        }
+    }
+    // Anything left over is seconds
+    if (curr) {
+        total += +curr;
+    }
+    return total;
+}
+exports.parseDuration = parseDuration;
 
 
 /***/ }),

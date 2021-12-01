@@ -40,7 +40,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(131);
+/******/ 		return __webpack_require__(878);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -156,157 +156,6 @@ function issueCommand(command, message) {
 }
 exports.issueCommand = issueCommand;
 //# sourceMappingURL=file-command.js.map
-
-/***/ }),
-
-/***/ 131:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(470);
-const workload_identity_client_1 = __webpack_require__(911);
-const credentials_json_client_1 = __webpack_require__(627);
-const base_1 = __webpack_require__(843);
-const utils_1 = __webpack_require__(163);
-const secretsWarning = 'If you are specifying input values via GitHub secrets, ensure the secret ' +
-    'is being injected into the environment. By default, secrets are not passed ' +
-    'to workflows triggered from forks, including Dependabot.';
-/**
- * Executes the main action, documented inline.
- */
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            // Load configuration.
-            const projectID = (0, core_1.getInput)('project_id');
-            const workloadIdentityProvider = (0, core_1.getInput)('workload_identity_provider');
-            const serviceAccount = (0, core_1.getInput)('service_account');
-            const audience = (0, core_1.getInput)('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
-            const credentialsJSON = (0, core_1.getInput)('credentials_json');
-            const createCredentialsFile = (0, core_1.getBooleanInput)('create_credentials_file');
-            const tokenFormat = (0, core_1.getInput)('token_format');
-            const delegates = (0, utils_1.explodeStrings)((0, core_1.getInput)('delegates'));
-            // Ensure exactly one of workload_identity_provider and credentials_json was
-            // provided.
-            if ((!workloadIdentityProvider && !credentialsJSON) ||
-                (workloadIdentityProvider && credentialsJSON)) {
-                throw new Error('The GitHub Action workflow must specify exactly one of ' +
-                    '"workload_identity_provider" or "credentials_json"! ' +
-                    secretsWarning);
-            }
-            // Ensure a service_account was provided if using WIF.
-            if (workloadIdentityProvider && !serviceAccount) {
-                throw new Error('The GitHub Action workflow must specify a "service_account" to ' +
-                    'impersonate when using "workload_identity_provider"! ' +
-                    secretsWarning);
-            }
-            // Instantiate the correct client based on the provided input parameters.
-            let client;
-            if (workloadIdentityProvider) {
-                const token = yield (0, core_1.getIDToken)(audience);
-                client = new workload_identity_client_1.WorkloadIdentityClient({
-                    projectID: projectID,
-                    providerID: workloadIdentityProvider,
-                    serviceAccount: serviceAccount,
-                    token: token,
-                    audience: audience,
-                });
-            }
-            else {
-                client = new credentials_json_client_1.CredentialsJSONClient({
-                    projectID: projectID,
-                    credentialsJSON: credentialsJSON,
-                });
-            }
-            // Always write the credentials file first, before trying to generate
-            // tokens. This will ensure the file is written even if token generation
-            // fails, which means continue-on-error actions will still have the file
-            // available.
-            if (createCredentialsFile) {
-                const runnerTempDir = process.env.RUNNER_TEMP;
-                if (!runnerTempDir) {
-                    throw new Error('$RUNNER_TEMP is not set');
-                }
-                const credentialsPath = yield client.createCredentialsFile(runnerTempDir);
-                (0, core_1.setOutput)('credentials_file_path', credentialsPath);
-                // CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE is picked up by gcloud to use
-                // a specific credential file (subject to change and equivalent to auth/credential_file_override)
-                (0, core_1.exportVariable)('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
-                // GOOGLE_APPLICATION_CREDENTIALS is used by Application Default Credentials
-                // in all GCP client libraries
-                (0, core_1.exportVariable)('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
-                // GOOGLE_GHA_CREDS_PATH is used by other Google GitHub Actions
-                (0, core_1.exportVariable)('GOOGLE_GHA_CREDS_PATH', credentialsPath);
-            }
-            // Set the project ID environment variables to the computed values.
-            const computedProjectID = yield client.getProjectID();
-            (0, core_1.setOutput)('project_id', computedProjectID);
-            (0, core_1.exportVariable)('CLOUDSDK_PROJECT', computedProjectID);
-            (0, core_1.exportVariable)('CLOUDSDK_CORE_PROJECT', computedProjectID);
-            (0, core_1.exportVariable)('GCP_PROJECT', computedProjectID);
-            (0, core_1.exportVariable)('GCLOUD_PROJECT', computedProjectID);
-            (0, core_1.exportVariable)('GOOGLE_CLOUD_PROJECT', computedProjectID);
-            switch (tokenFormat) {
-                case '': {
-                    break;
-                }
-                case null: {
-                    break;
-                }
-                case 'access_token': {
-                    const accessTokenLifetime = (0, core_1.getInput)('access_token_lifetime');
-                    const accessTokenScopes = (0, utils_1.explodeStrings)((0, core_1.getInput)('access_token_scopes'));
-                    const serviceAccount = yield client.getServiceAccount();
-                    const authToken = yield client.getAuthToken();
-                    const { accessToken, expiration } = yield base_1.BaseClient.googleAccessToken(authToken, {
-                        serviceAccount,
-                        delegates,
-                        scopes: accessTokenScopes,
-                        lifetime: accessTokenLifetime,
-                    });
-                    (0, core_1.setSecret)(accessToken);
-                    (0, core_1.setOutput)('access_token', accessToken);
-                    (0, core_1.setOutput)('access_token_expiration', expiration);
-                    break;
-                }
-                case 'id_token': {
-                    const idTokenAudience = (0, core_1.getInput)('id_token_audience', { required: true });
-                    const idTokenIncludeEmail = (0, core_1.getBooleanInput)('id_token_include_email');
-                    const serviceAccount = yield client.getServiceAccount();
-                    const authToken = yield client.getAuthToken();
-                    const { token } = yield base_1.BaseClient.googleIDToken(authToken, {
-                        serviceAccount,
-                        audience: idTokenAudience,
-                        delegates,
-                        includeEmail: idTokenIncludeEmail,
-                    });
-                    (0, core_1.setSecret)(token);
-                    (0, core_1.setOutput)('id_token', token);
-                    break;
-                }
-                default: {
-                    throw new Error(`Unknown token format "${tokenFormat}"`);
-                }
-            }
-        }
-        catch (err) {
-            (0, core_1.setFailed)(`google-github-actions/auth failed with: ${err}`);
-        }
-    });
-}
-run();
-
 
 /***/ }),
 
@@ -600,7 +449,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.writeSecureFile = void 0;
+exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.removeExportedCredentials = exports.writeSecureFile = void 0;
 const fs_1 = __webpack_require__(747);
 const crypto_1 = __importDefault(__webpack_require__(417));
 const path_1 = __importDefault(__webpack_require__(622));
@@ -627,6 +476,37 @@ function writeSecureFile(outputDir, data) {
     });
 }
 exports.writeSecureFile = writeSecureFile;
+/**
+ * removeExportedCredentials removes any exported credentials file. If the file
+ * does not exist, it does nothing.
+ *
+ * @returns Path of the file that was removed.
+ */
+function removeExportedCredentials() {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Look up the credentials path, if one exists. Note that we only check the
+        // environment variable set by our action, since we don't want to
+        // accidentially clean up if someone set GOOGLE_APPLICATION_CREDENTIALS or
+        // another environment variable manually.
+        const credentialsPath = process.env['GOOGLE_GHA_CREDS_PATH'];
+        if (!credentialsPath) {
+            return '';
+        }
+        // Delete the file.
+        try {
+            yield fs_1.promises.unlink(credentialsPath);
+            return credentialsPath;
+        }
+        catch (err) {
+            if (err instanceof Error)
+                if (err && err.message && err.message.includes('ENOENT')) {
+                    return '';
+                }
+            throw new Error(`failed to remove exported credentials: ${err}`);
+        }
+    });
+}
+exports.removeExportedCredentials = removeExportedCredentials;
 /**
  * Converts a multi-line or comma-separated collection of strings into an array
  * of trimmed strings.
@@ -1760,146 +1640,6 @@ module.exports = require("path");
 
 /***/ }),
 
-/***/ 627:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-};
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var _CredentialsJSONClient_projectID, _CredentialsJSONClient_credentials;
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CredentialsJSONClient = void 0;
-const crypto_1 = __webpack_require__(417);
-const utils_1 = __webpack_require__(163);
-/**
- * CredentialsJSONClient is a client that accepts a service account key JSON
- * credential.
- */
-class CredentialsJSONClient {
-    constructor(opts) {
-        _CredentialsJSONClient_projectID.set(this, void 0);
-        _CredentialsJSONClient_credentials.set(this, void 0);
-        __classPrivateFieldSet(this, _CredentialsJSONClient_credentials, this.parseServiceAccountKeyJSON(opts.credentialsJSON), "f");
-        __classPrivateFieldSet(this, _CredentialsJSONClient_projectID, opts.projectID || __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['project_id'], "f");
-    }
-    /**
-     * parseServiceAccountKeyJSON attempts to parse the given string as a service
-     * account key JSON. It handles if the string is base64-encoded.
-     */
-    parseServiceAccountKeyJSON(str) {
-        str = (0, utils_1.trimmedString)(str);
-        if (!str) {
-            throw new Error(`Missing service account key JSON (got empty value)`);
-        }
-        // If the string doesn't start with a JSON object character, it is probably
-        // base64-encoded.
-        if (!str.startsWith('{')) {
-            str = (0, utils_1.fromBase64)(str);
-        }
-        let creds;
-        try {
-            creds = JSON.parse(str);
-        }
-        catch (e) {
-            throw new SyntaxError(`Failed to parse credentials as JSON: ${e}`);
-        }
-        const requireValue = (key) => {
-            const val = (0, utils_1.trimmedString)(creds[key]);
-            if (!val) {
-                throw new Error(`Service account key JSON is missing required field "${key}"`);
-            }
-        };
-        requireValue('project_id');
-        requireValue('private_key_id');
-        requireValue('private_key');
-        requireValue('client_email');
-        return creds;
-    }
-    /**
-     * getAuthToken generates a token capable of calling the iamcredentials API.
-     */
-    getAuthToken() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const header = {
-                alg: 'RS256',
-                typ: 'JWT',
-                kid: __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['private_key_id'],
-            };
-            const now = Math.floor(new Date().getTime() / 1000);
-            const body = {
-                iss: __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['client_email'],
-                sub: __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['client_email'],
-                aud: 'https://iamcredentials.googleapis.com/',
-                iat: now,
-                exp: now + 3599,
-            };
-            const message = (0, utils_1.toBase64)(JSON.stringify(header)) + '.' + (0, utils_1.toBase64)(JSON.stringify(body));
-            try {
-                const signer = (0, crypto_1.createSign)('RSA-SHA256');
-                signer.write(message);
-                signer.end();
-                const signature = signer.sign(__classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['private_key']);
-                return message + '.' + (0, utils_1.toBase64)(signature);
-            }
-            catch (e) {
-                throw new Error(`Failed to sign auth token: ${e}`);
-            }
-        });
-    }
-    /**
-     * getProjectID returns the project ID. If an override was given, the override
-     * is returned. Otherwise, this will be the project ID that was extracted from
-     * the service account key JSON.
-     */
-    getProjectID() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return __classPrivateFieldGet(this, _CredentialsJSONClient_projectID, "f");
-        });
-    }
-    /**
-     * getServiceAccount returns the service account email for the authentication,
-     * extracted from the Service Account Key JSON.
-     */
-    getServiceAccount() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['client_email'];
-        });
-    }
-    /**
-     * createCredentialsFile creates a Google Cloud credentials file that can be
-     * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
-     */
-    createCredentialsFile(outputDir) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield (0, utils_1.writeSecureFile)(outputDir, JSON.stringify(__classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")));
-        });
-    }
-}
-exports.CredentialsJSONClient = CredentialsJSONClient;
-_CredentialsJSONClient_projectID = new WeakMap(), _CredentialsJSONClient_credentials = new WeakMap();
-
-
-/***/ }),
-
 /***/ 631:
 /***/ (function(module) {
 
@@ -1911,13 +1651,6 @@ module.exports = require("net");
 /***/ (function(module) {
 
 module.exports = require("util");
-
-/***/ }),
-
-/***/ 731:
-/***/ (function(module) {
-
-module.exports = {"name":"@google-github-actions/auth","version":"0.4.0","description":"Authenticate to Google Cloud using OIDC tokens or JSON service account keys.","main":"dist/index.js","scripts":{"build":"ncc build src/main.ts","lint":"eslint . --ext .ts,.tsx","format":"prettier --write **/*.ts","test":"mocha -r ts-node/register -t 120s 'tests/**/*.test.ts'"},"repository":{"type":"git","url":"https://github.com/google-github-actions/auth"},"keywords":["actions","google cloud","identity","auth","oidc"],"author":"GoogleCloudPlatform","license":"Apache-2.0","dependencies":{"@actions/core":"^1.6.0"},"devDependencies":{"@types/chai":"^4.2.21","@types/mocha":"^9.0.0","@types/node":"^16.9.1","@typescript-eslint/eslint-plugin":"^4.31.0","@typescript-eslint/parser":"^4.31.0","@zeit/ncc":"^0.22.3","chai":"^4.3.4","eslint":"^7.32.0","eslint-config-prettier":"^8.3.0","eslint-plugin-prettier":"^4.0.0","husky":"^7.0.2","mocha":"^9.1.1","prettier":"^2.4.0","ts-node":"^10.2.1","typescript":"^4.3.5"}};
 
 /***/ }),
 
@@ -2012,14 +1745,7 @@ module.exports = require("fs");
 
 /***/ }),
 
-/***/ 835:
-/***/ (function(module) {
-
-module.exports = require("url");
-
-/***/ }),
-
-/***/ 843:
+/***/ 878:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -2033,298 +1759,35 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BaseClient = void 0;
-const https_1 = __importDefault(__webpack_require__(211));
-const url_1 = __webpack_require__(835);
-// Do not listen to the linter - this can NOT be rewritten as an ES6 import statement.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { version: appVersion } = __webpack_require__(731);
-class BaseClient {
-    /**
-     * request is a high-level helper that returns a promise from the executed
-     * request.
-     */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-    static request(opts, data) {
-        if (!opts.headers) {
-            opts.headers = {};
-        }
-        if (!opts.headers['User-Agent']) {
-            opts.headers['User-Agent'] = `google-github-actions:auth/${appVersion}`;
-        }
-        return new Promise((resolve, reject) => {
-            const req = https_1.default.request(opts, (res) => {
-                res.setEncoding('utf8');
-                let body = '';
-                res.on('data', (data) => {
-                    body += data;
-                });
-                res.on('end', () => {
-                    if (res.statusCode && res.statusCode >= 400) {
-                        reject(body);
-                    }
-                    else {
-                        resolve(body);
-                    }
-                });
-            });
-            req.on('error', (err) => {
-                reject(err);
-            });
-            if (data != null) {
-                req.write(data);
-            }
-            req.end();
-        });
-    }
-    /**
-     * googleIDToken generates a Google Cloud ID token for the provided
-     * service account email or unique id.
-     */
-    static googleIDToken(token, { serviceAccount, audience, delegates, includeEmail }) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
-            const tokenURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateIdToken`);
-            const data = {
-                delegates: delegates,
-                audience: audience,
-                includeEmail: includeEmail,
-            };
-            const opts = {
-                hostname: tokenURL.hostname,
-                port: tokenURL.port,
-                path: tokenURL.pathname + tokenURL.search,
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            };
-            try {
-                const resp = yield BaseClient.request(opts, JSON.stringify(data));
-                const parsed = JSON.parse(resp);
-                return {
-                    token: parsed['token'],
-                };
-            }
-            catch (err) {
-                throw new Error(`failed to generate Google Cloud ID token for ${serviceAccount}: ${err}`);
-            }
-        });
-    }
-    /**
-     * googleAccessToken generates a Google Cloud access token for the provided
-     * service account email or unique id.
-     */
-    static googleAccessToken(token, { serviceAccount, delegates, scopes, lifetime }) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
-            const tokenURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateAccessToken`);
-            const data = {
-                delegates: delegates,
-                lifetime: lifetime,
-                scope: scopes,
-            };
-            const opts = {
-                hostname: tokenURL.hostname,
-                port: tokenURL.port,
-                path: tokenURL.pathname + tokenURL.search,
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            };
-            try {
-                const resp = yield BaseClient.request(opts, JSON.stringify(data));
-                const parsed = JSON.parse(resp);
-                return {
-                    accessToken: parsed['accessToken'],
-                    expiration: parsed['expireTime'],
-                };
-            }
-            catch (e) {
-                throw new Error(`Failed to generate Google Cloud access token for ${serviceAccount}: ${e}`);
-            }
-        });
-    }
-}
-exports.BaseClient = BaseClient;
-
-
-/***/ }),
-
-/***/ 911:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-};
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var _WorkloadIdentityClient_projectID, _WorkloadIdentityClient_providerID, _WorkloadIdentityClient_serviceAccount, _WorkloadIdentityClient_token, _WorkloadIdentityClient_audience;
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.WorkloadIdentityClient = void 0;
-const url_1 = __webpack_require__(835);
+exports.run = void 0;
+const core_1 = __webpack_require__(470);
 const utils_1 = __webpack_require__(163);
-const base_1 = __webpack_require__(843);
 /**
- * WorkloadIdentityClient is a client that uses the GitHub Actions runtime to
- * authentication via Workload Identity.
+ * Executes the post action, documented inline.
  */
-class WorkloadIdentityClient {
-    constructor(opts) {
-        _WorkloadIdentityClient_projectID.set(this, void 0);
-        _WorkloadIdentityClient_providerID.set(this, void 0);
-        _WorkloadIdentityClient_serviceAccount.set(this, void 0);
-        _WorkloadIdentityClient_token.set(this, void 0);
-        _WorkloadIdentityClient_audience.set(this, void 0);
-        __classPrivateFieldSet(this, _WorkloadIdentityClient_providerID, opts.providerID, "f");
-        __classPrivateFieldSet(this, _WorkloadIdentityClient_serviceAccount, opts.serviceAccount, "f");
-        __classPrivateFieldSet(this, _WorkloadIdentityClient_token, opts.token, "f");
-        __classPrivateFieldSet(this, _WorkloadIdentityClient_audience, opts.audience, "f");
-        __classPrivateFieldSet(this, _WorkloadIdentityClient_projectID, opts.projectID || this.extractProjectIDFromServiceAccountEmail(__classPrivateFieldGet(this, _WorkloadIdentityClient_serviceAccount, "f")), "f");
-    }
-    /**
-     * extractProjectIDFromServiceAccountEmail extracts the project ID from the
-     * service account email address.
-     */
-    extractProjectIDFromServiceAccountEmail(str) {
-        if (!str) {
-            return '';
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const cleanupCredentials = (0, core_1.getBooleanInput)('cleanup_credentials');
+            if (!cleanupCredentials) {
+                return;
+            }
+            const exportedPath = yield (0, utils_1.removeExportedCredentials)();
+            if (exportedPath) {
+                (0, core_1.info)(`Removed exported credentials at ${exportedPath}`);
+            }
+            else {
+                (0, core_1.info)('No exported credentials found');
+            }
         }
-        const [, dn] = str.split('@', 2);
-        if (!str.endsWith('.iam.gserviceaccount.com')) {
-            throw new Error(`Service account email ${str} is not of the form ` +
-                `"[name]@[project].iam.gserviceaccount.com. You must manually ` +
-                `specify the "project_id" parameter in your GitHub Actions workflow.`);
+        catch (err) {
+            (0, core_1.setFailed)(`google-github-actions/auth post failed with: ${err}`);
         }
-        const [project] = dn.split('.', 2);
-        return project;
-    }
-    /**
-     * getAuthToken generates a Google Cloud federated token using the provided OIDC
-     * token and Workload Identity Provider.
-     */
-    getAuthToken() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const stsURL = new url_1.URL('https://sts.googleapis.com/v1/token');
-            const data = {
-                audience: '//iam.googleapis.com/' + __classPrivateFieldGet(this, _WorkloadIdentityClient_providerID, "f"),
-                grantType: 'urn:ietf:params:oauth:grant-type:token-exchange',
-                requestedTokenType: 'urn:ietf:params:oauth:token-type:access_token',
-                scope: 'https://www.googleapis.com/auth/cloud-platform',
-                subjectTokenType: 'urn:ietf:params:oauth:token-type:jwt',
-                subjectToken: __classPrivateFieldGet(this, _WorkloadIdentityClient_token, "f"),
-            };
-            const opts = {
-                hostname: stsURL.hostname,
-                port: stsURL.port,
-                path: stsURL.pathname + stsURL.search,
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            };
-            try {
-                const resp = yield base_1.BaseClient.request(opts, JSON.stringify(data));
-                const parsed = JSON.parse(resp);
-                return parsed['access_token'];
-            }
-            catch (err) {
-                throw new Error(`Failed to generate Google Cloud federated token for ${__classPrivateFieldGet(this, _WorkloadIdentityClient_providerID, "f")}: ${err}`);
-            }
-        });
-    }
-    /**
-     * getProjectID returns the project ID. If an override was given, the override
-     * is returned. Otherwise, this will be the project ID that was extracted from
-     * the service account key JSON.
-     */
-    getProjectID() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return __classPrivateFieldGet(this, _WorkloadIdentityClient_projectID, "f");
-        });
-    }
-    /**
-     * getServiceAccount returns the service account email for the authentication,
-     * extracted from the input parameter.
-     */
-    getServiceAccount() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return __classPrivateFieldGet(this, _WorkloadIdentityClient_serviceAccount, "f");
-        });
-    }
-    /**
-     * createCredentialsFile creates a Google Cloud credentials file that can be
-     * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
-     */
-    createCredentialsFile(outputDir) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // Extract the request token and request URL from the environment. These
-            // are only set when an id-token is requested and the submitter has
-            // collaborator permissions.
-            const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-            const requestURLRaw = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-            if (!requestToken || !requestURLRaw) {
-                throw new Error('GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOKEN or ' +
-                    '$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely ' +
-                    'means the GitHub Actions workflow permissions are incorrect, or ' +
-                    'this job is being run from a fork. For more information, please ' +
-                    'see the GitHub documentation at https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token');
-            }
-            const requestURL = new url_1.URL(requestURLRaw);
-            // Append the audience value to the request.
-            const params = requestURL.searchParams;
-            params.set('audience', __classPrivateFieldGet(this, _WorkloadIdentityClient_audience, "f"));
-            requestURL.search = params.toString();
-            const data = {
-                type: 'external_account',
-                audience: `//iam.googleapis.com/${__classPrivateFieldGet(this, _WorkloadIdentityClient_providerID, "f")}`,
-                subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
-                token_url: 'https://sts.googleapis.com/v1/token',
-                service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${__classPrivateFieldGet(this, _WorkloadIdentityClient_serviceAccount, "f")}:generateAccessToken`,
-                credential_source: {
-                    url: requestURL,
-                    headers: {
-                        Authorization: `Bearer ${requestToken}`,
-                    },
-                    format: {
-                        type: 'json',
-                        subject_token_field_name: 'value',
-                    },
-                },
-            };
-            return yield (0, utils_1.writeSecureFile)(outputDir, JSON.stringify(data));
-        });
-    }
+    });
 }
-exports.WorkloadIdentityClient = WorkloadIdentityClient;
-_WorkloadIdentityClient_projectID = new WeakMap(), _WorkloadIdentityClient_providerID = new WeakMap(), _WorkloadIdentityClient_serviceAccount = new WeakMap(), _WorkloadIdentityClient_token = new WeakMap(), _WorkloadIdentityClient_audience = new WeakMap();
+exports.run = run;
+run();
 
 
 /***/ }),

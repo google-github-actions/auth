@@ -81,12 +81,22 @@ async function run(): Promise<void> {
     // fails, which means continue-on-error actions will still have the file
     // available.
     if (createCredentialsFile) {
-      const runnerTempDir = process.env.RUNNER_TEMP;
-      if (!runnerTempDir) {
-        throw new Error('$RUNNER_TEMP is not set');
+      // Note: We explicitly and intentionally export to GITHUB_WORKSPACE
+      // instead of RUNNER_TEMP, because RUNNER_TEMP is not shared with
+      // Docker-based actions on the filesystem. Exporting to GITHUB_WORKSPACE
+      // ensures that the exported credentials are automatically available to
+      // Docker-based actions without user modification.
+      //
+      // This has the unintended side-effect of leaking credentials over time,
+      // because GITHUB_WORKSPACE is not automatically cleaned up on self-hosted
+      // runners. To mitigate this issue, this action defines a post step to
+      // remove any created credentials.
+      const githubWorkspace = process.env.GITHUB_WORKSPACE;
+      if (!githubWorkspace) {
+        throw new Error('$GITHUB_WORKSPACE is not set');
       }
 
-      const credentialsPath = await client.createCredentialsFile(runnerTempDir);
+      const credentialsPath = await client.createCredentialsFile(githubWorkspace);
       setOutput('credentials_file_path', credentialsPath);
       // CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE is picked up by gcloud to use
       // a specific credential file (subject to change and equivalent to auth/credential_file_override)

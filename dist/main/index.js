@@ -275,16 +275,28 @@ function run() {
                     break;
                 }
                 case 'access_token': {
-                    const accessTokenLifetime = (0, core_1.getInput)('access_token_lifetime');
+                    const accessTokenLifetime = (0, utils_1.parseDuration)((0, core_1.getInput)('access_token_lifetime'));
                     const accessTokenScopes = (0, utils_1.explodeStrings)((0, core_1.getInput)('access_token_scopes'));
+                    const accessTokenSubject = (0, core_1.getInput)('access_token_subject');
                     const serviceAccount = yield client.getServiceAccount();
-                    const authToken = yield client.getAuthToken();
-                    const { accessToken, expiration } = yield base_1.BaseClient.googleAccessToken(authToken, {
-                        serviceAccount,
-                        delegates,
-                        scopes: accessTokenScopes,
-                        lifetime: accessTokenLifetime,
-                    });
+                    // If a subject was provided, use the traditional OAuth 2.0 flow to
+                    // perform Domain-Wide Delegation. Otherwise, use the modern IAM
+                    // Credentials endpoints.
+                    let accessToken, expiration;
+                    if (accessTokenSubject) {
+                        const unsignedJWT = (0, utils_1.buildDomainWideDelegationJWT)(serviceAccount, accessTokenSubject, accessTokenScopes, accessTokenLifetime);
+                        const signedJWT = yield client.signJWT(unsignedJWT, delegates);
+                        ({ accessToken, expiration } = yield base_1.BaseClient.googleOAuthToken(signedJWT));
+                    }
+                    else {
+                        const authToken = yield client.getAuthToken();
+                        ({ accessToken, expiration } = yield base_1.BaseClient.googleAccessToken(authToken, {
+                            serviceAccount,
+                            delegates,
+                            scopes: accessTokenScopes,
+                            lifetime: accessTokenLifetime,
+                        }));
+                    }
                     (0, core_1.setSecret)(accessToken);
                     (0, core_1.setOutput)('access_token', accessToken);
                     (0, core_1.setOutput)('access_token_expiration', expiration);
@@ -610,7 +622,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseDuration = exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.removeExportedCredentials = exports.writeSecureFile = void 0;
+exports.buildDomainWideDelegationJWT = exports.parseDuration = exports.trimmedString = exports.fromBase64 = exports.toBase64 = exports.explodeStrings = exports.removeExportedCredentials = exports.writeSecureFile = void 0;
 const fs_1 = __webpack_require__(747);
 const crypto_1 = __importDefault(__webpack_require__(417));
 const path_1 = __importDefault(__webpack_require__(622));
@@ -725,9 +737,9 @@ exports.toBase64 = toBase64;
  * encoding with and without padding.
  */
 function fromBase64(s) {
-    const str = s.replace(/-/g, '+').replace(/_/g, '/');
-    while (s.length % 4)
-        s += '=';
+    let str = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4)
+        str += '=';
     return Buffer.from(str, 'base64').toString('utf8');
 }
 exports.fromBase64 = fromBase64;
@@ -798,6 +810,35 @@ function parseDuration(str) {
     return total;
 }
 exports.parseDuration = parseDuration;
+/**
+ * buildDomainWideDelegationJWT constructs an _unsigned_ JWT to be used for a
+ * DWD exchange. The JWT must be signed and then exchangd with the OAuth
+ * endpoints for a token.
+ *
+ * @param serviceAccount Email address of the service account.
+ * @param subject Email address to use for impersonation.
+ * @param scopes List of scopes to authorize.
+ * @param lifetime Number of seconds for which the JWT should be valid.
+ */
+function buildDomainWideDelegationJWT(serviceAccount, subject, scopes, lifetime) {
+    const now = Math.floor(new Date().getTime() / 1000);
+    const body = {
+        iss: serviceAccount,
+        aud: 'https://oauth2.googleapis.com/token',
+        iat: now,
+        exp: now + lifetime,
+    };
+    if (subject && subject.trim().length > 0) {
+        body.sub = subject;
+    }
+    if (scopes && scopes.length > 0) {
+        // Yes, this is a space delimited list.
+        // Not a typo, the API expects the field to be "scope" (singular).
+        body.scope = scopes.join(' ');
+    }
+    return JSON.stringify(body);
+}
+exports.buildDomainWideDelegationJWT = buildDomainWideDelegationJWT;
 
 
 /***/ }),
@@ -1982,7 +2023,33 @@ class CredentialsJSONClient {
                 return message + '.' + (0, utils_1.toBase64)(signature);
             }
             catch (err) {
-                throw new Error(`Failed to sign auth token using ${this.getServiceAccount()}: ${err}`);
+                throw new Error(`Failed to sign auth token using ${yield this.getServiceAccount()}: ${err}`);
+            }
+        });
+    }
+    /**
+     * signJWT signs the given JWT with the private key.
+     *
+     * @param unsignedJWT The JWT to sign.
+     */
+    signJWT(unsignedJWT) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const header = {
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: __classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['private_key_id'],
+            };
+            const message = (0, utils_1.toBase64)(JSON.stringify(header)) + '.' + (0, utils_1.toBase64)(unsignedJWT);
+            try {
+                const signer = (0, crypto_1.createSign)('RSA-SHA256');
+                signer.write(message);
+                signer.end();
+                const signature = signer.sign(__classPrivateFieldGet(this, _CredentialsJSONClient_credentials, "f")['private_key']);
+                const jwt = message + '.' + (0, utils_1.toBase64)(signature);
+                return jwt;
+            }
+            catch (err) {
+                throw new Error(`Failed to sign JWT using ${yield this.getServiceAccount()}: ${err}`);
             }
         });
     }
@@ -2246,11 +2313,17 @@ class BaseClient {
         return __awaiter(this, void 0, void 0, function* () {
             const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
             const tokenURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateAccessToken`);
-            const data = {
-                delegates: delegates,
-                lifetime: lifetime,
-                scope: scopes,
-            };
+            const data = {};
+            if (delegates && delegates.length > 0) {
+                data.delegates = delegates;
+            }
+            if (scopes && scopes.length > 0) {
+                // Not a typo, the API expects the field to be "scope" (singular).
+                data.scope = scopes;
+            }
+            if (lifetime && lifetime > 0) {
+                data.lifetime = `${lifetime}s`;
+            }
             const opts = {
                 hostname: tokenURL.hostname,
                 port: tokenURL.port,
@@ -2272,6 +2345,45 @@ class BaseClient {
             }
             catch (err) {
                 throw new Error(`Failed to generate Google Cloud access token for ${serviceAccount}: ${err}`);
+            }
+        });
+    }
+    /**
+     * googleOAuthToken generates a Google Cloud OAuth token using the legacy
+     * OAuth endpoints.
+     *
+     * @param assertion A signed JWT.
+     */
+    static googleOAuthToken(assertion) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const tokenURL = new url_1.URL('https://oauth2.googleapis.com/token');
+            const opts = {
+                hostname: tokenURL.hostname,
+                port: tokenURL.port,
+                path: tokenURL.pathname + tokenURL.search,
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            };
+            const data = new url_1.URLSearchParams();
+            data.append('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
+            data.append('assertion', assertion);
+            try {
+                const resp = yield BaseClient.request(opts, data.toString());
+                const parsed = JSON.parse(resp);
+                // Normalize the expiration to be a timestamp like the iamcredentials API.
+                // This API returns the number of seconds until expiration, so convert
+                // that into a date.
+                const expiration = new Date(new Date().getTime() + parsed['expires_in'] * 10000);
+                return {
+                    accessToken: parsed['access_token'],
+                    expiration: expiration.toISOString(),
+                };
+            }
+            catch (err) {
+                throw new Error(`Failed to generate Google Cloud OAuth token: ${err}`);
             }
         });
     }
@@ -2378,6 +2490,45 @@ class WorkloadIdentityClient {
             }
             catch (err) {
                 throw new Error(`Failed to generate Google Cloud federated token for ${__classPrivateFieldGet(this, _WorkloadIdentityClient_providerID, "f")}: ${err}`);
+            }
+        });
+    }
+    /**
+     * signJWT signs the given JWT using the IAM credentials endpoint.
+     *
+     * @param unsignedJWT The JWT to sign.
+     * @param delegates List of service account email address to use for
+     * impersonation in the delegation chain to sign the JWT.
+     */
+    signJWT(unsignedJWT, delegates) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const serviceAccount = yield this.getServiceAccount();
+            const federatedToken = yield this.getAuthToken();
+            const signJWTURL = new url_1.URL(`https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:signJwt`);
+            const data = {
+                payload: unsignedJWT,
+            };
+            if (delegates && delegates.length > 0) {
+                data.delegates = delegates;
+            }
+            const opts = {
+                hostname: signJWTURL.hostname,
+                port: signJWTURL.port,
+                path: signJWTURL.pathname + signJWTURL.search,
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${federatedToken}`,
+                    'Content-Type': 'application/json',
+                },
+            };
+            try {
+                const resp = yield base_1.BaseClient.request(opts, JSON.stringify(data));
+                const parsed = JSON.parse(resp);
+                return parsed['signedJwt'];
+            }
+            catch (err) {
+                throw new Error(`Failed to sign JWT using ${serviceAccount}: ${err}`);
             }
         });
     }

@@ -32,11 +32,6 @@ and permissions on Google Cloud.
     configure a Google Cloud Workload Identity Provider. See [setup](#setup)
     for instructions.
 
-## Limitations
-
--   This Action does not support authenticating through service accounts via
-    Domain-Wide Delegation.
-
 
 ## Usage
 
@@ -123,7 +118,11 @@ workflow.
 
 -   `access_token_lifetime`: (Optional) Desired lifetime duration of the access
     token, in seconds. This must be specified as the number of seconds with a
-    trailing "s" (e.g. 30s). The default value is 1 hour (3600s).
+    trailing "s" (e.g. 30s). The default value is 1 hour (3600s). The maximum
+    value is 1 hour, unless the
+    [`constraints/iam.allowServiceAccountCredentialLifetimeExtension`
+    organization policy][orgpolicy-creds-lifetime] is enabled, in which case the
+    maximum value is 12 hours.
 
 -   `access_token_scopes`: (Optional) List of OAuth 2.0 access scopes to be
     included in the generated token. This is only valid when "token_format" is
@@ -132,6 +131,20 @@ workflow.
     ```text
     https://www.googleapis.com/auth/cloud-platform
     ```
+
+-   `access_token_subject`: (Optional) Email address of a user to impersonate
+    for [Domain-Wide Delegation][dwd]. Access tokens created for Domain-Wide
+    Delegation cannot have a lifetime beyond 1 hour, even if the
+    [`constraints/iam.allowServiceAccountCredentialLifetimeExtension`
+    organization policy][orgpolicy-creds-lifetime] is enabled.
+
+    Note: In order to support Domain-Wide Delegation via Workload Identity
+    Federation, you must grant the external identity ("principalSet")
+    `roles/iam.serviceAccountTokenCreator` in addition to
+    `roles/iam.workloadIdentityUser`. The default Workload Identity setup will
+    only grant the latter role. If you want to use this GitHub Action with
+    Domain-Wide Delegation, you must manually add the "Service Account Token
+    Creator" role onto the external identity.
 
 ### Generating ID tokens
 
@@ -286,7 +299,7 @@ Access Token for authenticating to Google Cloud. Most Google Cloud APIs accept
 this access token as authentication.
 
 The default lifetime is 1 hour, but you can request up to 12 hours if you set
-the [`constraints/iam.allowServiceAccountCredentialLifetimeExtension` organization policy](https://cloud.google.com/resource-manager/docs/organization-policy/org-policy-constraints).
+the [`constraints/iam.allowServiceAccountCredentialLifetimeExtension` organization policy][orgpolicy-creds-lifetime].
 
 Note: If you authenticate via `credentials_json`, the service account must have
 `roles/iam.serviceAccountTokenCreator` on itself.
@@ -513,3 +526,5 @@ mappings, see the [GitHub OIDC token documentation](https://docs.github.com/en/a
 [gcloud]: https://cloud.google.com/sdk
 [map-external]: https://cloud.google.com/iam/docs/access-resources-oidc#impersonate
 [github-perms]: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#permissions
+[dwd]: https://developers.google.com/admin-sdk/directory/v1/guides/delegation
+[orgpolicy-creds-lifetime]: https://cloud.google.com/resource-manager/docs/organization-policy/org-policy-constraints

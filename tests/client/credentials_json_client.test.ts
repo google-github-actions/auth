@@ -3,8 +3,9 @@
 import 'mocha';
 import { expect } from 'chai';
 
-import { tmpdir } from 'os';
 import { readFileSync } from 'fs';
+import { tmpdir } from 'os';
+
 import { CredentialsJSONClient } from '../../src/client/credentials_json_client';
 
 // Yes, this is a real private key. No, it's not valid for authenticating
@@ -54,7 +55,18 @@ describe('CredentialsJSONClient', () => {
       });
 
       const token = await client.getAuthToken();
-      expect(token).to.not.be.null;
+      expect(token).to.be;
+    });
+  });
+
+  describe('#signJWT', () => {
+    it('signs a jwt', async () => {
+      const client = new CredentialsJSONClient({
+        credentialsJSON: credentialsJSON,
+      });
+
+      const token = await client.signJWT('thisismy.jwt');
+      expect(token).to.be;
     });
   });
 

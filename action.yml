@@ -92,6 +92,13 @@ inputs:
       This is only valid when "token_format" is "access_token".
     default: 'https://www.googleapis.com/auth/cloud-platform'
     required: false
+  access_token_subject:
+    description: |-
+      Email address of a user to impersonate for Domain-Wide Delegation Access
+      tokens created for Domain-Wide Delegation cannot have a lifetime beyond 1
+      hour. This is only valid when "token_format" is "access_token".
+    default: ''
+    required: false
 
   # id token params
   id_token_audience:

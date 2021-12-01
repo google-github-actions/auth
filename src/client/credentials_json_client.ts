@@ -96,8 +96,8 @@ export class CredentialsJSONClient implements AuthClient {
 
       const signature = signer.sign(this.#credentials['private_key']);
       return message + '.' + toBase64(signature);
-    } catch (e) {
-      throw new Error(`Failed to sign auth token: ${e}`);
+    } catch (err) {
+      throw new Error(`Failed to sign auth token using ${this.getServiceAccount()}: ${err}`);
     }
   }
 

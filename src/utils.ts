@@ -196,7 +196,7 @@ export function parseDuration(str: string): number {
 
 /**
  * buildDomainWideDelegationJWT constructs an _unsigned_ JWT to be used for a
- * DWD exchange. The JWT must be signed and then exchangd with the OAuth
+ * DWD exchange. The JWT must be signed and then exchanged with the OAuth
  * endpoints for a token.
  *
  * @param serviceAccount Email address of the service account.

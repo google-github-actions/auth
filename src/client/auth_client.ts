@@ -5,6 +5,7 @@
  */
 export interface AuthClient {
   getAuthToken(): Promise<string>;
+  signJWT(unsignedJWT: string, delegates?: Array<string>): Promise<string>;
   getProjectID(): Promise<string>;
   getServiceAccount(): Promise<string>;
   createCredentialsFile(outputDir: string): Promise<string>;
@@ -16,17 +17,18 @@ export interface AuthClient {
  *
  *   https://cloud.google.com/iam/docs/reference/credentials/rest/v1/projects.serviceAccounts/generateAccessToken
  *
- * @param serviceAccount Optional email address or unique identifier of the service
- * account.
+ * @param serviceAccount Optional email address or unique identifier of the
+ * service account.
  * @param delegates Optional sequence of service accounts in the delegation
  * chain.
- * @param lifetime Optional validity period as a duration.
+ * @param lifetime Optional validity period as a number representing the number
+ * of seconds.
  */
 export interface GoogleAccessTokenParameters {
   serviceAccount?: string;
   delegates?: Array<string>;
   scopes?: Array<string>;
-  lifetime?: string;
+  lifetime?: number;
 }
 
 /**

@@ -13,7 +13,7 @@ import { WorkloadIdentityClient } from './client/workload_identity_client';
 import { CredentialsJSONClient } from './client/credentials_json_client';
 import { AuthClient } from './client/auth_client';
 import { BaseClient } from './base';
-import { explodeStrings } from './utils';
+import { buildDomainWideDelegationJWT, explodeStrings, parseDuration } from './utils';
 
 const secretsWarning =
   'If you are specifying input values via GitHub secrets, ensure the secret ' +
@@ -125,17 +125,33 @@ async function run(): Promise<void> {
         break;
       }
       case 'access_token': {
-        const accessTokenLifetime = getInput('access_token_lifetime');
+        const accessTokenLifetime = parseDuration(getInput('access_token_lifetime'));
         const accessTokenScopes = explodeStrings(getInput('access_token_scopes'));
+        const accessTokenSubject = getInput('access_token_subject');
         const serviceAccount = await client.getServiceAccount();
 
-        const authToken = await client.getAuthToken();
-        const { accessToken, expiration } = await BaseClient.googleAccessToken(authToken, {
-          serviceAccount,
-          delegates,
-          scopes: accessTokenScopes,
-          lifetime: accessTokenLifetime,
-        });
+        // If a subject was provided, use the traditional OAuth 2.0 flow to
+        // perform Domain-Wide Delegation. Otherwise, use the modern IAM
+        // Credentials endpoints.
+        let accessToken, expiration;
+        if (accessTokenSubject) {
+          const unsignedJWT = buildDomainWideDelegationJWT(
+            serviceAccount,
+            accessTokenSubject,
+            accessTokenScopes,
+            accessTokenLifetime,
+          );
+          const signedJWT = await client.signJWT(unsignedJWT, delegates);
+          ({ accessToken, expiration } = await BaseClient.googleOAuthToken(signedJWT));
+        } else {
+          const authToken = await client.getAuthToken();
+          ({ accessToken, expiration } = await BaseClient.googleAccessToken(authToken, {
+            serviceAccount,
+            delegates,
+            scopes: accessTokenScopes,
+            lifetime: accessTokenLifetime,
+          }));
+        }
 
         setSecret(accessToken);
         setOutput('access_token', accessToken);

@@ -97,7 +97,34 @@ export class CredentialsJSONClient implements AuthClient {
       const signature = signer.sign(this.#credentials['private_key']);
       return message + '.' + toBase64(signature);
     } catch (err) {
-      throw new Error(`Failed to sign auth token using ${this.getServiceAccount()}: ${err}`);
+      throw new Error(`Failed to sign auth token using ${await this.getServiceAccount()}: ${err}`);
+    }
+  }
+
+  /**
+   * signJWT signs the given JWT with the private key.
+   *
+   * @param unsignedJWT The JWT to sign.
+   */
+  async signJWT(unsignedJWT: string): Promise<string> {
+    const header = {
+      alg: 'RS256',
+      typ: 'JWT',
+      kid: this.#credentials['private_key_id'],
+    };
+
+    const message = toBase64(JSON.stringify(header)) + '.' + toBase64(unsignedJWT);
+
+    try {
+      const signer = createSign('RSA-SHA256');
+      signer.write(message);
+      signer.end();
+
+      const signature = signer.sign(this.#credentials['private_key']);
+      const jwt = message + '.' + toBase64(signature);
+      return jwt;
+    } catch (err) {
+      throw new Error(`Failed to sign JWT using ${await this.getServiceAccount()}: ${err}`);
     }
   }
 

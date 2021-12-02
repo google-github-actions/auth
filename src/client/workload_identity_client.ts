@@ -109,6 +109,49 @@ export class WorkloadIdentityClient implements AuthClient {
   }
 
   /**
+   * signJWT signs the given JWT using the IAM credentials endpoint.
+   *
+   * @param unsignedJWT The JWT to sign.
+   * @param delegates List of service account email address to use for
+   * impersonation in the delegation chain to sign the JWT.
+   */
+  async signJWT(unsignedJWT: string, delegates?: Array<string>): Promise<string> {
+    const serviceAccount = await this.getServiceAccount();
+    const federatedToken = await this.getAuthToken();
+
+    const signJWTURL = new URL(
+      `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:signJwt`,
+    );
+
+    const data: Record<string, string | Array<string>> = {
+      payload: unsignedJWT,
+    };
+    if (delegates && delegates.length > 0) {
+      data.delegates = delegates;
+    }
+
+    const opts = {
+      hostname: signJWTURL.hostname,
+      port: signJWTURL.port,
+      path: signJWTURL.pathname + signJWTURL.search,
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${federatedToken}`,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const resp = await BaseClient.request(opts, JSON.stringify(data));
+      const parsed = JSON.parse(resp);
+      return parsed['signedJwt'];
+    } catch (err) {
+      throw new Error(`Failed to sign JWT using ${serviceAccount}: ${err}`);
+    }
+  }
+
+  /**
    * getProjectID returns the project ID. If an override was given, the override
    * is returned. Otherwise, this will be the project ID that was extracted from
    * the service account key JSON.

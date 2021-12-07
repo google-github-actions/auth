@@ -148,6 +148,11 @@ describe('Utils', () => {
         input: 'aGVsbG8==',
         expected: 'hello',
       },
+      {
+        name: 'decodes semi-padded',
+        input: 'aGVsbG8=',
+        expected: 'hello',
+      },
     ];
 
     cases.forEach((tc) => {

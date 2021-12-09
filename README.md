@@ -48,7 +48,7 @@ jobs:
     steps:
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.4.1'
+      uses: 'google-github-actions/auth@v0'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -220,7 +220,7 @@ jobs:
     steps:
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.4.1'
+      uses: 'google-github-actions/auth@v0'
       with:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
@@ -246,7 +246,7 @@ jobs:
     steps:
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.4.1'
+      uses: 'google-github-actions/auth@v0'
       with:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 ```
@@ -275,7 +275,7 @@ jobs:
     # Configure Workload Identity Federation via a credentials file.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.4.1'
+      uses: 'google-github-actions/auth@v0'
       with:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
@@ -318,7 +318,7 @@ jobs:
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.4.1'
+      uses: 'google-github-actions/auth@v0'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -356,7 +356,7 @@ jobs:
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0.4.1'
+      uses: 'google-github-actions/auth@v0'
       with:
         token_format: 'access_token'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -443,7 +443,7 @@ the [gcloud][gcloud] command-line tool.
       --location="global" \
       --workload-identity-pool="my-pool" \
       --display-name="Demo provider" \
-      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud" \
+      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
       --issuer-uri="https://token.actions.githubusercontent.com"
     ```
 
@@ -452,34 +452,26 @@ the [gcloud][gcloud] command-line tool.
     the principal invoking the GitHub Action). These can be used to further
     restrict the authentication using `--attribute-condition` flags.
 
-    For example, you can map the attribute repository values (which can be used
-    later to restrict the authentication to specific repositories):
+    The example above only maps the `actor` and `repository` values. To map
+    additional values, add them to the attribute map:
 
     ```sh
-    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository"
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository_owner=assertion.repository_owner"
     ```
 
-1.  Allow authentications from the Workload Identity Provider to impersonate the
-    Service Account created above:
+    **You must map any claims in the incoming token to attributes before you can
+    assert on those attributes in a CEL expression or IAM policy!**
 
-    **Warning**: This grants access to any resource in the pool (all GitHub
-    repos). It's **strongly recommended** that you map to a specific attribute
-    such as the actor or repository name instead. See [mapping external
-    identities][map-external] for more information.
+1.  Allow authentications from the Workload Identity Provider originating from
+    your repository to impersonate the Service Account created above:
 
     ```sh
-    gcloud iam service-accounts add-iam-policy-binding "my-service-account@${PROJECT_ID}.iam.gserviceaccount.com" \
-      --project="${PROJECT_ID}" \
-      --role="roles/iam.workloadIdentityUser" \
-      --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/*"
-    ```
+    # TODO(developer): Update this value to your GitHub repository.
+    export REPO="username/name" # e.g. "google/chrome"
 
-    To map to a specific repository:
-
-    ```sh
     gcloud iam service-accounts add-iam-policy-binding "my-service-account@${PROJECT_ID}.iam.gserviceaccount.com" \
       --role="roles/iam.workloadIdentityUser" \
-      --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/attribute.repository/username/repo"
+      --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/attribute.repository/${REPO}"
     ```
 
 1.  Use this GitHub Action with the Workload Identity Provider ID and Service
@@ -521,6 +513,29 @@ mappings, see the [GitHub OIDC token documentation](https://docs.github.com/en/a
   "iat": 1631719427
 }
 ```
+
+
+## Versioning
+
+We recommend pinning to the latest available major version:
+
+```yaml
+- uses: 'google-github-actions/auth@v0'
+```
+
+While this action attempts to follow semantic versioning, but we're ultimately
+human and sometimes make mistakes. To prevent accidental breaking changes, you
+can also pin to a specific version:
+
+```yaml
+- uses: 'google-github-actions/auth@v0.1.1'
+```
+
+However, you will not get automatic security updates or new features without
+explicitly updating your version number. Note that we only publish `MAJOR` and
+`MAJOR.MINOR.PATCH` versions. There is **not** a floating alias for
+`MAJOR.MINOR`.
+
 
 [wif]: https://cloud.google.com/iam/docs/workload-identity-federation
 [gcloud]: https://cloud.google.com/sdk

@@ -174,6 +174,21 @@ regardless of the authentication mechanism.
      generate a credentials file which can be used for authentication via gcloud
      and Google Cloud SDKs in other steps in the workflow. The default is true.
 
+     The credentials file is exported into `$GITHUB_WORKSPACE`, which makes it
+     available to all future steps and filesystems (including Docker-based
+     GitHub Actions). The file is automatically removed at the end of the job
+     via a post action. In order to use exported credentials, you **must** add
+     the `actions/checkout` step before calling `auth`. This is due to how
+     GitHub Actions creates `$GITHUB_WORKSPACE`:
+
+     ```yaml
+     jobs:
+      job_id:
+        steps:
+        - uses: 'actions/checkout@v2' # Must come first!
+        - uses: 'google-github-actions/auth@v0'
+     ```
+
 -   `delegates`: (Optional) List of additional service account emails or unique
     identities to use for impersonation in the chain. By default there are no
     delegates.
@@ -419,7 +434,7 @@ the [gcloud][gcloud] command-line tool.
       --display-name="Demo pool"
     ```
 
-1.  Get the full ID of the Workload Identity Pool:
+1.  Get the full ID of the Workload Identity **Pool**:
 
     ```sh
     gcloud iam workload-identity-pools describe "my-pool" \
@@ -435,7 +450,7 @@ the [gcloud][gcloud] command-line tool.
     ```
 
 
-1.  Create a Workload Identity Provider in that pool:
+1.  Create a Workload Identity **Provider** in that pool:
 
     ```sh
     gcloud iam workload-identity-pools providers create-oidc "my-provider" \
@@ -470,9 +485,23 @@ the [gcloud][gcloud] command-line tool.
     export REPO="username/name" # e.g. "google/chrome"
 
     gcloud iam service-accounts add-iam-policy-binding "my-service-account@${PROJECT_ID}.iam.gserviceaccount.com" \
+      --project="${PROJECT_ID}" \
       --role="roles/iam.workloadIdentityUser" \
       --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/attribute.repository/${REPO}"
     ```
+
+1.  Extract the Workload Identity **Provider** resource name:
+
+    ```sh
+    gcloud iam workload-identity-pools providers describe "my-provider" \
+      --project="${PROJECT_ID}"
+      --location="global" \
+      --workload-identity-pool="my-pool" \
+      --format='value(name)'
+    ```
+
+    Use this value as the `workload_identity_provider` value in your GitHub
+    Actions YAML.
 
 1.  Use this GitHub Action with the Workload Identity Provider ID and Service
     Account email. The GitHub Action will mint a GitHub OIDC token and exchange

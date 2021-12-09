@@ -1,10 +1,12 @@
 'use strict';
 
 import {
+  debug as logDebug,
   exportVariable,
   getBooleanInput,
   getIDToken,
   getInput,
+  info as logInfo,
   setFailed,
   setOutput,
   setSecret,
@@ -13,7 +15,7 @@ import { WorkloadIdentityClient } from './client/workload_identity_client';
 import { CredentialsJSONClient } from './client/credentials_json_client';
 import { AuthClient } from './client/auth_client';
 import { BaseClient } from './base';
-import { buildDomainWideDelegationJWT, explodeStrings, parseDuration } from './utils';
+import { buildDomainWideDelegationJWT, errorMessage, explodeStrings, parseDuration } from './utils';
 
 const secretsWarning =
   `If you are specifying input values via GitHub secrets, ensure the secret ` +
@@ -67,6 +69,8 @@ async function run(): Promise<void> {
     // Instantiate the correct client based on the provided input parameters.
     let client: AuthClient;
     if (workloadIdentityProvider) {
+      logDebug(`Using workload identity provider "${workloadIdentityProvider}"`);
+
       // If we're going to do the OIDC dance, we need to make sure these values
       // are set. If they aren't, core.getIDToken() will fail and so will
       // generating the credentials file.
@@ -87,6 +91,7 @@ async function run(): Promise<void> {
         oidcTokenRequestURL: oidcTokenRequestURL,
       });
     } else {
+      logDebug(`Using credentials JSON`);
       client = new CredentialsJSONClient({
         projectID: projectID,
         credentialsJSON: credentialsJSON,
@@ -98,6 +103,8 @@ async function run(): Promise<void> {
     // fails, which means continue-on-error actions will still have the file
     // available.
     if (createCredentialsFile) {
+      logDebug(`Creating credentials file`);
+
       // Note: We explicitly and intentionally export to GITHUB_WORKSPACE
       // instead of RUNNER_TEMP, because RUNNER_TEMP is not shared with
       // Docker-based actions on the filesystem. Exporting to GITHUB_WORKSPACE
@@ -113,14 +120,21 @@ async function run(): Promise<void> {
         throw new Error('$GITHUB_WORKSPACE is not set');
       }
 
+      // Create credentials file.
       const credentialsPath = await client.createCredentialsFile(githubWorkspace);
+      logInfo(`Created credentials file at "${credentialsPath}"`);
+
+      // Output to be available to future steps.
       setOutput('credentials_file_path', credentialsPath);
+
       // CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE is picked up by gcloud to use
       // a specific credential file (subject to change and equivalent to auth/credential_file_override)
       exportVariable('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
+
       // GOOGLE_APPLICATION_CREDENTIALS is used by Application Default Credentials
       // in all GCP client libraries
       exportVariable('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
+
       // GOOGLE_GHA_CREDS_PATH is used by other Google GitHub Actions
       exportVariable('GOOGLE_GHA_CREDS_PATH', credentialsPath);
     }
@@ -142,6 +156,8 @@ async function run(): Promise<void> {
         break;
       }
       case 'access_token': {
+        logDebug(`Creating access token`);
+
         const accessTokenLifetime = parseDuration(getInput('access_token_lifetime'));
         const accessTokenScopes = explodeStrings(getInput('access_token_scopes'));
         const accessTokenSubject = getInput('access_token_subject');
@@ -152,6 +168,12 @@ async function run(): Promise<void> {
         // Credentials endpoints.
         let accessToken, expiration;
         if (accessTokenSubject) {
+          logInfo(
+            `An access token subject was specified, triggering Domain-Wide ` +
+              `Delegation flow. This flow does not support specifying an ` +
+              `access token lifetime of greater than 1 hour.`,
+          );
+
           const unsignedJWT = buildDomainWideDelegationJWT(
             serviceAccount,
             accessTokenSubject,
@@ -176,6 +198,8 @@ async function run(): Promise<void> {
         break;
       }
       case 'id_token': {
+        logDebug(`Creating id token`);
+
         const idTokenAudience = getInput('id_token_audience', { required: true });
         const idTokenIncludeEmail = getBooleanInput('id_token_include_email');
         const serviceAccount = await client.getServiceAccount();
@@ -196,7 +220,8 @@ async function run(): Promise<void> {
       }
     }
   } catch (err) {
-    setFailed(`google-github-actions/auth failed with: ${err}`);
+    const msg = errorMessage(err);
+    setFailed(`google-github-actions/auth failed with: ${msg}`);
   }
 }
 

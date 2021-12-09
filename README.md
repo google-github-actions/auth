@@ -396,6 +396,9 @@ To exchange a GitHub Actions OIDC token for a Google Cloud access token, you
 must create and configure a Workload Identity Provider. These instructions use
 the [gcloud][gcloud] command-line tool.
 
+Alternatively, you can also use the [gh-oidc](https://github.com/terraform-google-modules/terraform-google-github-actions-runners/tree/master/modules/gh-oidc)
+Terraform module to automate your infrastructure provisioning. See [examples](https://github.com/terraform-google-modules/terraform-google-github-actions-runners/tree/master/examples/oidc-simple) for usage.
+
 1.  Create or use an existing Google Cloud project. You must have privileges to
     create Workload Identity Pools, Workload Identity Providers, and to manage
     Service Accounts and IAM permissions. Save your project ID as an environment

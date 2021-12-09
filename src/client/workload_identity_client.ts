@@ -25,6 +25,9 @@ interface WorkloadIdentityClientOptions {
   serviceAccount: string;
   token: string;
   audience: string;
+
+  oidcTokenRequestURL: string;
+  oidcTokenRequestToken: string;
 }
 
 /**
@@ -38,11 +41,17 @@ export class WorkloadIdentityClient implements AuthClient {
   readonly #token: string;
   readonly #audience: string;
 
+  readonly #oidcTokenRequestURL: string;
+  readonly #oidcTokenRequestToken: string;
+
   constructor(opts: WorkloadIdentityClientOptions) {
     this.#providerID = opts.providerID;
     this.#serviceAccount = opts.serviceAccount;
     this.#token = opts.token;
     this.#audience = opts.audience;
+
+    this.#oidcTokenRequestURL = opts.oidcTokenRequestURL;
+    this.#oidcTokenRequestToken = opts.oidcTokenRequestToken;
 
     this.#projectID =
       opts.projectID || this.extractProjectIDFromServiceAccountEmail(this.#serviceAccount);
@@ -173,21 +182,7 @@ export class WorkloadIdentityClient implements AuthClient {
    * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
    */
   async createCredentialsFile(outputDir: string): Promise<string> {
-    // Extract the request token and request URL from the environment. These
-    // are only set when an id-token is requested and the submitter has
-    // collaborator permissions.
-    const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-    const requestURLRaw = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-    if (!requestToken || !requestURLRaw) {
-      throw new Error(
-        'GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOKEN or ' +
-          '$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely ' +
-          'means the GitHub Actions workflow permissions are incorrect, or ' +
-          'this job is being run from a fork. For more information, please ' +
-          'see the GitHub documentation at https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token',
-      );
-    }
-    const requestURL = new URL(requestURLRaw);
+    const requestURL = new URL(this.#oidcTokenRequestURL);
 
     // Append the audience value to the request.
     const params = requestURL.searchParams;
@@ -204,7 +199,7 @@ export class WorkloadIdentityClient implements AuthClient {
       credential_source: {
         url: requestURL,
         headers: {
-          Authorization: `Bearer ${requestToken}`,
+          Authorization: `Bearer ${this.#oidcTokenRequestToken}`,
         },
         format: {
           type: 'json',

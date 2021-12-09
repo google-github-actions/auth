@@ -16,9 +16,15 @@ import { BaseClient } from './base';
 import { buildDomainWideDelegationJWT, explodeStrings, parseDuration } from './utils';
 
 const secretsWarning =
-  'If you are specifying input values via GitHub secrets, ensure the secret ' +
-  'is being injected into the environment. By default, secrets are not passed ' +
-  'to workflows triggered from forks, including Dependabot.';
+  `If you are specifying input values via GitHub secrets, ensure the secret ` +
+  `is being injected into the environment. By default, secrets are not ` +
+  `passed to workflows triggered from forks, including Dependabot.`;
+
+const oidcWarning =
+  `GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOKEN or ` +
+  `$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely means the ` +
+  `GitHub Actions workflow permissions are incorrect, or this job is being ` +
+  `run from a fork. For more information, please see https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token`;
 
 /**
  * Executes the main action, documented inline.
@@ -61,6 +67,15 @@ async function run(): Promise<void> {
     // Instantiate the correct client based on the provided input parameters.
     let client: AuthClient;
     if (workloadIdentityProvider) {
+      // If we're going to do the OIDC dance, we need to make sure these values
+      // are set. If they aren't, core.getIDToken() will fail and so will
+      // generating the credentials file.
+      const oidcTokenRequestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+      const oidcTokenRequestURL = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+      if (!oidcTokenRequestToken || !oidcTokenRequestURL) {
+        throw new Error(oidcWarning);
+      }
+
       const token = await getIDToken(audience);
       client = new WorkloadIdentityClient({
         projectID: projectID,
@@ -68,6 +83,8 @@ async function run(): Promise<void> {
         serviceAccount: serviceAccount,
         token: token,
         audience: audience,
+        oidcTokenRequestToken: oidcTokenRequestToken,
+        oidcTokenRequestURL: oidcTokenRequestURL,
       });
     } else {
       client = new CredentialsJSONClient({

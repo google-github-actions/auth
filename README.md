@@ -497,7 +497,7 @@ Terraform module to automate your infrastructure provisioning. See [examples](ht
 
     ```sh
     gcloud iam workload-identity-pools providers describe "my-provider" \
-      --project="${PROJECT_ID}"
+      --project="${PROJECT_ID}" \
       --location="global" \
       --workload-identity-pool="my-pool" \
       --format='value(name)'

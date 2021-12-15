@@ -1,7 +1,7 @@
 name: 'tag'
 
 on:
-  push:
+  create:
     tags:
     # match vx.y and v x.y.z.w... but not vx
     - 'v[0-9]+.*'

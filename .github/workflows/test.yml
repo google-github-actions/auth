@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: '${{github.workflow}}-${{ github.head_ref || github.ref }}'
+  group: '${{ github.workflow }}-${{ github.head_ref || github.ref }}'
   cancel-in-progress: true
 
 jobs:
@@ -24,11 +24,8 @@ jobs:
       with:
         node-version: '12.x'
 
-    - name: 'npm ci'
-      run: 'npm ci'
-
     - name: 'npm build'
-      run: 'npm run build'
+      run: 'npm ci && npm run build'
 
     - name: 'verify compiled'
       shell: 'bash'

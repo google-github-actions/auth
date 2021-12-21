@@ -1,8 +1,9 @@
 'use strict';
 
 import { URL } from 'url';
+import { randomFilepath, writeSecureFile } from '@google-github-actions/actions-utils';
+
 import { AuthClient } from './auth_client';
-import { writeSecureFile } from '../utils';
 import { BaseClient } from '../base';
 
 /**
@@ -208,6 +209,7 @@ export class WorkloadIdentityClient implements AuthClient {
       },
     };
 
-    return await writeSecureFile(outputDir, JSON.stringify(data));
+    const outputFile = randomFilepath(outputDir);
+    return await writeSecureFile(outputFile, JSON.stringify(data));
   }
 }

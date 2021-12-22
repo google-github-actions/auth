@@ -36,6 +36,7 @@ jobs:
 
 
   credentials_json:
+    if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
     name: 'credentials_json'
     runs-on: '${{ matrix.os }}'
     strategy:
@@ -97,6 +98,7 @@ jobs:
 
 
   workload_identity_federation:
+    if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
     name: 'workload_identity_federation'
     runs-on: '${{ matrix.os }}'
     strategy:
@@ -167,6 +169,7 @@ jobs:
   # the shared filesystem with the container and that the USER for the container
   # has permissions to read the file.
   docker:
+    if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
     name: 'docker'
     runs-on: 'ubuntu-latest'
     strategy:

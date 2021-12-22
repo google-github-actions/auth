@@ -14,32 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  install_and_compile:
-    name: 'install_and_compile'
-    runs-on: 'ubuntu-latest'
-    steps:
-    - uses: 'actions/checkout@v2'
-
-    - uses: 'actions/setup-node@v2'
-      with:
-        node-version: '12.x'
-
-    - name: 'npm build'
-      run: 'npm ci && npm run build'
-
-    - name: 'verify compiled'
-      shell: 'bash'
-      run: |-
-        if [ -n "$(git status --porcelain)" ]; then
-          echo "TypeScript is not compiled!"
-          git diff
-          exit 1
-        fi
-
-
   unit:
     name: 'unit'
-    needs: 'install_and_compile'
     runs-on: 'ubuntu-latest'
 
     steps:
@@ -61,7 +37,6 @@ jobs:
 
   credentials_json:
     name: 'credentials_json'
-    needs: 'install_and_compile'
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
@@ -123,7 +98,6 @@ jobs:
 
   workload_identity_federation:
     name: 'workload_identity_federation'
-    needs: 'install_and_compile'
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
@@ -194,7 +168,6 @@ jobs:
   # has permissions to read the file.
   docker:
     name: 'docker'
-    needs: 'install_and_compile'
     runs-on: 'ubuntu-latest'
     strategy:
       fail-fast: false

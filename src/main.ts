@@ -11,11 +11,18 @@ import {
   setOutput,
   setSecret,
 } from '@actions/core';
+import {
+  errorMessage,
+  exactlyOneOf,
+  parseCSV,
+  parseDuration,
+} from '@google-github-actions/actions-utils';
+
 import { WorkloadIdentityClient } from './client/workload_identity_client';
 import { CredentialsJSONClient } from './client/credentials_json_client';
 import { AuthClient } from './client/auth_client';
 import { BaseClient } from './base';
-import { buildDomainWideDelegationJWT, errorMessage, explodeStrings, parseDuration } from './utils';
+import { buildDomainWideDelegationJWT } from './utils';
 
 const secretsWarning =
   `If you are specifying input values via GitHub secrets, ensure the secret ` +
@@ -42,14 +49,11 @@ async function run(): Promise<void> {
     const credentialsJSON = getInput('credentials_json');
     const createCredentialsFile = getBooleanInput('create_credentials_file');
     const tokenFormat = getInput('token_format');
-    const delegates = explodeStrings(getInput('delegates'));
+    const delegates = parseCSV(getInput('delegates'));
 
     // Ensure exactly one of workload_identity_provider and credentials_json was
     // provided.
-    if (
-      (!workloadIdentityProvider && !credentialsJSON) ||
-      (workloadIdentityProvider && credentialsJSON)
-    ) {
+    if (!exactlyOneOf(workloadIdentityProvider, credentialsJSON)) {
       throw new Error(
         'The GitHub Action workflow must specify exactly one of ' +
           '"workload_identity_provider" or "credentials_json"! ' +
@@ -159,7 +163,7 @@ async function run(): Promise<void> {
         logDebug(`Creating access token`);
 
         const accessTokenLifetime = parseDuration(getInput('access_token_lifetime'));
-        const accessTokenScopes = explodeStrings(getInput('access_token_scopes'));
+        const accessTokenScopes = parseCSV(getInput('access_token_scopes'));
         const accessTokenSubject = getInput('access_token_subject');
         const serviceAccount = await client.getServiceAccount();
 

@@ -1587,8 +1587,14 @@ const actions_utils_1 = __nccwpck_require__(308);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            const createCredentials = (0, core_1.getBooleanInput)('create_credentials_file');
+            if (!createCredentials) {
+                (0, core_1.info)(`Skipping credential cleanup - "create_credentials_file" is false.`);
+                return;
+            }
             const cleanupCredentials = (0, core_1.getBooleanInput)('cleanup_credentials');
             if (!cleanupCredentials) {
+                (0, core_1.info)(`Skipping credential cleanup - "cleanup_credentials" is false.`);
                 return;
             }
             // Look up the credentials path, if one exists. Note that we only check the
@@ -1597,15 +1603,16 @@ function run() {
             // another environment variable manually.
             const credentialsPath = process.env['GOOGLE_GHA_CREDS_PATH'];
             if (!credentialsPath) {
+                (0, core_1.info)(`Skipping credential cleanup - $GOOGLE_GHA_CREDS_PATH is not set.`);
                 return;
             }
             // Remove the file.
             const removed = yield (0, actions_utils_1.removeFile)(credentialsPath);
             if (removed) {
-                (0, core_1.info)(`Removed exported credentials at ${credentialsPath}`);
+                (0, core_1.info)(`Removed exported credentials at "${credentialsPath}".`);
             }
             else {
-                (0, core_1.info)('No exported credentials found');
+                (0, core_1.info)(`No exported credentials were found at "${credentialsPath}".`);
             }
         }
         catch (err) {

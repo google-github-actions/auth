@@ -73,8 +73,9 @@ inputs:
     required: false
   cleanup_credentials:
     description: |-
-      If true, the action will remove any generated credentials from the
-      filesystem upon completion.
+      If true, the action will remove any created credentials from the
+      filesystem upon completion. This only applies if "create_credentials_file"
+      is true.
     default: true
     required: false
 

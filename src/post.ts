@@ -8,8 +8,15 @@ import { errorMessage, removeFile } from '@google-github-actions/actions-utils';
  */
 export async function run(): Promise<void> {
   try {
-    const cleanupCredentials: boolean = getBooleanInput('cleanup_credentials');
+    const createCredentials = getBooleanInput('create_credentials_file');
+    if (!createCredentials) {
+      logInfo(`Skipping credential cleanup - "create_credentials_file" is false.`);
+      return;
+    }
+
+    const cleanupCredentials = getBooleanInput('cleanup_credentials');
     if (!cleanupCredentials) {
+      logInfo(`Skipping credential cleanup - "cleanup_credentials" is false.`);
       return;
     }
 
@@ -19,15 +26,16 @@ export async function run(): Promise<void> {
     // another environment variable manually.
     const credentialsPath = process.env['GOOGLE_GHA_CREDS_PATH'];
     if (!credentialsPath) {
+      logInfo(`Skipping credential cleanup - $GOOGLE_GHA_CREDS_PATH is not set.`);
       return;
     }
 
     // Remove the file.
     const removed = await removeFile(credentialsPath);
     if (removed) {
-      logInfo(`Removed exported credentials at ${credentialsPath}`);
+      logInfo(`Removed exported credentials at "${credentialsPath}".`);
     } else {
-      logInfo('No exported credentials found');
+      logInfo(`No exported credentials were found at "${credentialsPath}".`);
     }
   } catch (err) {
     const msg = errorMessage(err);

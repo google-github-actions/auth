@@ -193,8 +193,8 @@ regardless of the authentication mechanism.
     delegates.
 
 -   `cleanup_credentials`: (Optional) If true, the action will remove any
-    generated credentials from the filesystem upon completion. The default is
-    true.
+    created credentials from the filesystem upon completion. This only applies
+    if "create_credentials_file" is true. The default is true.
 
 ## Outputs
 

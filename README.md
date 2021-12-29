@@ -282,11 +282,6 @@ jobs:
       id-token: 'write'
 
     steps:
-    # Install gcloud, do not specify authentication.
-    - uses: 'google-github-actions/setup-gcloud@master'
-      with:
-        project_id: 'my-project'
-
     # Configure Workload Identity Federation via a credentials file.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -295,15 +290,14 @@ jobs:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
-    # Authenticate using the created credentials file.
-    #
-    # WARNING: The --cred-file flag is in preview and is subject to change.
+    # Install gcloud, `setup-gcloud` automatically picks up authentication from `auth`.
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v0'
+
+    # Now you can run gcloud commands authenticated as the impersonated service account.
     - id: 'gcloud'
       name: 'gcloud'
       run: |-
-        gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
-
-        # Now you can run gcloud commands authenticated as the impersonated service account.
         gcloud secrets versions access "latest" --secret "my-secret"
 ```
 

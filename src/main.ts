@@ -10,6 +10,7 @@ import {
   setFailed,
   setOutput,
   setSecret,
+  warning as logWarning,
 } from '@actions/core';
 import {
   errorMessage,
@@ -35,10 +36,28 @@ const oidcWarning =
   `GitHub Actions workflow permissions are incorrect, or this job is being ` +
   `run from a fork. For more information, please see https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token`;
 
+const headWarning =
+  `google-github-actions/auth is pinned at HEAD. We strongly advise against ` +
+  `pinning to "@main" as it may be unstable. Please update your GitHub ` +
+  `Action YAML from:\n` +
+  `\n` +
+  `    uses: 'google-github-actions/auth@main'\n` +
+  `\n` +
+  `to:\n` +
+  `\n` +
+  `    uses: 'google-github-actions/auth@v0'\n` +
+  `\n` +
+  `Alternatively, you can pin to any git tag or git SHA in the repository.`;
+
 /**
  * Executes the main action, documented inline.
  */
 async function run(): Promise<void> {
+  // Warn if pinned to HEAD
+  if (process.env.GITHUB_ACTION_REF == 'main') {
+    logWarning(headWarning);
+  }
+
   try {
     // Load configuration.
     const projectID = getInput('project_id');

@@ -2116,11 +2116,26 @@ const oidcWarning = `GitHub Actions did not inject $ACTIONS_ID_TOKEN_REQUEST_TOK
     `$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely means the ` +
     `GitHub Actions workflow permissions are incorrect, or this job is being ` +
     `run from a fork. For more information, please see https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token`;
+const headWarning = `google-github-actions/auth is pinned at HEAD. We strongly advise against ` +
+    `pinning to "@main" as it may be unstable. Please update your GitHub ` +
+    `Action YAML from:\n` +
+    `\n` +
+    `    uses: 'google-github-actions/auth@main'\n` +
+    `\n` +
+    `to:\n` +
+    `\n` +
+    `    uses: 'google-github-actions/auth@v0'\n` +
+    `\n` +
+    `Alternatively, you can pin to any git tag or git SHA in the repository.`;
 /**
  * Executes the main action, documented inline.
  */
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        // Warn if pinned to HEAD
+        if (process.env.GITHUB_ACTION_REF == 'main') {
+            (0, core_1.warning)(headWarning);
+        }
         try {
             // Load configuration.
             const projectID = (0, core_1.getInput)('project_id');

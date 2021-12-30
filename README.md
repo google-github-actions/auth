@@ -53,11 +53,7 @@ jobs:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
-    # Example of using the token:
-    - name: 'Access secret'
-      run: |-
-        curl https://secretmanager.googleapis.com/v1/projects/my-project/secrets/my-secret/versions/1:access \
-          --header "Authorization: Bearer ${{ steps.auth.outputs.access_token }}"
+    # ... further setps are automatically authenticated
 ```
 
 Note that changing the `permissions` block may remove some default permissions.
@@ -72,6 +68,10 @@ See [Examples](#examples) for more examples.
 
 The following inputs are for _authenticating_ to Google Cloud via Workload
 Identity Federation.
+
+**⚠️ The `bq` and `gsutil` tools do no currently support Workload Identity
+Federation!** You will need to use traditional service account key
+authentication for now.
 
 -   `workload_identity_provider`: (Required) The full identifier of the Workload Identity
     Provider, including the project number, pool name, and provider name. If
@@ -110,7 +110,7 @@ risk.**
 
 The following inputs are for _generating_ OAuth 2.0 access tokens for
 authenticating to Google Cloud as an output for use in future steps in the
-workflow.
+workflow. By default, this action does not generate any tokens.
 
 -   `token_format`: This value must be `"access_token"` to generate OAuth 2.0
     access tokens. To skip token generation, omit or set to the empty string "".
@@ -148,7 +148,8 @@ workflow.
 ### Generating ID tokens
 
 The following inputs are for _generating_ ID tokens for authenticating to Google
-Cloud as an output for use in future steps in the workflow.
+Cloud as an output for use in future steps in the workflow. By default, this
+action does not generate any tokens.
 
 -   `token_format`: This value must be `"id_token"` to generate ID tokens. To
     skip token generation, omit or set to the empty string "".
@@ -268,7 +269,7 @@ jobs:
 ### Configuring gcloud
 
 This example demonstrates using this GitHub Action to configure authentication
-for the `gcloud` CLI tool. Note this does **NOT** work for the `gsutil` tool.
+for the `gcloud` CLI tool.
 
 ```yaml
 jobs:
@@ -281,11 +282,6 @@ jobs:
       id-token: 'write'
 
     steps:
-    # Install gcloud, do not specify authentication.
-    - uses: 'google-github-actions/setup-gcloud@master'
-      with:
-        project_id: 'my-project'
-
     # Configure Workload Identity Federation via a credentials file.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -294,15 +290,14 @@ jobs:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
-    # Authenticate using the created credentials file.
-    #
-    # WARNING: The --cred-file flag is in preview and is subject to change.
+    # Install gcloud, `setup-gcloud` automatically picks up authentication from `auth`.
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v0'
+
+    # Now you can run gcloud commands authenticated as the impersonated service account.
     - id: 'gcloud'
       name: 'gcloud'
       run: |-
-        gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
-
-        # Now you can run gcloud commands authenticated as the impersonated service account.
         gcloud secrets versions access "latest" --secret "my-secret"
 ```
 
@@ -334,7 +329,7 @@ jobs:
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v0'
       with:
-        token_format: 'access_token'
+        token_format: 'access_token' # <--
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
         access_token_lifetime: '300s' # optional, default: '3600s' (1 hour)
@@ -372,7 +367,7 @@ jobs:
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v0'
       with:
-        token_format: 'access_token'
+        token_format: 'access_token' # <--
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
         id_token_audience: 'https://myapp-uvehjacqzq.a.run.app' # required, value depends on target

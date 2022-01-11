@@ -46,6 +46,8 @@ jobs:
       id-token: 'write'
 
     steps:
+    - uses: 'actions/checkout@v2'
+
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v0'
@@ -233,6 +235,8 @@ jobs:
       id-token: 'write'
 
     steps:
+    - uses: 'actions/checkout@v2'
+
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v0'
@@ -259,6 +263,8 @@ jobs:
     # ...
 
     steps:
+    - uses: 'actions/checkout@v2'
+
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v0'
@@ -271,6 +277,10 @@ jobs:
 This example demonstrates using this GitHub Action to configure authentication
 for the `gcloud` CLI tool.
 
+**Warning!** Workload Identity Federation requires Cloud SDK (`gcloud`) version
+[363.0.0](https://cloud.google.com/sdk/docs/release-notes#36300_2021-11-02) or
+later.
+
 ```yaml
 jobs:
   job_id:
@@ -282,6 +292,8 @@ jobs:
       id-token: 'write'
 
     steps:
+    - uses: 'actions/checkout@v2'
+
     # Configure Workload Identity Federation via a credentials file.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -324,6 +336,8 @@ jobs:
       id-token: 'write'
 
     steps:
+    - uses: 'actions/checkout@v2'
+
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -362,6 +376,8 @@ jobs:
       id-token: 'write'
 
     steps:
+    - uses: 'actions/checkout@v2'
+
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'

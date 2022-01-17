@@ -510,7 +510,7 @@ Terraform module to automate your infrastructure provisioning. See [examples](ht
       --project="${PROJECT_ID}" \
       --location="global" \
       --workload-identity-pool="my-pool" \
-      --format='value(name)'
+      --format="value(name)"
     ```
 
     Use this value as the `workload_identity_provider` value in your GitHub

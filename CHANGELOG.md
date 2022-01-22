@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://www.github.com/google-github-actions/auth/compare/v0.4.4...v0.5.0) (2022-01-22)
+
+
+### Features
+
+* switch to use node version 16 ([#110](https://www.github.com/google-github-actions/auth/issues/110)) ([54924db](https://www.github.com/google-github-actions/auth/commit/54924dbbed2718579e1a91c9fc16a0b81c1ad8cb))
+
 ### [0.4.4](https://www.github.com/google-github-actions/auth/compare/v0.4.3...v0.4.4) (2021-12-22)
 
 

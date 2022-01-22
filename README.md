@@ -46,6 +46,7 @@ jobs:
       id-token: 'write'
 
     steps:
+    # actions/checkout MUST come before auth
     - uses: 'actions/checkout@v2'
 
     - id: 'auth'

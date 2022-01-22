@@ -23,7 +23,7 @@ jobs:
 
     - uses: 'actions/setup-node@v2'
       with:
-        node-version: '12.x'
+        node-version: '16.x'
 
     - name: 'npm ci'
       run: 'npm ci'
@@ -52,7 +52,7 @@ jobs:
 
     - uses: 'actions/setup-node@v2'
       with:
-        node-version: '12.x'
+        node-version: '16.x'
 
     - id: 'auth-default'
       name: 'auth-default'
@@ -117,7 +117,7 @@ jobs:
 
     - uses: 'actions/setup-node@v2'
       with:
-        node-version: '12.x'
+        node-version: '16.x'
 
     - id: 'auth-default'
       name: 'auth-default'
@@ -179,7 +179,7 @@ jobs:
 
     - uses: 'actions/setup-node@v2'
       with:
-        node-version: '12.x'
+        node-version: '16.x'
 
     - name: 'npm ci'
       run: 'npm ci'

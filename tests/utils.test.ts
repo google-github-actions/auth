@@ -3,7 +3,9 @@
 import 'mocha';
 import { expect } from 'chai';
 
-import { buildDomainWideDelegationJWT } from '../src/utils';
+import { tmpdir } from 'os';
+
+import { buildDomainWideDelegationJWT, isEmptyDir } from '../src/utils';
 
 describe('Utils', () => {
   describe('#buildDomainWideDelegationJWT', () => {
@@ -51,6 +53,28 @@ describe('Utils', () => {
         } else {
           expect(body.scope).to.not.be;
         }
+      });
+    });
+  });
+
+  describe('#isEmptyDir', async () => {
+    const cases = [
+      {
+        name: 'non-existent dir',
+        dir: '/this/path/definitely/does/not/exist',
+        exp: true,
+      },
+      {
+        name: 'exists',
+        dir: tmpdir(),
+        exp: false,
+      },
+    ];
+
+    cases.forEach((tc) => {
+      it(tc.name, async () => {
+        const isEmpty = await isEmptyDir(tc.dir);
+        expect(isEmpty).to.eq(tc.exp);
       });
     });
   });

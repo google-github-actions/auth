@@ -15,6 +15,7 @@ import {
 import {
   errorMessage,
   exactlyOneOf,
+  isEmptyDir,
   isPinnedToHead,
   parseCSV,
   parseDuration,
@@ -25,7 +26,7 @@ import { WorkloadIdentityClient } from './client/workload_identity_client';
 import { CredentialsJSONClient } from './client/credentials_json_client';
 import { AuthClient } from './client/auth_client';
 import { BaseClient } from './base';
-import { buildDomainWideDelegationJWT, isEmptyDir } from './utils';
+import { buildDomainWideDelegationJWT } from './utils';
 
 const secretsWarning =
   `If you are specifying input values via GitHub secrets, ensure the secret ` +

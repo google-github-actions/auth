@@ -1,7 +1,5 @@
 'use strict';
 
-import { promises as fs } from 'fs';
-
 /**
  * buildDomainWideDelegationJWT constructs an _unsigned_ JWT to be used for a
  * DWD exchange. The JWT must be signed and then exchanged with the OAuth
@@ -36,21 +34,4 @@ export function buildDomainWideDelegationJWT(
   }
 
   return JSON.stringify(body);
-}
-
-/**
- * isEmptyDir returns true if the given directory does not exist, or exists but
- * contains no files. It also returns true if the current user does not have
- * permission to read the directory, since it is effectively empty from the
- * viewpoint of the caller.
- *
- * @param dir Path to a directory.
- */
-export async function isEmptyDir(dir: string): Promise<boolean> {
-  try {
-    const files = await fs.readdir(dir);
-    return files.length <= 0;
-  } catch (e) {
-    return true;
-  }
 }

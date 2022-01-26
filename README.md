@@ -32,6 +32,10 @@ and permissions on Google Cloud.
     configure a Google Cloud Workload Identity Provider. See [setup](#setup)
     for instructions.
 
+-   You must run the `actions/checkout@v2` step _before_ this action. Omitting
+    the checkout step or putting it after `auth` will cause future steps to be
+    unable to authenticate.
+
 
 ## Usage
 

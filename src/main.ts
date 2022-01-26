@@ -25,7 +25,7 @@ import { WorkloadIdentityClient } from './client/workload_identity_client';
 import { CredentialsJSONClient } from './client/credentials_json_client';
 import { AuthClient } from './client/auth_client';
 import { BaseClient } from './base';
-import { buildDomainWideDelegationJWT } from './utils';
+import { buildDomainWideDelegationJWT, isEmptyDir } from './utils';
 
 const secretsWarning =
   `If you are specifying input values via GitHub secrets, ensure the secret ` +
@@ -130,6 +130,25 @@ async function run(): Promise<void> {
       const githubWorkspace = process.env.GITHUB_WORKSPACE;
       if (!githubWorkspace) {
         throw new Error('$GITHUB_WORKSPACE is not set');
+      }
+
+      // There have been a number of issues where users have not used the
+      // "actions/checkout" step before our action. Our action relies on the
+      // creation of that directory; worse, if a user puts "actions/checkout"
+      // after our action, it will delete the exported credential. This
+      // following code does a small check to see if there are any files in the
+      // directory. It emits a warning if there are no files, since there may be
+      // legitimate use cases for authenticating without checking out the
+      // repository.
+      const githubWorkspaceIsEmpty = await isEmptyDir(githubWorkspace);
+      if (githubWorkspaceIsEmpty) {
+        logWarning(
+          `The "create_credentials_file" option is true, but the current ` +
+            `GitHub workspace is empty. Did you forget to use ` +
+            `"actions/checkout" before this step? If you do not intend to ` +
+            `share authentication with future steps in this job, set ` +
+            `"create_credentials_file" to false.`,
+        );
       }
 
       // Create credentials file.

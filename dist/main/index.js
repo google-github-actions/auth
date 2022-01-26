@@ -2198,6 +2198,22 @@ function run() {
                 if (!githubWorkspace) {
                     throw new Error('$GITHUB_WORKSPACE is not set');
                 }
+                // There have been a number of issues where users have not used the
+                // "actions/checkout" step before our action. Our action relies on the
+                // creation of that directory; worse, if a user puts "actions/checkout"
+                // after our action, it will delete the exported credential. This
+                // following code does a small check to see if there are any files in the
+                // directory. It emits a warning if there are no files, since there may be
+                // legitimate use cases for authenticating without checking out the
+                // repository.
+                const githubWorkspaceIsEmpty = yield (0, utils_1.isEmptyDir)(githubWorkspace);
+                if (githubWorkspaceIsEmpty) {
+                    (0, core_1.warning)(`The "create_credentials_file" option is true, but the current ` +
+                        `GitHub workspace is empty. Did you forget to use ` +
+                        `"actions/checkout" before this step? If you do not intend to ` +
+                        `share authentication with future steps in this job, set ` +
+                        `"create_credentials_file" to false.`);
+                }
                 // Create credentials file.
                 const credentialsPath = yield client.createCredentialsFile(githubWorkspace);
                 (0, core_1.info)(`Created credentials file at "${credentialsPath}"`);
@@ -2292,12 +2308,22 @@ run();
 /***/ }),
 
 /***/ 314:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.buildDomainWideDelegationJWT = void 0;
+exports.isEmptyDir = exports.buildDomainWideDelegationJWT = void 0;
+const fs_1 = __nccwpck_require__(147);
 /**
  * buildDomainWideDelegationJWT constructs an _unsigned_ JWT to be used for a
  * DWD exchange. The JWT must be signed and then exchanged with the OAuth
@@ -2327,6 +2353,26 @@ function buildDomainWideDelegationJWT(serviceAccount, subject, scopes, lifetime)
     return JSON.stringify(body);
 }
 exports.buildDomainWideDelegationJWT = buildDomainWideDelegationJWT;
+/**
+ * isEmptyDir returns true if the given directory does not exist, or exists but
+ * contains no files. It also returns true if the current user does not have
+ * permission to read the directory, since it is effectively empty from the
+ * viewpoint of the caller.
+ *
+ * @param dir Path to a directory.
+ */
+function isEmptyDir(dir) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const files = yield fs_1.promises.readdir(dir);
+            return files.length <= 0;
+        }
+        catch (e) {
+            return true;
+        }
+    });
+}
+exports.isEmptyDir = isEmptyDir;
 
 
 /***/ }),

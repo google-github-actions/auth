@@ -476,24 +476,25 @@ Terraform module to automate your infrastructure provisioning. See [examples](ht
       --location="global" \
       --workload-identity-pool="my-pool" \
       --display-name="Demo provider" \
-      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
+      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository,assertion.ref=attribute.ref" \
+      --attribute-condition="attribute.ref == 'refs/heads/main'" \
       --issuer-uri="https://token.actions.githubusercontent.com"
     ```
 
-    The attribute mappings map claims in the GitHub Actions JWT to assertions
-    you can make about the request (like the repository or GitHub username of
-    the principal invoking the GitHub Action). These can be used to further
-    restrict the authentication using `--attribute-condition` flags.
+    The `--attribute-mappings` maps claims from JWT issued by Github
+    to Google Cloud attributes. These mappings can be further used to
+    restrict the authentication by using `--attribute-condition` flag.
+    The attributes **must** be mapped before they can be used in a
+    condition or IAM policy.
 
-    The example above only maps the `actor` and `repository` values. To map
-    additional values, add them to the attribute map:
+    The example above only maps a few claims like `actor`, `repository`
+    etc. and only one condition to restrict authentication to the main
+    branch only. You can add more mappings and conditions to these flags. e.g.
 
     ```sh
-    --attribute-mapping="google.subject=assertion.sub,attribute.repository_owner=assertion.repository_owner"
+    --attribute-mapping="attribute.event_name=assertion.event_name,attribute.repository_owner=assertion.repository_owner"
+    --attribute-condition="attribute.event_name == 'push'" \
     ```
-
-    **You must map any claims in the incoming token to attributes before you can
-    assert on those attributes in a CEL expression or IAM policy!**
 
 1.  Allow authentications from the Workload Identity Provider originating from
     your repository to impersonate the Service Account created above:

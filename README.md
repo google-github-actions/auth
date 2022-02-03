@@ -66,7 +66,7 @@ jobs:
 Note that changing the `permissions` block may remove some default permissions.
 See the [permissions documentation][github-perms] for more information.
 
-See [Examples](#examples) for more examples.
+See [Examples](#examples) for more examples. For help debugging common errors, see [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 
 ## Inputs
@@ -529,6 +529,7 @@ Terraform module to automate your infrastructure provisioning. See [examples](ht
 
     Note: It can take **up to 5 minutes** from when you configure the Workload
     Identity Pool mapping until the permissions are available.
+
 
 ## GitHub Token Format
 

@@ -1,5 +1,7 @@
 'use strict';
 
+import { join as pathjoin } from 'path';
+
 import {
   debug as logDebug,
   exportVariable,
@@ -26,7 +28,7 @@ import { WorkloadIdentityClient } from './client/workload_identity_client';
 import { CredentialsJSONClient } from './client/credentials_json_client';
 import { AuthClient } from './client/auth_client';
 import { BaseClient } from './base';
-import { buildDomainWideDelegationJWT } from './utils';
+import { buildDomainWideDelegationJWT, generateCredentialsFilename } from './utils';
 
 const secretsWarning =
   `If you are specifying input values via GitHub secrets, ensure the secret ` +
@@ -153,7 +155,9 @@ async function run(): Promise<void> {
       }
 
       // Create credentials file.
-      const credentialsPath = await client.createCredentialsFile(githubWorkspace);
+      const outputFile = generateCredentialsFilename();
+      const outputPath = pathjoin(githubWorkspace, outputFile);
+      const credentialsPath = await client.createCredentialsFile(outputPath);
       logInfo(`Created credentials file at "${credentialsPath}"`);
 
       // Output to be available to future steps.

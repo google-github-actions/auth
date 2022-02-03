@@ -36,6 +36,15 @@ and permissions on Google Cloud.
     the checkout step or putting it after `auth` will cause future steps to be
     unable to authenticate.
 
+-   If you plan to create binaries, containers, pull requests, or other
+    releases, add the following to your `.gitignore` to prevent accidentially
+    committing credentials to your release artifact:
+
+    ```text
+    # Ignore generated credentials from google-github-actions/auth
+    gha-creds-*.json
+    ```
+
 
 ## Usage
 

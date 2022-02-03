@@ -3,7 +3,7 @@
 import 'mocha';
 import { expect } from 'chai';
 
-import { buildDomainWideDelegationJWT } from '../src/utils';
+import { buildDomainWideDelegationJWT, generateCredentialsFilename } from '../src/utils';
 
 describe('Utils', () => {
   describe('#buildDomainWideDelegationJWT', () => {
@@ -52,6 +52,15 @@ describe('Utils', () => {
           expect(body.scope).to.not.be;
         }
       });
+    });
+  });
+
+  describe('#generateCredentialsFilename', () => {
+    it('returns a string matching the regex', () => {
+      for (let i = 0; i < 10; i++) {
+        const filename = generateCredentialsFilename();
+        expect(filename).to.match(/gha-creds-[0-9a-z]{16}\.json/);
+      }
     });
   });
 });

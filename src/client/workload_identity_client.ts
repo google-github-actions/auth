@@ -1,7 +1,7 @@
 'use strict';
 
 import { URL } from 'url';
-import { randomFilepath, writeSecureFile } from '@google-github-actions/actions-utils';
+import { writeSecureFile } from '@google-github-actions/actions-utils';
 
 import { AuthClient } from './auth_client';
 import { BaseClient } from '../base';
@@ -182,7 +182,7 @@ export class WorkloadIdentityClient implements AuthClient {
    * createCredentialsFile creates a Google Cloud credentials file that can be
    * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
    */
-  async createCredentialsFile(outputDir: string): Promise<string> {
+  async createCredentialsFile(outputPath: string): Promise<string> {
     const requestURL = new URL(this.#oidcTokenRequestURL);
 
     // Append the audience value to the request.
@@ -209,7 +209,6 @@ export class WorkloadIdentityClient implements AuthClient {
       },
     };
 
-    const outputFile = randomFilepath(outputDir);
-    return await writeSecureFile(outputFile, JSON.stringify(data));
+    return await writeSecureFile(outputPath, JSON.stringify(data));
   }
 }

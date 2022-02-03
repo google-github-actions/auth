@@ -4,7 +4,6 @@ import { createSign } from 'crypto';
 import {
   isServiceAccountKey,
   parseCredential,
-  randomFilepath,
   ServiceAccountKey,
   toBase64,
   writeSecureFile,
@@ -124,8 +123,7 @@ export class CredentialsJSONClient implements AuthClient {
    * createCredentialsFile creates a Google Cloud credentials file that can be
    * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
    */
-  async createCredentialsFile(outputDir: string): Promise<string> {
-    const outputFile = randomFilepath(outputDir);
-    return await writeSecureFile(outputFile, JSON.stringify(this.#credentials));
+  async createCredentialsFile(outputPath: string): Promise<string> {
+    return await writeSecureFile(outputPath, JSON.stringify(this.#credentials));
   }
 }

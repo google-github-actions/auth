@@ -3,8 +3,11 @@
 import 'mocha';
 import { expect } from 'chai';
 
+import { join as pathjoin } from 'path';
 import { readFileSync } from 'fs';
 import { tmpdir } from 'os';
+
+import { randomFilename } from '@google-github-actions/actions-utils';
 
 import { CredentialsJSONClient } from '../../src/client/credentials_json_client';
 
@@ -104,14 +107,14 @@ describe('CredentialsJSONClient', () => {
 
   describe('#createCredentialsFile', () => {
     it('writes the file', async () => {
-      const tmp = tmpdir();
+      const outputFile = pathjoin(tmpdir(), randomFilename());
       const client = new CredentialsJSONClient({
         credentialsJSON: credentialsJSON,
       });
 
       const exp = JSON.parse(credentialsJSON);
 
-      const pth = await client.createCredentialsFile(tmp);
+      const pth = await client.createCredentialsFile(outputFile);
       const data = readFileSync(pth);
       const got = JSON.parse(data.toString('utf8'));
 

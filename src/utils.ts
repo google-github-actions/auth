@@ -1,5 +1,7 @@
 'use strict';
 
+import { randomFilename } from '@google-github-actions/actions-utils';
+
 /**
  * buildDomainWideDelegationJWT constructs an _unsigned_ JWT to be used for a
  * DWD exchange. The JWT must be signed and then exchanged with the OAuth
@@ -34,4 +36,20 @@ export function buildDomainWideDelegationJWT(
   }
 
   return JSON.stringify(body);
+}
+
+/**
+ * generateCredentialsFilename creates a predictable filename under which
+ * credentials are written. This string is the filename, not the filepath. It must match the format:
+ *
+ *     gha-creds-[a-z0-9]{16}.json
+ *
+ * For example:
+ *
+ *     gha-creds-ef801c3bb35b52e5.json
+ *
+ * @return Filename
+ */
+export function generateCredentialsFilename(): string {
+  return 'gha-creds-' + randomFilename(8) + '.json';
 }

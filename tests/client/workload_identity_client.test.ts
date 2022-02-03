@@ -4,7 +4,11 @@ import 'mocha';
 import { expect } from 'chai';
 
 import { tmpdir } from 'os';
+import { join as pathjoin } from 'path';
 import { readFileSync } from 'fs';
+
+import { randomFilename } from '@google-github-actions/actions-utils';
+
 import { WorkloadIdentityClient } from '../../src/client/workload_identity_client';
 
 describe('WorkloadIdentityClient', () => {
@@ -71,7 +75,7 @@ describe('WorkloadIdentityClient', () => {
 
   describe('#createCredentialsFile', () => {
     it('writes the file', async () => {
-      const tmp = tmpdir();
+      const outputFile = pathjoin(tmpdir(), randomFilename());
       const client = new WorkloadIdentityClient({
         projectID: 'my-project',
         providerID: 'my-provider',
@@ -101,7 +105,7 @@ describe('WorkloadIdentityClient', () => {
         type: 'external_account',
       };
 
-      const pth = await client.createCredentialsFile(tmp);
+      const pth = await client.createCredentialsFile(outputFile);
       const data = readFileSync(pth);
       const got = JSON.parse(data.toString('utf8'));
 

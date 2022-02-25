@@ -316,7 +316,7 @@ jobs:
     # This example uses the docker login action
     - uses: 'docker/login-action@v1'
       with:
-        registry: 'gcr.io' # or REGION.docker.pkg.dev
+        registry: 'gcr.io' # or REGION-docker.pkg.dev
         username: 'oauth2accesstoken'
         password: '${{ steps.auth.outputs.access_token }}'
 

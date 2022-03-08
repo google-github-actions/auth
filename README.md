@@ -32,7 +32,7 @@ and permissions on Google Cloud.
     configure a Google Cloud Workload Identity Provider. See [setup](#setup)
     for instructions.
 
--   You must run the `actions/checkout@v2` step _before_ this action. Omitting
+-   You must run the `actions/checkout@v3` step _before_ this action. Omitting
     the checkout step or putting it after `auth` will cause future steps to be
     unable to authenticate.
 
@@ -60,7 +60,7 @@ jobs:
 
     steps:
     # actions/checkout MUST come before auth
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -201,7 +201,7 @@ regardless of the authentication mechanism.
      jobs:
       job_id:
         steps:
-        - uses: 'actions/checkout@v2' # Must come first!
+        - uses: 'actions/checkout@v3' # Must come first!
         - uses: 'google-github-actions/auth@v0'
      ```
 
@@ -249,7 +249,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -277,7 +277,7 @@ jobs:
     # ...
 
     steps:
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -303,7 +303,7 @@ examples:
 jobs:
   job_id:
     steps:
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -349,7 +349,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     # Configure Workload Identity Federation via a credentials file.
     - id: 'auth'
@@ -393,7 +393,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
@@ -433,7 +433,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'

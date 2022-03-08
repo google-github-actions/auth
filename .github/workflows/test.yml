@@ -19,7 +19,7 @@ jobs:
     runs-on: 'ubuntu-latest'
 
     steps:
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     - uses: 'actions/setup-node@v2'
       with:
@@ -48,7 +48,7 @@ jobs:
         - 'macos-latest'
 
     steps:
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     - uses: 'actions/setup-node@v2'
       with:
@@ -116,7 +116,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     - uses: 'actions/setup-node@v2'
       with:
@@ -181,7 +181,7 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-    - uses: 'actions/checkout@v2'
+    - uses: 'actions/checkout@v3'
 
     - uses: 'actions/setup-node@v2'
       with:

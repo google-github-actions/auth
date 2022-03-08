@@ -44,6 +44,10 @@ and permissions on Google Cloud.
     # Ignore generated credentials from google-github-actions/auth
     gha-creds-*.json
     ```
+    
+-   This action runs using Node 16. If you are using self-hosted GitHub Actions
+    runners, you must use runner version [2.285.0](https://github.com/actions/virtual-environments)
+    or newer.
 
 
 ## Usage

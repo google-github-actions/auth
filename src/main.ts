@@ -41,6 +41,14 @@ const oidcWarning =
   `GitHub Actions workflow permissions are incorrect, or this job is being ` +
   `run from a fork. For more information, please see https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token`;
 
+const projectEnvVars = [
+  'CLOUDSDK_PROJECT',
+  'CLOUDSDK_CORE_PROJECT',
+  'GCP_PROJECT',
+  'GCLOUD_PROJECT',
+  'GOOGLE_CLOUD_PROJECT',
+];
+
 /**
  * Executes the main action, documented inline.
  */
@@ -52,7 +60,8 @@ async function run(): Promise<void> {
 
   try {
     // Load configuration.
-    const projectID = getInput('project_id');
+    const projectID =
+      getInput('project_id') || process.env[projectEnvVars.find((envVar) => process.env[envVar])];
     const workloadIdentityProvider = getInput('workload_identity_provider');
     const serviceAccount = getInput('service_account');
     const audience =
@@ -178,11 +187,9 @@ async function run(): Promise<void> {
     // Set the project ID environment variables to the computed values.
     const computedProjectID = await client.getProjectID();
     setOutput('project_id', computedProjectID);
-    exportVariable('CLOUDSDK_PROJECT', computedProjectID);
-    exportVariable('CLOUDSDK_CORE_PROJECT', computedProjectID);
-    exportVariable('GCP_PROJECT', computedProjectID);
-    exportVariable('GCLOUD_PROJECT', computedProjectID);
-    exportVariable('GOOGLE_CLOUD_PROJECT', computedProjectID);
+    projectEnvVars.forEach((envVar) => {
+      exportVariable(envVar, computedProjectID);
+    });
 
     switch (tokenFormat) {
       case '': {

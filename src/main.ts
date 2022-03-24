@@ -59,6 +59,7 @@ async function run(): Promise<void> {
       getInput('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
     const credentialsJSON = getInput('credentials_json');
     const createCredentialsFile = getBooleanInput('create_credentials_file');
+    const exportEnvironmentVariables = getBooleanInput('export_environment_variables');
     const tokenFormat = getInput('token_format');
     const delegates = parseCSV(getInput('delegates'));
 
@@ -163,26 +164,32 @@ async function run(): Promise<void> {
       // Output to be available to future steps.
       setOutput('credentials_file_path', credentialsPath);
 
-      // CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE is picked up by gcloud to use
-      // a specific credential file (subject to change and equivalent to auth/credential_file_override)
-      exportVariable('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
+      if (exportEnvironmentVariables) {
+        // CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE is picked up by gcloud to
+        // use a specific credential file (subject to change and equivalent to
+        // auth/credential_file_override).
+        exportVariableAndWarn('CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', credentialsPath);
 
-      // GOOGLE_APPLICATION_CREDENTIALS is used by Application Default Credentials
-      // in all GCP client libraries
-      exportVariable('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
+        // GOOGLE_APPLICATION_CREDENTIALS is used by Application Default
+        // Credentials in all GCP client libraries.
+        exportVariableAndWarn('GOOGLE_APPLICATION_CREDENTIALS', credentialsPath);
 
-      // GOOGLE_GHA_CREDS_PATH is used by other Google GitHub Actions
-      exportVariable('GOOGLE_GHA_CREDS_PATH', credentialsPath);
+        // GOOGLE_GHA_CREDS_PATH is used by other Google GitHub Actions.
+        exportVariableAndWarn('GOOGLE_GHA_CREDS_PATH', credentialsPath);
+      }
     }
 
     // Set the project ID environment variables to the computed values.
     const computedProjectID = await client.getProjectID();
     setOutput('project_id', computedProjectID);
-    exportVariable('CLOUDSDK_PROJECT', computedProjectID);
-    exportVariable('CLOUDSDK_CORE_PROJECT', computedProjectID);
-    exportVariable('GCP_PROJECT', computedProjectID);
-    exportVariable('GCLOUD_PROJECT', computedProjectID);
-    exportVariable('GOOGLE_CLOUD_PROJECT', computedProjectID);
+
+    if (exportEnvironmentVariables) {
+      exportVariableAndWarn('CLOUDSDK_CORE_PROJECT', computedProjectID);
+      exportVariableAndWarn('CLOUDSDK_PROJECT', computedProjectID);
+      exportVariableAndWarn('GCLOUD_PROJECT', computedProjectID);
+      exportVariableAndWarn('GCP_PROJECT', computedProjectID);
+      exportVariableAndWarn('GOOGLE_CLOUD_PROJECT', computedProjectID);
+    }
 
     switch (tokenFormat) {
       case '': {
@@ -259,6 +266,24 @@ async function run(): Promise<void> {
     const msg = errorMessage(err);
     setFailed(`google-github-actions/auth failed with: ${msg}`);
   }
+}
+
+/**
+ * exportVariableAndWarn exports the given key as an environment variable set to
+ * the provided value. If a value already exists, it is overwritten and an
+ * warning is emitted.
+ *
+ * @param key Environment variable key.
+ * @param value Environment variable value.
+ */
+function exportVariableAndWarn(key: string, value: string) {
+  const existing = process.env[key];
+  if (existing) {
+    const old = JSON.stringify(existing);
+    logWarning(`Overwriting existing environment variable ${key} (was: ${old})`);
+  }
+
+  exportVariable(key, value);
 }
 
 run();

@@ -44,7 +44,7 @@ and permissions on Google Cloud.
     # Ignore generated credentials from google-github-actions/auth
     gha-creds-*.json
     ```
-    
+
 -   This action runs using Node 16. If you are using self-hosted GitHub Actions
     runners, you must use runner version [2.285.0](https://github.com/actions/virtual-environments)
     or newer.
@@ -208,6 +208,27 @@ regardless of the authentication mechanism.
         - uses: 'actions/checkout@v3' # Must come first!
         - uses: 'google-github-actions/auth@v0'
      ```
+
+-   `export_environment_variables`: (Optional) If true, the action will export
+    common environment variables which are known to be consumed by popular
+    downstream libraries and tools, including:
+
+    -   `CLOUDSDK_PROJECT`
+    -   `CLOUDSDK_CORE_PROJECT`
+    -   `GCP_PROJECT`
+    -   `GCLOUD_PROJECT`
+    -   `GOOGLE_CLOUD_PROJECT`
+
+    If "create_credentials_file" is true, additional environment variables are
+    exported:
+
+    -   `CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE`
+    -   `GOOGLE_APPLICATION_CREDENTIALS`
+    -   `GOOGLE_GHA_CREDS_PATH`
+
+    If false, the action will not export any environment variables, meaning
+    future steps are unlikely to be automatically authenticated to Google Cloud.
+    The default value is true.
 
 -   `delegates`: (Optional) List of additional service account emails or unique
     identities to use for impersonation in the chain. By default there are no

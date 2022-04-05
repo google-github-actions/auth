@@ -1,6 +1,6 @@
 {
   "name": "@google-github-actions/auth",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Authenticate to Google Cloud using OIDC tokens or JSON service account keys.",
   "main": "dist/main/index.js",
   "scripts": {

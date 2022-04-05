@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://www.github.com/google-github-actions/auth/compare/v0.6.0...v0.7.0) (2022-04-05)
+
+
+### Features
+
+* allow opt-out of exporting environment variables ([#157](https://www.github.com/google-github-actions/auth/issues/157)) ([d16fd89](https://www.github.com/google-github-actions/auth/commit/d16fd896f76605863c491de993d3e5d5cf4f68f8))
+
 ## [0.6.0](https://www.github.com/google-github-actions/auth/compare/v0.5.0...v0.6.0) (2022-02-03)
 
 

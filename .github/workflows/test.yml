@@ -65,7 +65,7 @@ jobs:
 
     - id: 'setup-gcloud'
       name: 'setup-gcloud'
-      uses: 'google-github-actions/setup-gcloud@master'
+      uses: 'google-github-actions/setup-gcloud@main'
 
     - id: 'gcloud'
       name: 'gcloud'
@@ -134,7 +134,7 @@ jobs:
 
     - id: 'setup-gcloud'
       name: 'setup-gcloud'
-      uses: 'google-github-actions/setup-gcloud@master'
+      uses: 'google-github-actions/setup-gcloud@main'
 
     - id: 'gcloud'
       name: 'gcloud'

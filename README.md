@@ -616,9 +616,9 @@ mappings, see the [GitHub OIDC token documentation](https://docs.github.com/en/a
 ```json
 {
   "jti": "...",
-  "sub": "repo:username/reponame:ref:refs/heads/master",
+  "sub": "repo:username/reponame:ref:refs/heads/main",
   "aud": "https://iam.googleapis.com/projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider",
-  "ref": "refs/heads/master",
+  "ref": "refs/heads/main",
   "sha": "d11880f4f451ee35192135525dc974c56a3c1b28",
   "repository": "username/reponame",
   "repository_owner": "username",
@@ -631,7 +631,7 @@ mappings, see the [GitHub OIDC token documentation](https://docs.github.com/en/a
   "base_ref": "",
   "event_name": "push",
   "ref_type": "branch",
-  "job_workflow_ref": "username/reponame/.github/workflows/token.yml@refs/heads/master",
+  "job_workflow_ref": "username/reponame/.github/workflows/token.yml@refs/heads/main",
   "iss": "https://token.actions.githubusercontent.com",
   "nbf": 1631718827,
   "exp": 1631719727,

@@ -91,7 +91,8 @@ Identity Federation.
 
 **⚠️ The `bq` and `gsutil` tools do no currently support Workload Identity
 Federation!** You will need to use traditional service account key
-authentication for now.
+authentication for now. Please note that our team does not control these other
+CLI tools. See GoogleCloudPlatform/gsutil#1407 for more information.
 
 -   `workload_identity_provider`: (Required) The full identifier of the Workload Identity
     Provider, including the project number, pool name, and provider name. If

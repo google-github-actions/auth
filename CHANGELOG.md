@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.7.1](https://www.github.com/google-github-actions/auth/compare/v0.7.0...v0.7.1) (2022-04-22)
+
+
+### Miscellaneous Chores
+
+* release 0.7.1 ([b5b6d97](https://www.github.com/google-github-actions/auth/commit/b5b6d978c9d18fff624c340104d75251e9c18614))
+
 ## [0.7.0](https://www.github.com/google-github-actions/auth/compare/v0.6.0...v0.7.0) (2022-04-05)
 
 

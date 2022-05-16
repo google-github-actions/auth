@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.7.2](https://www.github.com/google-github-actions/auth/compare/v0.7.1...v0.7.2) (2022-05-16)
+
+
+### Bug Fixes
+
+* only emit warning if the lifetime exceeds 1 hour ([f322a0d](https://www.github.com/google-github-actions/auth/commit/f322a0d1e2c22a84ebc9356dc234f5df49e238d4))
+
 ### [0.7.1](https://www.github.com/google-github-actions/auth/compare/v0.7.0...v0.7.1) (2022-04-22)
 
 

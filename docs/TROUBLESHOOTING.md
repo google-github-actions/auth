@@ -101,6 +101,21 @@ with the Google Cloud IAM team][iam-feedback]. The only mitigation is to use
 shorter repo names or shorter branch names.
 
 
+## Token lifetime cannot exceed 1 hour
+
+If you get an error like:
+
+```text
+The access token lifetime cannot exceed 3600 seconds.
+```
+
+it means that there is likely clock skew between where you are running the
+`auth` GitHub Action and Google's servers. You can either install and configure
+ntp pointed at time.google.com, or adjust the `access_token_lifetime` value to
+something less than `3600s` to allow for clock skew (`3300s` would allow for 5
+minutes of clock skew).
+
+
 ## Dirty git or bundled credentials
 
 By default, the `auth` action exports credentials to the current workspace so

@@ -91,7 +91,7 @@ If you get an error like:
 The size of mapped attribute exceeds the 127 bytes limit.
 ```
 
-it means  that the GitHub OIDC token had a claim that exceeded the maximum
+it means that the GitHub OIDC token had a claim that exceeded the maximum
 allowed value of 127 bytes. In general, 1 byte = 1 character. This most common
 reason this occurs is due to long repo names or long branch names.
 

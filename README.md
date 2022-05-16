@@ -158,13 +158,16 @@ workflow. By default, this action does not generate any tokens.
     [`constraints/iam.allowServiceAccountCredentialLifetimeExtension`
     organization policy][orgpolicy-creds-lifetime] is enabled.
 
-    Note: In order to support Domain-Wide Delegation via Workload Identity
-    Federation, you must grant the external identity ("principalSet")
+    In order to support Domain-Wide Delegation via Workload Identity Federation,
+    you must grant the external identity ("principalSet")
     `roles/iam.serviceAccountTokenCreator` in addition to
     `roles/iam.workloadIdentityUser`. The default Workload Identity setup will
     only grant the latter role. If you want to use this GitHub Action with
     Domain-Wide Delegation, you must manually add the "Service Account Token
     Creator" role onto the external identity.
+
+    You will also need to customize the `access_token_scopes` value to
+    correspond to the OAuth scopes required for the API(s) you will access.
 
 ### Generating ID tokens
 

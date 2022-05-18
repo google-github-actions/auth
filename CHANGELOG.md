@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.7.3](https://www.github.com/google-github-actions/auth/compare/v0.7.2...v0.7.3) (2022-05-18)
+
+
+### Bug Fixes
+
+* repair a logic bug for domain-wide delegation ([#178](https://www.github.com/google-github-actions/auth/issues/178)) ([7c32666](https://www.github.com/google-github-actions/auth/commit/7c326663721943518ddf89bec946f83da5cfc0e5))
+
 ### [0.7.2](https://www.github.com/google-github-actions/auth/compare/v0.7.1...v0.7.2) (2022-05-16)
 
 

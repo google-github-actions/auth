@@ -210,12 +210,14 @@ async function run(): Promise<void> {
         // perform Domain-Wide Delegation. Otherwise, use the modern IAM
         // Credentials endpoints.
         let accessToken, expiration;
-        if (accessTokenSubject && accessTokenLifetime > 3600) {
-          logInfo(
-            `An access token subject was specified, triggering Domain-Wide ` +
-              `Delegation flow. This flow does not support specifying an ` +
-              `access token lifetime of greater than 1 hour.`,
-          );
+        if (accessTokenSubject) {
+          if (accessTokenLifetime > 3600) {
+            logInfo(
+              `An access token subject was specified, triggering Domain-Wide ` +
+                `Delegation flow. This flow does not support specifying an ` +
+                `access token lifetime of greater than 1 hour.`,
+            );
+          }
 
           const unsignedJWT = buildDomainWideDelegationJWT(
             serviceAccount,

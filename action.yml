@@ -58,6 +58,12 @@ inputs:
       used for authentication via gcloud and Google Cloud SDKs.
     default: true
     required: false
+  create_credentials_file_name:
+    description: |-
+      If set, the action will create a credentials file with the specified name
+      (e.g. 'google-credentials.json').
+    default: null
+    required: false
   export_environment_variables:
     description: |-
       If true, the action will export common environment variables which are

@@ -213,6 +213,11 @@ regardless of the authentication mechanism.
         - uses: 'google-github-actions/auth@v0'
      ```
 
+-   `create_credentials_file_name`: (Optional) If set, the action will create
+    a credentials file with the specified name (e.g. 'google-credentials.json').
+    The default is null. This is only available if "create_credentials_file"
+    was set to true.
+
 -   `export_environment_variables`: (Optional) If true, the action will export
     common environment variables which are known to be consumed by popular
     downstream libraries and tools, including:

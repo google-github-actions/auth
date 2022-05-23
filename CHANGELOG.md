@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://www.github.com/google-github-actions/auth/compare/v0.7.3...v0.8.0) (2022-05-23)
+
+
+### Features
+
+* add retries ([#181](https://www.github.com/google-github-actions/auth/issues/181)) ([95a6bc2](https://www.github.com/google-github-actions/auth/commit/95a6bc2a27ae409a01ea58dd0732eccaa088ec07))
+
 ### [0.7.3](https://www.github.com/google-github-actions/auth/compare/v0.7.2...v0.7.3) (2022-05-18)
 
 

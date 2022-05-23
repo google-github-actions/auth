@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://www.github.com/google-github-actions/auth/compare/v0.8.0...v0.8.0) (2022-05-23)
+
+
+### Miscellaneous Chores
+
+* release 0.8.0 ([#185](https://www.github.com/google-github-actions/auth/issues/185)) ([b60aafc](https://www.github.com/google-github-actions/auth/commit/b60aafc09d4b3b3ccc4562f4c61279b0e2cdd299))
+
 ## [0.8.0](https://www.github.com/google-github-actions/auth/compare/v0.7.3...v0.8.0) (2022-05-23)
 
 

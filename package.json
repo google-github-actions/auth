@@ -24,7 +24,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@actions/core": "^1.7.0",
-    "@google-github-actions/actions-utils": "^0.3.0"
+    "@google-github-actions/actions-utils": "^0.4.0"
   },
   "devDependencies": {
     "@types/chai": "^4.3.1",

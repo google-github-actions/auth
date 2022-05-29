@@ -16,7 +16,7 @@ jobs:
         with:
           script: |-
             const msg =
-              `Hi there :wave:!\n` +
+              `Hi there ${context.actor} :wave:!\n` +
               `\n` +
               `Thank you for reporting an issue. Our team will triage this as soon as we ` +
               `can. Please take a moment to review the ` +

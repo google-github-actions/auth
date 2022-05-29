@@ -1,0 +1,31 @@
+name: 'troubleshooting'
+
+on:
+  issues:
+    types:
+      - 'labeled'
+      - 'opened'
+
+jobs:
+  troubleshooting:
+    runs-on: 'ubuntu-latest'
+
+    steps:
+      - uses: 'actions/github-script@v6'
+        if: '${{ github.event.label_name == 'bug' }}'
+        with:
+          script: |-
+            const msg =
+              `Hi there :wave:!\n` +
+              `\n` +
+              `Thank you for reporting an issue. Our team will triage this as soon as we ` +
+              `can. Please take a moment to review the ` +
+              `[troubleshooting steps](https://github.com/google-github-actions/auth/blob/main/docs/TROUBLESHOOTING.md)` +
+              `which lists common error messages and their resolution steps.`;
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: msg,
+            });

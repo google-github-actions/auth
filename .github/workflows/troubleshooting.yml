@@ -1,4 +1,4 @@
-name: 'troubleshooting'
+name: 'Troubleshooting'
 
 on:
   issues:
@@ -17,11 +17,11 @@ jobs:
         with:
           script: |-
             const msg =
-              `Hi there ${context.actor} :wave:!\n` +
+              `Hi there @${context.actor} :wave:!\n` +
               `\n` +
-              `Thank you for reporting an issue. Our team will triage this as soon as we ` +
+              `Thank you for opening an issue. Our team will triage this as soon as we ` +
               `can. Please take a moment to review the ` +
-              `[troubleshooting steps](https://github.com/google-github-actions/auth/blob/main/docs/TROUBLESHOOTING.md)` +
+              `[troubleshooting steps](https://github.com/google-github-actions/auth/blob/main/docs/TROUBLESHOOTING.md) ` +
               `which lists common error messages and their resolution steps.`;
 
             await github.rest.issues.createComment({

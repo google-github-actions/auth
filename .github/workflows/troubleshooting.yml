@@ -3,15 +3,17 @@ name: 'troubleshooting'
 on:
   issues:
     types:
-      - 'labeled'
+      - 'opened'
 
 jobs:
   troubleshooting:
+    permissions:
+      issues: 'write'
+
     runs-on: 'ubuntu-latest'
 
     steps:
       - uses: 'actions/github-script@v6'
-        if: "${{ github.event.label_name == 'bug' }}"
         with:
           script: |-
             const msg =

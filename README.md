@@ -25,7 +25,7 @@ and permissions on Google Cloud.
 
 ## Prerequisites
 
--   For authenticating via Google Cloud Service Account Keys, you must create an
+-   For authenticating via Google Cloud Service Account Keys, you must create and
     export a Google Cloud Service Account Key in JSON format.
 
 -   For authenticating via Workload Identity Federation, you must create and

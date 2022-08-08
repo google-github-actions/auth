@@ -127,6 +127,14 @@ risk.**
     service account, you must grant the underlying service account
     `roles/iam.serviceAccountTokenCreator` permissions on itself.
 
+    Note: we strongly advise that you "compress" your JSON into a single line
+    string before storing it in a GitHub Secret. When a GitHub Secret is used in
+    a GitHub Actions workflow, _each line_ of the secret is masked in log
+    output. This can lead to aggressive sanitization of benign characters like
+    curly braces (`{}`) and brackets (`[]`). See
+    [Troubleshooting](docs/TROUBLESHOOTING.md#aggressive-replacement) for more
+    information.
+
 ### Generating OAuth 2.0 access tokens
 
 The following inputs are for _generating_ OAuth 2.0 access tokens for

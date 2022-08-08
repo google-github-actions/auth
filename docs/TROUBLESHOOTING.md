@@ -161,9 +161,30 @@ ways to fix this issue:
     5. Push
     ```
 
+<a name="aggressive-replacement"></a>
+
+## Aggressive *** replacement in logs
+
+When you use a [GitHub Actions secret][github-secrets] inside a workflow, _each_
+line of the secret is masked in log output. This is controlled by GitHub, not
+the `auth` action. We cannot change this behavior.
+
+This can be problematic if your secret is a multi-line JSON string, since it
+means curly braces (`{}`) and brackets (`[]`) will likely be replaced as `***`
+in the GitHub Actions log output. To avoid this, remove all unnecessary
+whitespace from the JSON and save the secret as a single-line JSON string. You
+can convert a multi-line JSON document to a single-line manually or by using a
+tool like `jq`:
+
+```sh
+cat credentials.json | jq -r tostring
+```
+
+
 [attribute-conditions]: https://cloud.google.com/iam/docs/workload-identity-federation#conditions
 [sa-impersonation]: https://cloud.google.com/iam/docs/workload-identity-federation#impersonation
 [debug-logs]: https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/enabling-debug-logging
 [iam-feedback]: https://cloud.google.com/iam/docs/getting-support
 [wif-byte-limit]: https://cloud.google.com/iam/docs/configuring-workload-identity-federation
 [cal]: https://cloud.google.com/logging/docs/audit/configure-data-access
+[github-secrets]: https://docs.github.com/en/actions/security-guides/encrypted-secrets

@@ -89,10 +89,8 @@ See [Examples](#examples) for more examples. For help debugging common errors, s
 The following inputs are for _authenticating_ to Google Cloud via Workload
 Identity Federation.
 
-**⚠️ The `bq` and `gsutil` tools do no currently support Workload Identity
-Federation!** You will need to use traditional service account key
-authentication for now. Please note that our team does not control these other
-CLI tools. See GoogleCloudPlatform/gsutil#1407 for more information.
+**⚠️ You must use the Cloud SDK version 390.0.0 or later to authenticate the
+`bq` and `gsutil` tools.**
 
 -   `workload_identity_provider`: (Required) The full identifier of the Workload Identity
     Provider, including the project number, pool name, and provider name. If

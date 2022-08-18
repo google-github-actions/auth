@@ -23,7 +23,7 @@
   "author": "GoogleCloudPlatform",
   "license": "Apache-2.0",
   "dependencies": {
-    "@actions/core": "^1.9.0",
+    "@actions/core": "^1.9.1",
     "@google-github-actions/actions-utils": "^0.4.0"
   },
   "devDependencies": {

@@ -620,6 +620,36 @@ Terraform module to automate your infrastructure provisioning. See [examples](ht
     Identity Pool mapping until the permissions are available.
 
 
+## Egress Proxy Support
+
+Using a proxy for outgoing traffic is supported via [global-agent](https://github.com/gajus/global-agent).
+```yaml
+jobs:
+  job_id:
+    # ...
+
+    # Add "id-token" with the intended permissions.
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - uses: 'actions/checkout@v3'
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v0'
+      env:
+        # See: https://github.com/gajus/global-agent#environment-variables
+        GLOBAL_AGENT_ENVIRONMENT_VARIABLE_NAMESPACE: ""
+        HTTPS_PROXY: http://my.proxy:3128
+
+      with:
+        workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+        service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
+```
+
+
 ## GitHub Token Format
 
 Below is a sample GitHub Token for reference for attribute mappings. For a list of all

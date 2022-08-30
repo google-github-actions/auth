@@ -1,6 +1,7 @@
 'use strict';
 
 import { join as pathjoin } from 'path';
+import {bootstrap} from 'global-agent';
 
 import {
   debug as logDebug,
@@ -41,6 +42,8 @@ const oidcWarning =
   `$ACTIONS_ID_TOKEN_REQUEST_URL into this job. This most likely means the ` +
   `GitHub Actions workflow permissions are incorrect, or this job is being ` +
   `run from a fork. For more information, please see https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token`;
+
+bootstrap();
 
 /**
  * Executes the main action.

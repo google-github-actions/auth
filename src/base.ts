@@ -1,7 +1,7 @@
 'use strict';
 
-import https, { RequestOptions } from 'https';
-import { URL, URLSearchParams } from 'url';
+import { HttpClient } from '@actions/http-client';
+import { URLSearchParams } from 'url';
 import {
   GoogleAccessTokenParameters,
   GoogleAccessTokenResponse,
@@ -13,63 +13,32 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { version: appVersion } = require('../package.json');
 
+// userAgent is the default user agent.
+const userAgent = `google-github-actions:auth/${appVersion}`;
+
+/**
+ * BaseClient is the default HTTP client for interacting with the IAM
+ * credentials API.
+ */
 export class BaseClient {
   /**
-   * request is a high-level helper that returns a promise from the executed
-   * request.
+   * client is the HTTP client.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-  static request(opts: RequestOptions, data?: any): Promise<string> {
-    if (!opts.headers) {
-      opts.headers = {};
-    }
+  protected readonly client: HttpClient;
 
-    if (!opts.headers['User-Agent']) {
-      opts.headers['User-Agent'] = `google-github-actions:auth/${appVersion}`;
-    }
-
-    return new Promise((resolve, reject) => {
-      const req = https.request(opts, (res) => {
-        res.setEncoding('utf8');
-
-        let body = '';
-        res.on('data', (data) => {
-          body += data;
-        });
-
-        res.on('end', () => {
-          if (res.statusCode && res.statusCode >= 400) {
-            reject(body);
-          } else {
-            resolve(body);
-          }
-        });
-      });
-
-      req.on('error', (err) => {
-        reject(err);
-      });
-
-      if (data != null) {
-        req.write(data);
-      }
-
-      req.end();
-    });
+  constructor() {
+    this.client = new HttpClient(userAgent);
   }
 
   /**
    * googleIDToken generates a Google Cloud ID token for the provided
    * service account email or unique id.
    */
-  static async googleIDToken(
+  async googleIDToken(
     token: string,
     { serviceAccount, audience, delegates, includeEmail }: GoogleIDTokenParameters,
   ): Promise<GoogleIDTokenResponse> {
-    const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
-    const tokenURL = new URL(
-      `https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateIdToken`,
-    );
+    const pth = `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:generateIdToken`;
 
     const data = {
       delegates: delegates,
@@ -77,21 +46,20 @@ export class BaseClient {
       includeEmail: includeEmail,
     };
 
-    const opts = {
-      hostname: tokenURL.hostname,
-      port: tokenURL.port,
-      path: tokenURL.pathname + tokenURL.search,
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
     };
 
     try {
-      const resp = await BaseClient.request(opts, JSON.stringify(data));
-      const parsed = JSON.parse(resp);
+      const resp = await this.client.request('POST', pth, JSON.stringify(data), headers);
+      const body = await resp.readBody();
+      const statusCode = resp.message.statusCode || 500;
+      if (statusCode >= 400) {
+        throw new Error(`(${statusCode}) ${body}`);
+      }
+      const parsed = JSON.parse(body);
       return {
         token: parsed['token'],
       };
@@ -104,14 +72,11 @@ export class BaseClient {
    * googleAccessToken generates a Google Cloud access token for the provided
    * service account email or unique id.
    */
-  static async googleAccessToken(
+  async googleAccessToken(
     token: string,
     { serviceAccount, delegates, scopes, lifetime }: GoogleAccessTokenParameters,
   ): Promise<GoogleAccessTokenResponse> {
-    const serviceAccountID = `projects/-/serviceAccounts/${serviceAccount}`;
-    const tokenURL = new URL(
-      `https://iamcredentials.googleapis.com/v1/${serviceAccountID}:generateAccessToken`,
-    );
+    const pth = `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`;
 
     const data: Record<string, string | Array<string>> = {};
     if (delegates && delegates.length > 0) {
@@ -125,21 +90,20 @@ export class BaseClient {
       data.lifetime = `${lifetime}s`;
     }
 
-    const opts = {
-      hostname: tokenURL.hostname,
-      port: tokenURL.port,
-      path: tokenURL.pathname + tokenURL.search,
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
     };
 
     try {
-      const resp = await BaseClient.request(opts, JSON.stringify(data));
-      const parsed = JSON.parse(resp);
+      const resp = await this.client.request('POST', pth, JSON.stringify(data), headers);
+      const body = await resp.readBody();
+      const statusCode = resp.message.statusCode || 500;
+      if (statusCode >= 400) {
+        throw new Error(`(${statusCode}) ${body}`);
+      }
+      const parsed = JSON.parse(body);
       return {
         accessToken: parsed['accessToken'],
         expiration: parsed['expireTime'],
@@ -155,18 +119,12 @@ export class BaseClient {
    *
    * @param assertion A signed JWT.
    */
-  static async googleOAuthToken(assertion: string): Promise<GoogleAccessTokenResponse> {
-    const tokenURL = new URL('https://oauth2.googleapis.com/token');
+  async googleOAuthToken(assertion: string): Promise<GoogleAccessTokenResponse> {
+    const pth = `https://oauth2.googleapis.com/token`;
 
-    const opts = {
-      hostname: tokenURL.hostname,
-      port: tokenURL.port,
-      path: tokenURL.pathname + tokenURL.search,
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+    const headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
     };
 
     const data = new URLSearchParams();
@@ -174,8 +132,13 @@ export class BaseClient {
     data.append('assertion', assertion);
 
     try {
-      const resp = await BaseClient.request(opts, data.toString());
-      const parsed = JSON.parse(resp);
+      const resp = await this.client.request('POST', pth, data.toString(), headers);
+      const body = await resp.readBody();
+      const statusCode = resp.message.statusCode || 500;
+      if (statusCode >= 400) {
+        throw new Error(`(${statusCode}) ${body}`);
+      }
+      const parsed = JSON.parse(body);
 
       // Normalize the expiration to be a timestamp like the iamcredentials API.
       // This API returns the number of seconds until expiration, so convert

@@ -35,7 +35,7 @@ interface WorkloadIdentityClientOptions {
  * WorkloadIdentityClient is a client that uses the GitHub Actions runtime to
  * authentication via Workload Identity.
  */
-export class WorkloadIdentityClient implements AuthClient {
+export class WorkloadIdentityClient extends BaseClient implements AuthClient {
   readonly #projectID: string;
   readonly #providerID: string;
   readonly #serviceAccount: string;
@@ -46,6 +46,8 @@ export class WorkloadIdentityClient implements AuthClient {
   readonly #oidcTokenRequestToken: string;
 
   constructor(opts: WorkloadIdentityClientOptions) {
+    super();
+
     this.#providerID = opts.providerID;
     this.#serviceAccount = opts.serviceAccount;
     this.#token = opts.token;
@@ -85,7 +87,7 @@ export class WorkloadIdentityClient implements AuthClient {
    * OIDC token and Workload Identity Provider.
    */
   async getAuthToken(): Promise<string> {
-    const stsURL = new URL('https://sts.googleapis.com/v1/token');
+    const pth = `https://sts.googleapis.com/v1/token`;
 
     const data = {
       audience: '//iam.googleapis.com/' + this.#providerID,
@@ -96,20 +98,19 @@ export class WorkloadIdentityClient implements AuthClient {
       subjectToken: this.#token,
     };
 
-    const opts = {
-      hostname: stsURL.hostname,
-      port: stsURL.port,
-      path: stsURL.pathname + stsURL.search,
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
+    const headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
     };
 
     try {
-      const resp = await BaseClient.request(opts, JSON.stringify(data));
-      const parsed = JSON.parse(resp);
+      const resp = await this.client.request('POST', pth, JSON.stringify(data), headers);
+      const body = await resp.readBody();
+      const statusCode = resp.message.statusCode || 500;
+      if (statusCode >= 400) {
+        throw new Error(`(${statusCode}) ${body}`);
+      }
+      const parsed = JSON.parse(body);
       return parsed['access_token'];
     } catch (err) {
       throw new Error(
@@ -129,9 +130,7 @@ export class WorkloadIdentityClient implements AuthClient {
     const serviceAccount = await this.getServiceAccount();
     const federatedToken = await this.getAuthToken();
 
-    const signJWTURL = new URL(
-      `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:signJwt`,
-    );
+    const pth = `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:signJwt`;
 
     const data: Record<string, string | Array<string>> = {
       payload: unsignedJWT,
@@ -140,21 +139,20 @@ export class WorkloadIdentityClient implements AuthClient {
       data.delegates = delegates;
     }
 
-    const opts = {
-      hostname: signJWTURL.hostname,
-      port: signJWTURL.port,
-      path: signJWTURL.pathname + signJWTURL.search,
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${federatedToken}`,
-        'Content-Type': 'application/json',
-      },
+    const headers = {
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${federatedToken}`,
+      'Content-Type': 'application/json',
     };
 
     try {
-      const resp = await BaseClient.request(opts, JSON.stringify(data));
-      const parsed = JSON.parse(resp);
+      const resp = await this.client.request('POST', pth, JSON.stringify(data), headers);
+      const body = await resp.readBody();
+      const statusCode = resp.message.statusCode || 500;
+      if (statusCode >= 400) {
+        throw new Error(`(${statusCode}) ${body}`);
+      }
+      const parsed = JSON.parse(body);
       return parsed['signedJwt'];
     } catch (err) {
       throw new Error(`Failed to sign JWT using ${serviceAccount}: ${err}`);

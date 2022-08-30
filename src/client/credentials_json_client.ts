@@ -10,6 +10,7 @@ import {
 } from '@google-github-actions/actions-utils';
 
 import { AuthClient } from './auth_client';
+import { BaseClient } from '../base';
 
 /**
  * Available options to create the CredentialsJSONClient.
@@ -27,11 +28,13 @@ interface CredentialsJSONClientOptions {
  * CredentialsJSONClient is a client that accepts a service account key JSON
  * credential.
  */
-export class CredentialsJSONClient implements AuthClient {
+export class CredentialsJSONClient extends BaseClient implements AuthClient {
   readonly #projectID: string;
   readonly #credentials: ServiceAccountKey;
 
   constructor(opts: CredentialsJSONClientOptions) {
+    super();
+
     const credentials = parseCredential(opts.credentialsJSON);
     if (!isServiceAccountKey(credentials)) {
       throw new Error(`Provided credential is not a valid service account key JSON`);

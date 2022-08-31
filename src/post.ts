@@ -1,7 +1,7 @@
 'use strict';
 
 import { getBooleanInput, setFailed, info as logInfo } from '@actions/core';
-import { errorMessage, removeFile } from '@google-github-actions/actions-utils';
+import { errorMessage, forceRemove } from '@google-github-actions/actions-utils';
 
 /**
  * Executes the post action, documented inline.
@@ -31,12 +31,8 @@ export async function run(): Promise<void> {
     }
 
     // Remove the file.
-    const removed = await removeFile(credentialsPath);
-    if (removed) {
-      logInfo(`Removed exported credentials at "${credentialsPath}".`);
-    } else {
-      logInfo(`No exported credentials were found at "${credentialsPath}".`);
-    }
+    await forceRemove(credentialsPath);
+    logInfo(`Removed exported credentials at "${credentialsPath}".`);
   } catch (err) {
     const msg = errorMessage(err);
     setFailed(`google-github-actions/auth post failed with: ${msg}`);

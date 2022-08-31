@@ -9,6 +9,16 @@ export interface AuthClient {
   getProjectID(): Promise<string>;
   getServiceAccount(): Promise<string>;
   createCredentialsFile(outputDir: string): Promise<string>;
+
+  /**
+   * Provided by BaseClient.
+   */
+  googleIDToken(token: string, params: GoogleIDTokenParameters): Promise<GoogleIDTokenResponse>;
+  googleAccessToken(
+    token: string,
+    params: GoogleAccessTokenParameters,
+  ): Promise<GoogleAccessTokenResponse>;
+  googleOAuthToken(assertion: string): Promise<GoogleAccessTokenResponse>;
 }
 
 /**

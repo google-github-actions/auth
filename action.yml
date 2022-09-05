@@ -58,6 +58,14 @@ inputs:
       used for authentication via gcloud and Google Cloud SDKs.
     default: true
     required: false
+  set_application_default_credentials:
+    description: |-
+      If true, the action will create the credentials file in the well-known
+      location for application default credentials. As a result environment
+      variables may not need to be exported for sdks to be authenticated
+      automatically. Requires create_credentials_file to be true.
+    default: false
+    required: false
   export_environment_variables:
     description: |-
       If true, the action will export common environment variables which are
@@ -78,7 +86,7 @@ inputs:
 
       If false, the action will not export any environment variables, meaning
       future steps are unlikely to be automatically authenticated to Google
-      Cloud.
+      Cloud. See set_application_default_credentials as an alternative.
     default: true
     required: false
   token_format:

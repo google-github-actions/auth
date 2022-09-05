@@ -242,6 +242,20 @@ regardless of the authentication mechanism.
     future steps are unlikely to be automatically authenticated to Google Cloud.
     The default value is true.
 
+    See also `set_application_default_credentials`.
+
+-   `set_application_default_credentials`: (Optional) If true the credentials
+    file is written to a [well-known location](https://cloud.google.com/docs/authentication/application-default-credentials) where google tools typically
+    look for credentials when GOOGLE_APPLICATION_CREDENTIALS is not set, rather
+    than writing the credentials file into `$GITHUB_WORKSPACE`. This can be
+    helpful in workflows that rely on `$HOME/.config/gcloud` for configuration,
+    rather than environment variables.
+
+    The default value is false.
+
+    This input and `export_environment_variables` may be used together. This
+    input requires that `create_credentials_file` is true.
+
 -   `delegates`: (Optional) List of additional service account emails or unique
     identities to use for impersonation in the chain. By default there are no
     delegates.

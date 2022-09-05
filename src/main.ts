@@ -1,6 +1,7 @@
 'use strict';
 
 import { join as pathjoin } from 'path';
+import { mkdir } from 'fs';
 
 import {
   debug as logDebug,
@@ -81,6 +82,7 @@ async function main() {
   const audience = getInput('audience') || `https://iam.googleapis.com/${workloadIdentityProvider}`;
   const credentialsJSON = getInput('credentials_json');
   const createCredentialsFile = getBooleanInput('create_credentials_file');
+  const setApplicationDefaultCredentials = getBooleanInput('set_application_default_credentials');
   const exportEnvironmentVariables = getBooleanInput('export_environment_variables');
   const tokenFormat = getInput('token_format');
   const delegates = parseCSV(getInput('delegates'));
@@ -101,6 +103,14 @@ async function main() {
       'The GitHub Action workflow must specify a "service_account" to ' +
         'impersonate when using "workload_identity_provider"! ' +
         secretsWarning,
+    );
+  }
+
+  // Ensure credential file may be created when creating ADC
+  if (setApplicationDefaultCredentials && !createCredentialsFile) {
+    throw new Error(
+      'The GitHub Action workflow must set "create_credentials_file" to ' +
+        'true when using "create_application_default_credentials"!',
     );
   }
 
@@ -177,9 +187,29 @@ async function main() {
       );
     }
 
-    // Create credentials file.
-    const outputFile = generateCredentialsFilename();
-    const outputPath = pathjoin(githubWorkspace, outputFile);
+    let outputPath;
+    if (setApplicationDefaultCredentials) {
+      // The well-known location for application default credentials is:
+      // "$HOME/.config/gcloud/application_default_credentials.json". We make
+      // sure that location exists so that we can create the ADC config file.
+      const homeDir = process.env.HOME;
+      if (!homeDir) {
+        throw new Error('$HOME is not set');
+      }
+
+      const configDir = pathjoin(homeDir, '.config/gcloud');
+      const configDirIsEmpty = await isEmptyDir(configDir);
+      if (configDirIsEmpty) {
+        mkdir(configDir, { recursive: true }, (err) => {
+          if (err) throw err;
+        });
+      }
+
+      outputPath = pathjoin(configDir, 'application_default_credentials.json');
+    } else {
+      const outputFile = generateCredentialsFilename();
+      outputPath = pathjoin(githubWorkspace, outputFile);
+    }
     const credentialsPath = await client.createCredentialsFile(outputPath);
     logInfo(`Created credentials file at "${credentialsPath}"`);
 

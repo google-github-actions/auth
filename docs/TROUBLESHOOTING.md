@@ -56,6 +56,10 @@ some common sources of errors:
     Account on an attribute unless you map that value from the incoming GitHub
     OIDC token.
 
+1.  Ensure you have the correct casing and capitalization. GitHub does not
+    distinguish between "foobar" and "FooBar", but Google Cloud does. Ensure any
+    **Attribute Conditions** use the correct capitalization.
+
 1.  Check the specific error message that is returned.
 
     -   If the error message includes "failed to generate Google Cloud federated

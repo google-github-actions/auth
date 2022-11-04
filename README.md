@@ -554,6 +554,11 @@ Terraform module to automate your infrastructure provisioning. See [examples](ht
 
     ```sh
     export WORKLOAD_IDENTITY_POOL_ID="..." # value from above
+
+    # This should look like:
+    #
+    #   projects/123456789/locations/global/workloadIdentityPools/my-pool
+    #
     ```
 
 
@@ -595,6 +600,13 @@ Terraform module to automate your infrastructure provisioning. See [examples](ht
       --project="${PROJECT_ID}" \
       --role="roles/iam.workloadIdentityUser" \
       --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/attribute.repository/${REPO}"
+    ```
+
+    Note that `$WORKLOAD_IDENTITY_POOL_ID` should be the **full** Workload
+    Identity Pool resource ID, like:
+
+    ```text
+    projects/123456789/locations/global/workloadIdentityPools/my-pool
     ```
 
 1.  Extract the Workload Identity **Provider** resource name:

@@ -7,7 +7,7 @@ Identity, the first step is to ask the `auth` plugin to generate an OAuth access
 token. Do this by adding `token_format: 'access_token'` to your YAML:
 
 ```yaml
-- uses: 'google-github-actions/auth@v0'
+- uses: 'google-github-actions/auth@v1'
   with:
     # ...
     token_format: 'access_token'

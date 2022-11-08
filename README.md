@@ -68,7 +68,7 @@ jobs:
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
@@ -218,7 +218,7 @@ regardless of the authentication mechanism.
       job_id:
         steps:
         - uses: 'actions/checkout@v3' # Must come first!
-        - uses: 'google-github-actions/auth@v0'
+        - uses: 'google-github-actions/auth@v1'
      ```
 
 -   `export_environment_variables`: (Optional) If true, the action will export
@@ -290,7 +290,7 @@ jobs:
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
@@ -318,7 +318,7 @@ jobs:
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 ```
@@ -344,7 +344,7 @@ jobs:
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         token_format: 'access_token'
         # Either user Workload Identity Federation or Service Account Keys. See
@@ -391,7 +391,7 @@ jobs:
     # Configure Workload Identity Federation via a credentials file.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
@@ -435,7 +435,7 @@ jobs:
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         token_format: 'access_token' # <--
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -475,7 +475,7 @@ jobs:
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         token_format: 'id_token' # <--
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -673,7 +673,7 @@ mappings, see the [GitHub OIDC token documentation](https://docs.github.com/en/a
 We recommend pinning to the latest available major version:
 
 ```yaml
-- uses: 'google-github-actions/auth@v0'
+- uses: 'google-github-actions/auth@v1'
 ```
 
 While this action attempts to follow semantic versioning, but we're ultimately
@@ -681,7 +681,7 @@ human and sometimes make mistakes. To prevent accidental breaking changes, you
 can also pin to a specific version:
 
 ```yaml
-- uses: 'google-github-actions/auth@v0.1.1'
+- uses: 'google-github-actions/auth@v1.1.1'
 ```
 
 However, you will not get automatic security updates or new features without

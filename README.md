@@ -681,7 +681,7 @@ human and sometimes make mistakes. To prevent accidental breaking changes, you
 can also pin to a specific version:
 
 ```yaml
-- uses: 'google-github-actions/auth@v1.1.1'
+- uses: 'google-github-actions/auth@v1.0.0'
 ```
 
 However, you will not get automatic security updates or new features without

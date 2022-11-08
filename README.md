@@ -1,8 +1,8 @@
 # auth
 
-This GitHub Action establishes authentication to Google Cloud. It supports
-traditional authentication via a Google Cloud Service Account Key JSON and
-authentication via [Workload Identity Federation][wif].
+This GitHub Action authenticates to Google Cloud. It supports authentication via
+a Google Cloud Service Account Key JSON and authentication via [Workload
+Identity Federation][wif].
 
 Workload Identity Federation is the recommended approach as it obviates the need
 to export a long-lived Google Cloud service account key and establishes a trust
@@ -646,11 +646,15 @@ mappings, see the [GitHub OIDC token documentation](https://docs.github.com/en/a
   "sha": "d11880f4f451ee35192135525dc974c56a3c1b28",
   "repository": "username/reponame",
   "repository_owner": "username",
+  "repository_visibility": "private",
+  "repository_id": "74",
+  "repository_owner_id": "65",
   "run_id": "1238222155",
   "run_number": "18",
   "run_attempt": "1",
   "actor": "username",
-  "workflow": "OIDC",
+  "actor_id": "12",
+  "workflow": "oidc",
   "head_ref": "",
   "base_ref": "",
   "event_name": "push",

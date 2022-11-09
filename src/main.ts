@@ -47,7 +47,7 @@ const oidcWarning =
 async function run(): Promise<void> {
   // Warn if pinned to HEAD
   if (isPinnedToHead()) {
-    logWarning(pinnedToHeadWarning('v0'));
+    logWarning(pinnedToHeadWarning('v1'));
   }
 
   const retries = Number(getInput('retries'));

@@ -398,7 +398,7 @@ jobs:
 
     # Install gcloud, `setup-gcloud` automatically picks up authentication from `auth`.
     - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v0'
+      uses: 'google-github-actions/setup-gcloud@v1'
 
     # Now you can run gcloud commands authenticated as the impersonated service account.
     - id: 'gcloud'

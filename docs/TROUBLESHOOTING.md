@@ -165,6 +165,37 @@ ways to fix this issue:
     5. Push
     ```
 
+## Issuer in ID Token does not match the expected ones
+
+If you get an error like:
+
+```text
+The issuer in ID Token https://github.<company>.net/_services/token does not match the expected ones: https://token.actions.githubusercontent.com/
+```
+
+it means that the OIDC token's issuer and the Attribute Mapping do not match.
+There are a few common reasons why this happens:
+
+1.  You made a typographical error. If you are using the public version of
+    GitHub (https://github.com), the value for the `oidc.issuerUri` should be
+    `https://token.actions.githubusercontent.com`.
+
+1.  You are using a GitHub Enterprise _Cloud_ installation and your GitHub
+    administrator has configured a [unique token
+    URL](https://docs.github.com/en/enterprise-cloud@latest/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#switching-to-a-unique-token-url).
+    Use that URL for `oidc.issuerUri` instead of the public value. You must
+    contact your GitHub administrator for assistance - our team does not have
+    visibility into how your GitHub Enterprise Cloud instance is configured.
+
+1.  You are using a GitHub Enterprise _Server_ installation. In this case, you
+    must contact your GitHub administrator to get the URL for OIDC token
+    verification. This is usually `https://github.company.com/_services/token`,
+    but it can be customized by the installation. Furthermore, your GitHub
+    administrator may have disabled this functionality. You must contact your
+    GitHub administrator for assistance  - our team does not have visibility
+    into how your GitHub Enterprise Server instance is configured.
+
+
 <a name="aggressive-replacement"></a>
 
 ## Aggressive *** replacement in logs

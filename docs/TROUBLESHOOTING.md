@@ -18,8 +18,9 @@ it means Workload Identity Federation is configured correctly and the issue is
 in subsequent actions. You can remove the `token_format` from your YAML. To
 further debug:
 
-1.  Look at the [debug logs][debug-logs] to see exactly which step is failing.
-    Ensure you are using the latest version of that GitHub Action.
+1.  Enable [GitHub Actions debug logging][debug-logs] and re-run the workflow to
+    see exactly which step is failing. Ensure you are using the latest version
+    of that GitHub Action.
 
 1.  Make sure you use `actions/checkout@v3` **before** the `auth` action in your
     workflow.
@@ -38,8 +39,9 @@ If your workflow _fails_ after adding the the step to generate an access token,
 it likely means there is a misconfiguration with Workload Identity. Here are
 some common sources of errors:
 
-1.  Look at the [debug logs][debug-logs] to see exactly which step is failing.
-    Ensure you are using the latest version of that GitHub Action.
+1.  Enable [GitHub Actions debug logging][debug-logs] and re-run the workflow to
+    see exactly which step is failing. Ensure you are using the latest version
+    of that GitHub Action.
 
 1.  Ensure the value for `workload_identity_provider` is the full _Provider_
     name, **not** the _Pool_ name:
@@ -48,6 +50,10 @@ some common sources of errors:
     - projects/NUMBER/locations/global/workloadIdentityPools/POOL
     + projects/NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER
     ```
+
+1.  Ensure the `workload_identity_provider` uses the Google Cloud Project
+    **number**. Workload Identity Federation does not accept Google Cloud
+    Project IDs.
 
 1.  Ensure you have created an **Attribute Mapping** for any **Attribute
     Conditions** or **Service Account Impersonation** principals. You cannot
@@ -80,7 +86,7 @@ some common sources of errors:
 
     Try to authenticate again, and then explore the logs for your Workload
     Identity Provider and Workload Identity Pool. Sometimes these error messages
-    are helpful in hinting at the root problem.
+    are helpful in identifying the root cause.
 
 1.  Ensure you have waited at least 5 minutes between making changes to the
     Workload Identity Pool and Workload Identity Provider. Changes to these

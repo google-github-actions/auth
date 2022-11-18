@@ -62,6 +62,10 @@ some common sources of errors:
     Account on an attribute unless you map that value from the incoming GitHub
     OIDC token.
 
+    You can use the [GitHub Actions OIDC Debugger][oidc-debugger] to print the
+    list of token claims and compare them to your Attribute Mappings and
+    Attribute Conditions.
+
 1.  Ensure you have the correct casing and capitalization. GitHub does not
     distinguish between "foobar" and "FooBar", but Google Cloud does. Ensure any
     **Attribute Conditions** use the correct capitalization.
@@ -229,3 +233,4 @@ cat credentials.json | jq -r tostring
 [wif-byte-limit]: https://cloud.google.com/iam/docs/configuring-workload-identity-federation
 [cal]: https://cloud.google.com/logging/docs/audit/configure-data-access
 [github-secrets]: https://docs.github.com/en/actions/security-guides/encrypted-secrets
+[oidc-debugger]: https://github.com/github/actions-oidc-debugger

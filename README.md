@@ -4,8 +4,8 @@ This GitHub Action authenticates to Google Cloud. It supports authentication via
 a Google Cloud Service Account Key JSON and authentication via [Workload
 Identity Federation][wif].
 
-Workload Identity Federation is the recommended approach as it obviates the need
-to export a long-lived Google Cloud service account key and establishes a trust
+Workload Identity Federation is recommended over Service Account Keys as it
+obviates the need to export a long-lived credential and establishes a trust
 delegation relationship between a particular GitHub Actions workflow invocation
 and permissions on Google Cloud.
 

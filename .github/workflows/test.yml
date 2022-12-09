@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: 'actions/checkout@v3'
 
-      - uses: 'actions/setup-node@v2'
+      - uses: 'actions/setup-node@v3'
         with:
           node-version: '16.x'
 
@@ -49,7 +49,7 @@ jobs:
     steps:
       - uses: 'actions/checkout@v3'
 
-      - uses: 'actions/setup-node@v2'
+      - uses: 'actions/setup-node@v3'
         with:
           node-version: '16.x'
 
@@ -60,7 +60,7 @@ jobs:
         name: 'auth-default'
         uses: './'
         with:
-          credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
+          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
 
       - id: 'setup-gcloud'
         name: 'setup-gcloud'
@@ -70,20 +70,20 @@ jobs:
         name: 'gcloud'
         shell: 'bash'
         run: |-
-          gcloud secrets versions access "latest" --secret "${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}"
+          gcloud secrets versions access "latest" --secret "${{ secrets.SECRET_NAME }}"
 
       - id: 'auth-access-token'
         name: 'auth-access-token'
         uses: './'
         with:
-          credentials_json: '${{ secrets.AUTH_SA_KEY_B64 }}'
+          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
           token_format: 'access_token'
 
       - id: 'access-token'
         name: 'access-token'
         shell: 'bash'
         run: |-
-          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}/versions/latest:access \
+          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.SECRET_NAME }}/versions/latest:access \
             --silent \
             --show-error \
             --fail \
@@ -93,7 +93,7 @@ jobs:
         name: 'auth-id-token'
         uses: './'
         with:
-          credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
+          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
           token_format: 'id_token'
           id_token_audience: 'https://secretmanager.googleapis.com/'
           id_token_include_email: true
@@ -105,7 +105,7 @@ jobs:
           retries: '2'
           backoff: '200'
           backoff_limit: '1000'
-          credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
+          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
 
   workload_identity_federation:
     if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
@@ -125,7 +125,7 @@ jobs:
     steps:
       - uses: 'actions/checkout@v3'
 
-      - uses: 'actions/setup-node@v2'
+      - uses: 'actions/setup-node@v3'
         with:
           node-version: '16.x'
 
@@ -137,7 +137,7 @@ jobs:
         uses: './'
         with:
           workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-          service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
+          service_account: '${{ secrets.SERVICE_ACCOUNT_EMAIL }}'
 
       - id: 'setup-gcloud'
         name: 'setup-gcloud'
@@ -147,21 +147,21 @@ jobs:
         name: 'gcloud'
         shell: 'bash'
         run: |-
-          gcloud secrets versions access "latest" --secret "${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}"
+          gcloud secrets versions access "latest" --secret "${{ secrets.SECRET_NAME }}"
 
       - id: 'auth-access-token'
         name: 'auth-access-token'
         uses: './'
         with:
           workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-          service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
+          service_account: '${{ secrets.SERVICE_ACCOUNT_EMAIL }}'
           token_format: 'access_token'
 
       - id: 'access-token'
         name: 'access-token'
         shell: 'bash'
         run: |-
-          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.OIDC_AUTH_TEST_SECRET_NAME }}/versions/latest:access \
+          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.SECRET_NAME }}/versions/latest:access \
             --silent \
             --show-error \
             --fail \
@@ -172,7 +172,7 @@ jobs:
         uses: './'
         with:
           workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-          service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
+          service_account: '${{ secrets.SERVICE_ACCOUNT_EMAIL }}'
           token_format: 'id_token'
           id_token_audience: 'https://secretmanager.googleapis.com/'
           id_token_include_email: true
@@ -185,7 +185,7 @@ jobs:
           backoff: '200'
           backoff_limit: '1000'
           workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-          service_account: '${{ secrets.OIDC_AUTH_SA_EMAIL }}'
+          service_account: '${{ secrets.SERVICE_ACCOUNT_EMAIL }}'
 
   # This test ensures that the GOOGLE_APPLICATION_CREDENTIALS environment
   # variable is shared with the container and that the path of the file is on
@@ -200,7 +200,7 @@ jobs:
     steps:
       - uses: 'actions/checkout@v3'
 
-      - uses: 'actions/setup-node@v2'
+      - uses: 'actions/setup-node@v3'
         with:
           node-version: '16.x'
 
@@ -210,7 +210,7 @@ jobs:
       - name: 'auth-default'
         uses: './'
         with:
-          credentials_json: '${{ secrets.AUTH_SA_KEY_JSON }}'
+          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
 
       - name: 'docker'
         uses: 'docker://alpine:3'

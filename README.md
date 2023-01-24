@@ -632,6 +632,31 @@ Terraform module to automate your infrastructure provisioning. See [examples](ht
     Identity Pool mapping until the permissions are available.
 
 
+#### Organizational Policy Constraints
+
+By default, Google Cloud allows you to create Workload Identity Pools and
+Workload Identity Providers for any endpoints. Your organization may restrict
+which external identity providers are permitted on your Google Cloud account. To
+enable GitHub Actions as a Workload Identity Pool and Provider, add the
+`https://token.actions.githubusercontent.com` to the allowed
+`iam.workloadIdentityPoolProviders` Org Policy constraint.
+
+```shell
+gcloud resource-manager org-policies allow "constraints/iam.workloadIdentityPoolProviders" \
+  https://token.actions.githubusercontent.com
+```
+
+You can specify a `--folder` or `--organization`. If you do not have permission
+to manage these Org Policies, please contact your Google Cloud administrator.
+
+For GitHub Enterprise Server, the endpoint will be your server URL:
+
+```shell
+gcloud resource-manager org-policies allow "constraints/iam.workloadIdentityPoolProviders" \
+  https://my.github.company
+```
+
+
 ## GitHub Token Format
 
 Below is a sample GitHub Token for reference for attribute mappings. For a list of all

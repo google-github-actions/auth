@@ -35,7 +35,7 @@ further debug:
     libraries. Please note that we do not have control over actions outside of
     `google-github-actions`.
 
-If your workflow _fails_ after adding the the step to generate an access token,
+If your workflow _fails_ after adding the step to generate an access token,
 it likely means there is a misconfiguration with Workload Identity. Here are
 some common sources of errors:
 
@@ -54,6 +54,14 @@ some common sources of errors:
 1.  Ensure the `workload_identity_provider` uses the Google Cloud Project
     **number**. Workload Identity Federation does not accept Google Cloud
     Project IDs.
+
+1.  Ensure that you have the correct workflow permissions, per the [usage](../README.md#usage) docs, i.e.
+
+    ```yaml
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    ```
 
 1.  Ensure you have created an **Attribute Mapping** for any **Attribute
     Conditions** or **Service Account Impersonation** principals. You cannot

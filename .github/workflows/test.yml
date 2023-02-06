@@ -119,8 +119,8 @@ jobs:
           - 'windows-latest'
           - 'macos-latest'
 
-    permissions:
-      id-token: 'write'
+    # permissions:
+    #   id-token: 'write'
 
     steps:
       - uses: 'actions/checkout@v3'

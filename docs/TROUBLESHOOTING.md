@@ -55,7 +55,8 @@ some common sources of errors:
     **number**. Workload Identity Federation does not accept Google Cloud
     Project IDs.
 
-1.  Ensure that you have the correct workflow permissions, per the [usage](../README.md#usage) docs, i.e.
+1.  Ensure that you have the correct `permissions:` for the job in your workflow, per
+    the [usage](../README.md#usage) docs, i.e.
 
     ```yaml
     permissions:

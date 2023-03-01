@@ -32,6 +32,10 @@ and permissions on Google Cloud.
     configure a Google Cloud Workload Identity Provider. See [setup](#setup)
     for instructions.
 
+-   If you're a Firebase user and you're using the Admin Node.js SDK, you must
+    authenticate with a service account key (Workload Identity Federation is
+    not yet supported.)
+
 -   You must run the `actions/checkout@v3` step _before_ this action. Omitting
     the checkout step or putting it after `auth` will cause future steps to be
     unable to authenticate.

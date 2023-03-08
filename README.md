@@ -92,6 +92,12 @@ Identity Federation.
 **⚠️ You must use the Cloud SDK version 390.0.0 or later to authenticate the
 `bq` and `gsutil` tools.**
 
+**⚠️ Firebase users:** If you're using this Action to authenticate the Firebase
+Admin Node.js SDK, you must authenticate with a service account key since
+Workload Identity Federation is not yet supported. See
+[#1377](https://github.com/firebase/firebase-admin-node/issues/1377)
+for the status of WLIF support.
+
 -   `workload_identity_provider`: (Required) The full identifier of the Workload Identity
     Provider, including the project number, pool name, and provider name. If
     provided, this must be the full identifier which includes all parts:

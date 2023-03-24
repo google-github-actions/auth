@@ -607,6 +607,14 @@ Terraform module to automate your infrastructure provisioning. See [examples](ht
       --role="roles/iam.workloadIdentityUser" \
       --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/attribute.repository/${REPO}"
     ```
+    
+    If you want to admit all repos of an owner (user or organization), map on `attribute.repository_owner`:
+    
+    ```sh
+    --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/attribute.repository_owner/${OWNER}"
+    ```
+
+You also need to make sure that attribute.repository_owner is mapped in your attribute mapping to take advantage of that. Note, it's NOT .../attribute.repository_owner/${ORG_NAME}/*, it's .../attribute.repository_owner/${ORG_NAME}. I was incorrect above.
 
     Note that `$WORKLOAD_IDENTITY_POOL_ID` should be the **full** Workload
     Identity Pool resource ID, like:

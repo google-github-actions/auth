@@ -70,7 +70,7 @@ jobs:
         name: 'gcloud'
         shell: 'bash'
         run: |-
-          gcloud secrets versions access "latest" --secret "${{ secrets.SECRET_NAME }}"
+          gcloud secrets versions access "latest" --secret "${{ vars.SECRET_NAME }}"
 
       - id: 'auth-access-token'
         name: 'auth-access-token'
@@ -83,7 +83,7 @@ jobs:
         name: 'access-token'
         shell: 'bash'
         run: |-
-          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.SECRET_NAME }}/versions/latest:access \
+          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ vars.SECRET_NAME }}/versions/latest:access \
             --silent \
             --show-error \
             --fail \
@@ -136,8 +136,8 @@ jobs:
         name: 'auth-default'
         uses: './'
         with:
-          workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-          service_account: '${{ secrets.SERVICE_ACCOUNT_EMAIL }}'
+          workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
+          service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
 
       - id: 'setup-gcloud'
         name: 'setup-gcloud'
@@ -147,21 +147,21 @@ jobs:
         name: 'gcloud'
         shell: 'bash'
         run: |-
-          gcloud secrets versions access "latest" --secret "${{ secrets.SECRET_NAME }}"
+          gcloud secrets versions access "latest" --secret "${{ vars.SECRET_NAME }}"
 
       - id: 'auth-access-token'
         name: 'auth-access-token'
         uses: './'
         with:
-          workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-          service_account: '${{ secrets.SERVICE_ACCOUNT_EMAIL }}'
+          workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
+          service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
           token_format: 'access_token'
 
       - id: 'access-token'
         name: 'access-token'
         shell: 'bash'
         run: |-
-          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ secrets.SECRET_NAME }}/versions/latest:access \
+          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ vars.SECRET_NAME }}/versions/latest:access \
             --silent \
             --show-error \
             --fail \
@@ -171,8 +171,8 @@ jobs:
         name: 'auth-id-token'
         uses: './'
         with:
-          workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-          service_account: '${{ secrets.SERVICE_ACCOUNT_EMAIL }}'
+          workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
+          service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
           token_format: 'id_token'
           id_token_audience: 'https://secretmanager.googleapis.com/'
           id_token_include_email: true
@@ -184,8 +184,8 @@ jobs:
           retries: '2'
           backoff: '200'
           backoff_limit: '1000'
-          workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-          service_account: '${{ secrets.SERVICE_ACCOUNT_EMAIL }}'
+          workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
+          service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
 
   # This test ensures that the GOOGLE_APPLICATION_CREDENTIALS environment
   # variable is shared with the container and that the path of the file is on

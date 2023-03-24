@@ -613,8 +613,8 @@ Terraform module to automate your infrastructure provisioning. See [examples](ht
     ```sh
     --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/attribute.repository_owner/${OWNER}"
     ```
-
-You also need to make sure that attribute.repository_owner is mapped in your attribute mapping to take advantage of that. Note, it's NOT .../attribute.repository_owner/${ORG_NAME}/*, it's .../attribute.repository_owner/${ORG_NAME}. I was incorrect above.
+    
+    For this to work, need to make sure that `attribute.repository_owner` is mapped in your attribute mapping (see previous step).
 
     Note that `$WORKLOAD_IDENTITY_POOL_ID` should be the **full** Workload
     Identity Pool resource ID, like:

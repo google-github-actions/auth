@@ -128,14 +128,16 @@ inputs:
   retries:
     description: |-
       Number of times to retry a failed authentication attempt. This is useful
-      for automated pipelines that may execute before IAM permissions are fully propogated.
-    default: '0'
+      for automated pipelines that may execute before IAM permissions are fully
+      propogated.
+    default: '3'
     required: false
   backoff:
     description: |-
-      Delay time before trying another authentication attempt. This
-      is implemented using a fibonacci backoff method (e.g. 1-1-2-3-5).
-      This value defaults to 100 milliseconds when retries are greater than 0.
+      Delay time before trying another authentication attempt. This is
+      implemented using a fibonacci backoff method (e.g. 1-1-2-3-5). The default
+      value is 250 milliseconds.
+    default: '250'
     required: false
   backoff_limit:
     description: |-

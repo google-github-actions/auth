@@ -299,8 +299,12 @@ async function main() {
 function exportVariableAndWarn(key: string, value: string) {
   const existing = process.env[key];
   if (existing && existing !== value) {
-    const old = JSON.stringify(existing);
-    logWarning(`Overwriting existing environment variable ${key} (was: ${old})`);
+    logWarning(
+      `Overwriting existing environment variable ${key}:
+- ${JSON.stringify(existing)}
++ ${JSON.stringify(value)}
+`.trim(),
+    );
   }
 
   exportVariable(key, value);

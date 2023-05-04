@@ -22,6 +22,11 @@ and permissions on Google Cloud.
 1.  Exchange the GitHub Actions OIDC token for a short-lived Google Cloud access
     token
 
+**This is not an officially supported Google product, and it is not covered by a
+Google Cloud support contract. To report bugs or request features in a Google
+Cloud product, please contact [Google Cloud
+support](https://cloud.google.com/support).**
+
 
 ## Prerequisites
 

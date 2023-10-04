@@ -69,7 +69,7 @@ jobs:
 
     steps:
     # actions/checkout MUST come before auth
-    - uses: 'actions/checkout@v3'
+    - uses: 'actions/checkout@v4'
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'

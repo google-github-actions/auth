@@ -22,7 +22,7 @@ further debug:
     see exactly which step is failing. Ensure you are using the latest version
     of that GitHub Action.
 
-1.  Make sure you use `actions/checkout@v3` **before** the `auth` action in your
+1.  Make sure you use `actions/checkout@v4` **before** the `auth` action in your
     workflow.
 
 1.  If the failing action is from `google-github-action/*`, please file an issue

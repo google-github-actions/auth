@@ -37,7 +37,7 @@ support](https://cloud.google.com/support).**
     configure a Google Cloud Workload Identity Provider. See [setup](#setup)
     for instructions.
 
--   You must run the `actions/checkout@v3` step _before_ this action. Omitting
+-   You must run the `actions/checkout@v4` step _before_ this action. Omitting
     the checkout step or putting it after `auth` will cause future steps to be
     unable to authenticate.
 
@@ -50,9 +50,10 @@ support](https://cloud.google.com/support).**
     gha-creds-*.json
     ```
 
--   This action runs using Node 16. If you are using self-hosted GitHub Actions
-    runners, you must use runner version [2.285.0](https://github.com/actions/virtual-environments)
-    or newer.
+-   This action runs using Node 20. If you are using self-hosted GitHub Actions
+    runners, you must use a [runner
+    version](https://github.com/actions/virtual-environments) that supports this
+    version or newer.
 
 
 ## Usage
@@ -242,7 +243,7 @@ regardless of the authentication mechanism.
      jobs:
       job_id:
         steps:
-        - uses: 'actions/checkout@v3' # Must come first!
+        - uses: 'actions/checkout@v4' # Must come first!
         - uses: 'google-github-actions/auth@v1'
      ```
 
@@ -311,7 +312,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v3'
+    - uses: 'actions/checkout@v4'
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -339,7 +340,7 @@ jobs:
     # ...
 
     steps:
-    - uses: 'actions/checkout@v3'
+    - uses: 'actions/checkout@v4'
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -365,7 +366,7 @@ examples:
 jobs:
   job_id:
     steps:
-    - uses: 'actions/checkout@v3'
+    - uses: 'actions/checkout@v4'
 
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
@@ -411,7 +412,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v3'
+    - uses: 'actions/checkout@v4'
 
     # Configure Workload Identity Federation via a credentials file.
     - id: 'auth'
@@ -455,7 +456,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v3'
+    - uses: 'actions/checkout@v4'
 
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'
@@ -495,7 +496,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v3'
+    - uses: 'actions/checkout@v4'
 
     # Configure Workload Identity Federation and generate an access token.
     - id: 'auth'

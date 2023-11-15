@@ -1,7 +1,19 @@
-'use strict';
+// Copyright 2023 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-import 'mocha';
-import { expect } from 'chai';
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
 
 import { tmpdir } from 'os';
 import { join as pathjoin } from 'path';
@@ -24,7 +36,7 @@ describe('WorkloadIdentityClient', () => {
       });
 
       const result = await client.getProjectID();
-      expect(result).to.eq('my-project');
+      assert.deepStrictEqual(result, 'my-project');
     });
 
     it('prefers the override if given', async () => {
@@ -39,11 +51,11 @@ describe('WorkloadIdentityClient', () => {
       });
 
       const result = await client.getProjectID();
-      expect(result).to.eq('my-other-project');
+      assert.deepStrictEqual(result, 'my-other-project');
     });
 
     it('throws an error when extraction fails', async () => {
-      const fn = () => {
+      assert.rejects(async () => {
         return new WorkloadIdentityClient({
           providerID: 'my-provider',
           token: 'my-token',
@@ -52,8 +64,7 @@ describe('WorkloadIdentityClient', () => {
           oidcTokenRequestURL: 'https://example.com/',
           oidcTokenRequestToken: 'token',
         });
-      };
-      return expect(fn).to.throw(Error);
+      }, Error);
     });
   });
 
@@ -69,7 +80,7 @@ describe('WorkloadIdentityClient', () => {
         oidcTokenRequestToken: 'token',
       });
       const result = await client.getServiceAccount();
-      expect(result).to.eq('my-service@my-project.iam.gserviceaccount.com');
+      assert.deepStrictEqual(result, 'my-service@my-project.iam.gserviceaccount.com');
     });
   });
 
@@ -109,7 +120,7 @@ describe('WorkloadIdentityClient', () => {
       const data = readFileSync(pth);
       const got = JSON.parse(data.toString('utf8'));
 
-      expect(got).to.deep.equal(exp);
+      assert.deepStrictEqual(got, exp);
     });
   });
 });

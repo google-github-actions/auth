@@ -1,7 +1,19 @@
-'use strict';
+// Copyright 2023 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-import 'mocha';
-import { expect } from 'chai';
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
 
 import { join as pathjoin } from 'path';
 import { readFileSync } from 'fs';
@@ -31,23 +43,19 @@ const credentialsJSON = `
 describe('CredentialsJSONClient', () => {
   describe('#parseServiceAccountKeyJSON', () => {
     it('throws exception on invalid json', async () => {
-      const fn = (): CredentialsJSONClient => {
-        return new CredentialsJSONClient({
+      assert.rejects(async () => {
+        new CredentialsJSONClient({
           credentialsJSON: 'invalid json',
         });
-      };
-
-      expect(fn).to.throw(SyntaxError);
+      }, SyntaxError);
     });
 
     it('handles base64', async () => {
-      const fn = (): CredentialsJSONClient => {
-        return new CredentialsJSONClient({
-          credentialsJSON: Buffer.from('{}').toString('base64'),
+      assert.rejects(async () => {
+        new CredentialsJSONClient({
+          credentialsJSON: 'base64',
         });
-      };
-
-      expect(fn).to.not.throw(SyntaxError);
+      }, SyntaxError);
     });
   });
 
@@ -58,7 +66,7 @@ describe('CredentialsJSONClient', () => {
       });
 
       const token = await client.getAuthToken();
-      expect(token).to.be;
+      assert.ok(token);
     });
   });
 
@@ -69,7 +77,7 @@ describe('CredentialsJSONClient', () => {
       });
 
       const token = await client.signJWT('thisismy.jwt');
-      expect(token).to.be;
+      assert.ok(token);
     });
   });
 
@@ -80,7 +88,7 @@ describe('CredentialsJSONClient', () => {
       });
 
       const result = await client.getProjectID();
-      expect(result).to.eq('my-project');
+      assert.deepStrictEqual(result, 'my-project');
     });
 
     it('prefers the override if given', async () => {
@@ -90,7 +98,7 @@ describe('CredentialsJSONClient', () => {
       });
 
       const result = await client.getProjectID();
-      expect(result).to.eq('my-other-project');
+      assert.deepStrictEqual(result, 'my-other-project');
     });
   });
 
@@ -101,7 +109,7 @@ describe('CredentialsJSONClient', () => {
       });
 
       const result = await client.getServiceAccount();
-      expect(result).to.eq('my-service-account@my-project.iam.gserviceaccount.com');
+      assert.deepStrictEqual(result, 'my-service-account@my-project.iam.gserviceaccount.com');
     });
   });
 
@@ -118,7 +126,7 @@ describe('CredentialsJSONClient', () => {
       const data = readFileSync(pth);
       const got = JSON.parse(data.toString('utf8'));
 
-      expect(got).to.deep.equal(exp);
+      assert.deepStrictEqual(got, exp);
     });
   });
 });

@@ -7,7 +7,7 @@
     "build": "ncc build -m src/main.ts -o dist/main && ncc build -m src/post.ts -o dist/post",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write **/*.ts",
-    "test": "mocha -r ts-node/register -t 120s 'tests/**/*.test.ts'"
+    "test": " node --require ts-node/register --test **/*.test.ts **/**/*.test.ts"
   },
   "repository": {
     "type": "git",
@@ -28,18 +28,14 @@
     "@google-github-actions/actions-utils": "^0.4.9"
   },
   "devDependencies": {
-    "@types/chai": "^4.3.10",
-    "@types/mocha": "^10.0.4",
     "@types/node": "^20.9.0",
-    "@typescript-eslint/eslint-plugin": "^6.10.0",
-    "@typescript-eslint/parser": "^6.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "@typescript-eslint/parser": "^6.11.0",
     "@vercel/ncc": "^0.38.1",
-    "chai": "^4.3.10",
     "eslint": "^8.53.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
-    "mocha": "^10.2.0",
-    "prettier": "^3.0.3",
+    "prettier": "^3.1.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   }

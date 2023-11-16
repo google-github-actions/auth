@@ -7,7 +7,7 @@
     "build": "ncc build -m src/main.ts -o dist/main && ncc build -m src/post.ts -o dist/post",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write **/*.ts",
-    "test": " node --require ts-node/register --test **/*.test.ts **/**/*.test.ts"
+    "test": "bash ./bin/runTests.sh"
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
   "dependencies": {
     "@actions/core": "^1.10.1",
     "@actions/http-client": "^2.2.0",
-    "@google-github-actions/actions-utils": "^0.4.9"
+    "@google-github-actions/actions-utils": "^0.4.10"
   },
   "devDependencies": {
     "@types/node": "^20.9.0",

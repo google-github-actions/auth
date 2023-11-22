@@ -2,46 +2,33 @@
 
 ## Permission denied
 
-When troubleshooting "permission denied" errors from `auth` for Workload
-Identity, the first step is to ask the `auth` plugin to generate an OAuth access
-token. Do this by adding `token_format: 'access_token'` to your YAML:
-
-```yaml
-- uses: 'google-github-actions/auth@v1'
-  with:
-    # ...
-    token_format: 'access_token'
-```
-
-If your workflow _succeeds_ after adding the step to generate an access token,
-it means Workload Identity Federation is configured correctly and the issue is
-in subsequent actions. You can remove the `token_format` from your YAML. To
-further debug:
-
 1.  Enable [GitHub Actions debug logging][debug-logs] and re-run the workflow to
     see exactly which step is failing. Ensure you are using the latest version
-    of that GitHub Action.
+    of the GitHub Action.
 
-1.  Make sure you use `actions/checkout@v4` **before** the `auth` action in your
+    > **❗️ WARNING!** Enabling debug logging increases the chances of a secret
+    > being accidentially logged. While GitHub Actions will scrub secrets,
+    > please take extra caution when sharing these debug logs in publicly
+    > accessible places like GitHub issues.
+    >
+    > If you do not feel comfortable attaching the debug logs to a GitHub issue,
+    > please create the issue and then email the debug logs to
+    > google-github-actions@google.com, including the GitHub issue number in the
+    > subject line and email body.
+
+1.  Ensure you have waited at least 5 minutes between making changes to the
+    Workload Identity Pool, Workload Identity Provider, or IAM policies. Changes
+    to these resources are eventually consistent. Usually they happen
+    immediately, but sometimes they can take up to 5 minutes to propagate.
+
+1.  Ensure `actions/checkout@v4` is **before** the `auth` action in your
     workflow.
 
-1.  If the failing action is from `google-github-action/*`, please file an issue
-    in the corresponding repository.
-
-1.  If the failing action is from an external action, please file an issue
-    against that repository. The `auth` action exports Google Application
-    Default Credentials (ADC). Ask the action author to ensure they are
-    processing ADC correctly and using the latest versions of the Google client
-    libraries. Please note that we do not have control over actions outside of
-    `google-github-actions`.
-
-If your workflow _fails_ after adding the step to generate an access token,
-it likely means there is a misconfiguration with Workload Identity. Here are
-some common sources of errors:
-
-1.  Enable [GitHub Actions debug logging][debug-logs] and re-run the workflow to
-    see exactly which step is failing. Ensure you are using the latest version
-    of that GitHub Action.
+    ```yaml
+    steps:
+      - uses: 'actions/checkout@v4'
+      - uses: 'google-github-actions/auth@v2'
+    ```
 
 1.  Ensure the value for `workload_identity_provider` is the full _Provider_
     name, **not** the _Pool_ name:
@@ -55,8 +42,13 @@ some common sources of errors:
     **number**. Workload Identity Federation does not accept Google Cloud
     Project IDs.
 
-1.  Ensure that you have the correct `permissions:` for the job in your workflow, per
-    the [usage](../README.md#usage) docs, i.e.
+    ```diff
+    - projects/my-project/locations/global/workloadIdentityPools/my-pool/providers/my-provider
+    + projects/1234567890/locations/global/workloadIdentityPools/my-pool/providers/
+    ```
+
+1.  Ensure that you have the correct `permissions:` for the job in your
+    workflow, per the [usage](../README.md#usage) docs:
 
     ```yaml
     permissions:
@@ -67,43 +59,47 @@ some common sources of errors:
 1.  Ensure you have created an **Attribute Mapping** for any **Attribute
     Conditions** or **Service Account Impersonation** principals. You cannot
     create an Attribute Condition unless you map that value from the incoming
-    GitHub OIDC token. You cannot grant permissions to impersonate a Service
-    Account on an attribute unless you map that value from the incoming GitHub
-    OIDC token.
+    GitHub OIDC token. You cannot grant permissions on an attribute unless you
+    map that value from the incoming GitHub OIDC token.
 
-    You can use the [GitHub Actions OIDC Debugger][oidc-debugger] to print the
-    list of token claims and compare them to your Attribute Mappings and
-    Attribute Conditions.
+    > **📝 TIP!** Use the [GitHub Actions OIDC Debugger][oidc-debugger] to print
+    > the list of token claims and compare them to your Attribute Mappings and
+    > Attribute Conditions.
 
-1.  Ensure you have the correct casing and capitalization. GitHub does not
-    distinguish between "foobar" and "FooBar", but Google Cloud does. Ensure any
-    **Attribute Conditions** use the correct capitalization.
+1.  Ensure you have the correct character casing and capitalization. GitHub does
+    not distinguish between "foobar" and "FooBar", but Google Cloud does. Ensure
+    any **Attribute Conditions** use the correct capitalization. The
+    capitalization must match what is in the GitHub Actions OIDC token.
 
 1.  Check the specific error message that is returned.
 
-    -   If the error message includes "failed to generate Google Cloud federated
+    -   If the error message includes "Failed to generate Google Cloud federated
         token", it means admission into the Workload Identity Pool failed. Check
         your [**Attribute Conditions**][attribute-conditions].
 
-    -   If the error message inclues "failed to generate Google Cloud access
-        token", it means Service Account Impersonation failed. Check your
+    -   If the error message inclues "Failed to generate OAuth 2.0 Access
+        Token", it means Service Account Impersonation failed. Check your
         [**Service Account Impersonation**][sa-impersonation] settings and
         ensure the principalSet is correct.
 
 1.  Enable `Admin Read`, `Data Read`, and `Data Write` [Audit Logging][cal] for
     Identity and Access Management (IAM) in your Google Cloud project.
 
-    **Warning!** This will increase log volume which may increase costs. To keep
-    costs low, you can disable this audit logging after you have debugged the
-    issue.
+    > **❗️ WARNING!** This will increase log volume which may increase costs.
+    > You can disable this audit logging after you have debugged the issue.
 
     Try to authenticate again, and then explore the logs for your Workload
     Identity Provider and Workload Identity Pool. Sometimes these error messages
     are helpful in identifying the root cause.
 
-1.  Ensure you have waited at least 5 minutes between making changes to the
-    Workload Identity Pool and Workload Identity Provider. Changes to these
-    resources are eventually consistent.
+1.  If failures are coming from a different GitHub Action step, please file an
+    issue against that repository. The `auth` action exports Google Application
+    Default Credentials (ADC). Ask the action author to ensure they are
+    processing ADC correctly and using the latest versions of the Google client
+    libraries.
+
+    > **⚠️ NOTE!** We do not have control over GitHub Actions outside of the
+    > `google-github-actions` GitHub organization.
 
 
 ## Subject exceeds the 127 byte limit
@@ -232,6 +228,33 @@ tool like `jq`:
 
 ```sh
 cat credentials.json | jq -r tostring
+```
+
+## Organizational Policy Constraints
+
+**⚠️ NOTE!** Your Google Cloud organization administrator controls these
+policies. You must work with your internal IT department to resolve OrgPolicy
+violations and constraints.
+
+### Workload Identity Providers
+
+Your organization may restrict which external identity providers are permitted
+on your Google Cloud account. To enable GitHub Actions as a Workload Identity
+Pool and Provider, add the `https://token.actions.githubusercontent.com` to the
+allowed `iam.workloadIdentityPoolProviders` Org Policy constraint.
+
+```shell
+gcloud resource-manager org-policies allow "constraints/iam.workloadIdentityPoolProviders" \
+  https://token.actions.githubusercontent.com
+```
+
+### Service Account Key Export
+
+Your organization may restrict exporting Service Account Keys. To enable Service
+Account Key export, set the `iam.disableServiceAccountCreation` to false.
+
+```shell
+gcloud resource-manager org-policies disable-enforce "constraints/iam.disableServiceAccountCreation"
 ```
 
 

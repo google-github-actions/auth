@@ -21,7 +21,8 @@ import { tmpdir } from 'os';
 
 import { randomFilename } from '@google-github-actions/actions-utils';
 
-import { CredentialsJSONClient } from '../../src/client/credentials_json_client';
+import { NullLogger } from '../../src/logger';
+import { ServiceAccountKeyClient } from '../../src/client/credentials_json_client';
 
 // Yes, this is a real private key. No, it's not valid for authenticating
 // Google Cloud.
@@ -40,40 +41,40 @@ const credentialsJSON = `
 }
 `;
 
-describe('CredentialsJSONClient', () => {
+describe('ServiceAccountKeyClient', () => {
   describe('#parseServiceAccountKeyJSON', () => {
     it('throws exception on invalid json', async () => {
       assert.rejects(async () => {
-        new CredentialsJSONClient({
-          credentialsJSON: 'invalid json',
+        new ServiceAccountKeyClient(new NullLogger(), {
+          serviceAccountKey: 'invalid json',
         });
       }, SyntaxError);
     });
 
     it('handles base64', async () => {
       assert.rejects(async () => {
-        new CredentialsJSONClient({
-          credentialsJSON: 'base64',
+        new ServiceAccountKeyClient(new NullLogger(), {
+          serviceAccountKey: 'base64',
         });
       }, SyntaxError);
     });
   });
 
-  describe('#getAuthToken', () => {
-    it('signs a jwt', async () => {
-      const client = new CredentialsJSONClient({
-        credentialsJSON: credentialsJSON,
+  describe('#getToken', () => {
+    it('gets a token', async () => {
+      const client = new ServiceAccountKeyClient(new NullLogger(), {
+        serviceAccountKey: credentialsJSON,
       });
 
-      const token = await client.getAuthToken();
+      const token = await client.getToken();
       assert.ok(token);
     });
   });
 
   describe('#signJWT', () => {
     it('signs a jwt', async () => {
-      const client = new CredentialsJSONClient({
-        credentialsJSON: credentialsJSON,
+      const client = new ServiceAccountKeyClient(new NullLogger(), {
+        serviceAccountKey: credentialsJSON,
       });
 
       const token = await client.signJWT('thisismy.jwt');
@@ -81,43 +82,11 @@ describe('CredentialsJSONClient', () => {
     });
   });
 
-  describe('#getProjectID', () => {
-    it('extracts project ID from the json', async () => {
-      const client = new CredentialsJSONClient({
-        credentialsJSON: credentialsJSON,
-      });
-
-      const result = await client.getProjectID();
-      assert.deepStrictEqual(result, 'my-project');
-    });
-
-    it('prefers the override if given', async () => {
-      const client = new CredentialsJSONClient({
-        projectID: 'my-other-project',
-        credentialsJSON: credentialsJSON,
-      });
-
-      const result = await client.getProjectID();
-      assert.deepStrictEqual(result, 'my-other-project');
-    });
-  });
-
-  describe('#getServiceAccount', () => {
-    it('extracts service account from the json', async () => {
-      const client = new CredentialsJSONClient({
-        credentialsJSON: credentialsJSON,
-      });
-
-      const result = await client.getServiceAccount();
-      assert.deepStrictEqual(result, 'my-service-account@my-project.iam.gserviceaccount.com');
-    });
-  });
-
   describe('#createCredentialsFile', () => {
     it('writes the file', async () => {
       const outputFile = pathjoin(tmpdir(), randomFilename());
-      const client = new CredentialsJSONClient({
-        credentialsJSON: credentialsJSON,
+      const client = new ServiceAccountKeyClient(new NullLogger(), {
+        serviceAccountKey: credentialsJSON,
       });
 
       const exp = JSON.parse(credentialsJSON);

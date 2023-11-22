@@ -13,83 +13,24 @@
 // limitations under the License.
 
 /**
- * Defines the main interface for all clients that generate credentials.
+ * Client is the default HTTP client for interacting with the IAM credentials
+ * API.
  */
 export interface AuthClient {
-  getAuthToken(): Promise<string>;
-  signJWT(unsignedJWT: string, delegates?: Array<string>): Promise<string>;
-  getProjectID(): Promise<string>;
-  getServiceAccount(): Promise<string>;
-  createCredentialsFile(outputDir: string): Promise<string>;
+  /**
+   * getToken() gets or generates the best token for the auth client.
+   */
+  getToken(): Promise<string>;
 
   /**
-   * Provided by BaseClient.
+   * createCredentialsFile creates a credential file (for use with gcloud and
+   * other Google Cloud tools) that instructs the tool how to perform identity
+   * federation.
    */
-  googleIDToken(token: string, params: GoogleIDTokenParameters): Promise<GoogleIDTokenResponse>;
-  googleAccessToken(
-    token: string,
-    params: GoogleAccessTokenParameters,
-  ): Promise<GoogleAccessTokenResponse>;
-  googleOAuthToken(assertion: string): Promise<GoogleAccessTokenResponse>;
-}
+  createCredentialsFile(outputPath: string): Promise<string>;
 
-/**
- * GoogleAccessTokenParameters are the parameters to generate a Google Cloud
- * access token as described in:
- *
- *   https://cloud.google.com/iam/docs/reference/credentials/rest/v1/projects.serviceAccounts/generateAccessToken
- *
- * @param serviceAccount Optional email address or unique identifier of the
- * service account.
- * @param delegates Optional sequence of service accounts in the delegation
- * chain.
- * @param lifetime Optional validity period as a number representing the number
- * of seconds.
- */
-export interface GoogleAccessTokenParameters {
-  serviceAccount?: string;
-  delegates?: Array<string>;
-  scopes?: Array<string>;
-  lifetime?: number;
-}
-
-/**
- * GoogleAccessTokenResponse is the response from generating an access token.
- *
- * @param accessToken OAuth 2.0 access token.
- * @param expiration A timestamp in RFC3339 UTC "Zulu" format when the token
- * expires.
- */
-export interface GoogleAccessTokenResponse {
-  accessToken: string;
-  expiration: string;
-}
-
-/**
- * GoogleIDTokenParameters are the parameters to generate a Google Cloud
- * ID token as described in:
- *
- *   https://cloud.google.com/iam/docs/reference/credentials/rest/v1/projects.serviceAccounts/generateIdToken
- *
- * @param serviceAccount Email address or unique identifier of the service
- * account.
- * @param audience The audience for the token.
- * @param delegates Optional sequence of service accounts in the delegation
- * chain.
- */
-export interface GoogleIDTokenParameters {
-  serviceAccount?: string;
-  audience: string;
-  delegates?: Array<string>;
-  includeEmail?: boolean;
-}
-
-/**
- * GoogleIDTokenResponse is the response from generating an ID token.
- *
- * @param token ID token.
- * expires.
- */
-export interface GoogleIDTokenResponse {
-  token: string;
+  /**
+   * signJWT signs a JWT using the auth provider.
+   */
+  signJWT(claims: any): Promise<string>;
 }

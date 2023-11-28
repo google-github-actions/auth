@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { createSign } from 'crypto';
+
 import {
   isServiceAccountKey,
   parseCredential,
@@ -22,123 +23,112 @@ import {
 } from '@google-github-actions/actions-utils';
 
 import { AuthClient } from './auth_client';
-import { BaseClient } from '../base';
+import { expandEndpoint } from '../utils';
+import { Logger } from '../logger';
 
 /**
- * Available options to create the CredentialsJSONClient.
- *
- * @param projectID User-supplied value for project ID. If not provided, the
- * project ID is extracted from the credentials JSON.
- * @param credentialsJSON Raw JSON credentials blob.
+ * ServiceAccountKeyClientParameters is used as input to the
+ * ServiceAccountKeyClient.
  */
-interface CredentialsJSONClientOptions {
-  projectID?: string;
-  credentialsJSON: string;
+export interface ServiceAccountKeyClientParameters {
+  readonly serviceAccountKey: string;
 }
 
 /**
- * CredentialsJSONClient is a client that accepts a service account key JSON
- * credential.
+ * ServiceAccountKeyClient is an authentication client that expects a Service
+ * Account Key JSON file.
  */
-export class CredentialsJSONClient extends BaseClient implements AuthClient {
-  readonly #projectID: string;
-  readonly #credentials: ServiceAccountKey;
+export class ServiceAccountKeyClient implements AuthClient {
+  readonly #logger: Logger;
+  readonly #serviceAccountKey: ServiceAccountKey;
 
-  constructor(opts: CredentialsJSONClientOptions) {
-    super();
+  readonly #universe: string = 'googleapis.com';
+  readonly #endpoints = {
+    iamcredentials: 'https://iamcredentials.{universe}/v1',
+  };
+  readonly #audience: string;
 
-    const credentials = parseCredential(opts.credentialsJSON);
-    if (!isServiceAccountKey(credentials)) {
-      throw new Error(`Provided credential is not a valid service account key JSON`);
+  constructor(logger: Logger, opts: ServiceAccountKeyClientParameters) {
+    this.#logger = logger.withNamespace(this.constructor.name);
+
+    const serviceAccountKey = parseCredential(opts.serviceAccountKey);
+    if (!isServiceAccountKey(serviceAccountKey)) {
+      throw new Error(`Provided credential is not a valid Google Service Account Key JSON`);
     }
-    this.#credentials = credentials;
+    this.#serviceAccountKey = serviceAccountKey;
 
-    this.#projectID = opts.projectID || this.#credentials.project_id;
+    const endpoints = this.#endpoints;
+    for (const key of Object.keys(this.#endpoints) as Array<keyof typeof endpoints>) {
+      this.#endpoints[key] = expandEndpoint(this.#endpoints[key], this.#universe);
+    }
+    this.#logger.debug(`Computed endpoints`, this.#endpoints);
+
+    this.#audience = new URL(this.#endpoints.iamcredentials).origin + `/`;
+    this.#logger.debug(`Computed audience`, this.#audience);
   }
 
   /**
-   * getAuthToken generates a token capable of calling the iamcredentials API.
+   * getToken generates a self-signed JWT that, by default, is capable of
+   * calling the iamcredentials API to mint OAuth 2.0 Access Tokens and ID
+   * Tokens. However, users can theoretically override the audience value and
+   * use the JWT to call other endpoints without calling iamcredentials.
    */
-  async getAuthToken(): Promise<string> {
-    const header = {
-      alg: 'RS256',
-      typ: 'JWT',
-      kid: this.#credentials.private_key_id,
-    };
-
-    const now = Math.floor(new Date().getTime() / 1000);
-
-    const body = {
-      iss: this.#credentials.client_email,
-      sub: this.#credentials.client_email,
-      aud: 'https://iamcredentials.googleapis.com/',
-      iat: now,
-      exp: now + 3599,
-    };
-
-    const message = toBase64(JSON.stringify(header)) + '.' + toBase64(JSON.stringify(body));
-
+  async getToken(): Promise<string> {
     try {
-      const signer = createSign('RSA-SHA256');
-      signer.write(message);
-      signer.end();
+      const now = Math.floor(new Date().getTime() / 1000);
 
-      const signature = signer.sign(this.#credentials.private_key);
-      return message + '.' + toBase64(signature);
+      const claims = {
+        iss: this.#serviceAccountKey.client_email,
+        sub: this.#serviceAccountKey.client_email,
+        aud: this.#audience,
+        iat: now,
+        exp: now + 3599,
+      };
+
+      this.#logger.withNamespace('getToken').debug({
+        claims: claims,
+      });
+
+      return await this.signJWT(claims);
     } catch (err) {
-      throw new Error(`Failed to sign auth token using ${await this.getServiceAccount()}: ${err}`);
+      throw new Error(
+        `Failed to sign auth token using ${this.#serviceAccountKey.client_email}: ${err}`,
+      );
     }
   }
 
   /**
-   * signJWT signs the given JWT with the private key.
-   *
-   * @param unsignedJWT The JWT to sign.
+   * signJWT signs a JWT using the Service Account's private key.
    */
-  async signJWT(unsignedJWT: string): Promise<string> {
+  async signJWT(claims: any): Promise<string> {
     const header = {
-      alg: 'RS256',
-      typ: 'JWT',
-      kid: this.#credentials.private_key_id,
+      alg: `RS256`,
+      typ: `JWT`,
+      kid: this.#serviceAccountKey.private_key_id,
     };
 
-    const message = toBase64(JSON.stringify(header)) + '.' + toBase64(unsignedJWT);
+    const message = toBase64(JSON.stringify(header)) + `.` + toBase64(JSON.stringify(claims));
 
-    try {
-      const signer = createSign('RSA-SHA256');
-      signer.write(message);
-      signer.end();
+    this.#logger.withNamespace('signJWT').debug({
+      header: header,
+      claims: claims,
+      message: message,
+    });
 
-      const signature = signer.sign(this.#credentials.private_key);
-      const jwt = message + '.' + toBase64(signature);
-      return jwt;
-    } catch (err) {
-      throw new Error(`Failed to sign JWT using ${await this.getServiceAccount()}: ${err}`);
-    }
+    const signer = createSign(`RSA-SHA256`);
+    signer.write(message);
+    signer.end();
+
+    const signature = signer.sign(this.#serviceAccountKey.private_key);
+    return message + '.' + toBase64(signature);
   }
 
   /**
-   * getProjectID returns the project ID. If an override was given, the override
-   * is returned. Otherwise, this will be the project ID that was extracted from
-   * the service account key JSON.
-   */
-  async getProjectID(): Promise<string> {
-    return this.#projectID;
-  }
-
-  /**
-   * getServiceAccount returns the service account email for the authentication,
-   * extracted from the Service Account Key JSON.
-   */
-  async getServiceAccount(): Promise<string> {
-    return this.#credentials.client_email;
-  }
-
-  /**
-   * createCredentialsFile creates a Google Cloud credentials file that can be
-   * set as GOOGLE_APPLICATION_CREDENTIALS for gcloud and client libraries.
+   * createCredentialsFile writes the Service Account Key JSON back to disk at
+   * the specified outputPath.
    */
   async createCredentialsFile(outputPath: string): Promise<string> {
-    return await writeSecureFile(outputPath, JSON.stringify(this.#credentials));
+    this.#logger.withNamespace('createCredentialsFile').debug({ outputPath: outputPath });
+    return await writeSecureFile(outputPath, JSON.stringify(this.#serviceAccountKey));
   }
 }

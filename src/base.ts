@@ -12,157 +12,210 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { HttpClient } from '@actions/http-client';
 import { URLSearchParams } from 'url';
-import {
-  GoogleAccessTokenParameters,
-  GoogleAccessTokenResponse,
-  GoogleIDTokenParameters,
-  GoogleIDTokenResponse,
-} from './client/auth_client';
 
-// Do not listen to the linter - this can NOT be rewritten as an ES6 import statement.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { version: appVersion } = require('../package.json');
+import { HttpClient } from '@actions/http-client';
 
-// userAgent is the default user agent.
-const userAgent = `google-github-actions:auth/${appVersion}`;
+import { Logger } from './logger';
+import { expandEndpoint, userAgent } from './utils';
 
 /**
- * BaseClient is the default HTTP client for interacting with the IAM
- * credentials API.
+ * GenerateAccessTokenParameters are the inputs to the generateAccessToken call.
  */
-export class BaseClient {
-  /**
-   * client is the HTTP client.
-   */
-  protected readonly client: HttpClient;
+export interface GenerateAccessTokenParameters {
+  readonly serviceAccount: string;
+  readonly delegates?: string[];
+  readonly scopes?: string[];
+  readonly lifetime?: number;
+}
 
-  constructor() {
-    this.client = new HttpClient(userAgent);
-  }
+/**
+ * GenerateIDTokenParameters are the inputs to the generateIDToken call.
+ */
+export interface GenerateIDTokenParameters {
+  readonly serviceAccount: string;
+  readonly audience: string;
+  readonly delegates?: string[];
+  readonly includeEmail?: boolean;
+}
 
-  /**
-   * googleIDToken generates a Google Cloud ID token for the provided
-   * service account email or unique id.
-   */
-  async googleIDToken(
-    token: string,
-    { serviceAccount, audience, delegates, includeEmail }: GoogleIDTokenParameters,
-  ): Promise<GoogleIDTokenResponse> {
-    const pth = `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:generateIdToken`;
+/**
+ * IAMCredentialsClientParameters are the inputs to the IAM client.
+ */
+export interface IAMCredentialsClientParameters {
+  readonly authToken: string;
+}
 
-    const data = {
-      delegates: delegates,
-      audience: audience,
-      includeEmail: includeEmail,
-    };
+/**
+ * IAMCredentialsClient is a thin HTTP client around the Google Cloud IAM
+ * Credentials API.
+ */
+export class IAMCredentialsClient {
+  readonly #logger: Logger;
+  readonly #httpClient: HttpClient;
+  readonly #authToken: string;
 
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
+  readonly #universe: string = 'googleapis.com';
+  readonly #endpoints = {
+    iamcredentials: 'https://iamcredentials.{universe}/v1',
+    oauth2: 'https://oauth2.{universe}',
+  };
 
-    try {
-      const resp = await this.client.request('POST', pth, JSON.stringify(data), headers);
-      const body = await resp.readBody();
-      const statusCode = resp.message.statusCode || 500;
-      if (statusCode >= 400) {
-        throw new Error(`(${statusCode}) ${body}`);
-      }
-      const parsed = JSON.parse(body);
-      return {
-        token: parsed['token'],
-      };
-    } catch (err) {
-      throw new Error(`failed to generate Google Cloud ID token for ${serviceAccount}: ${err}`);
+  constructor(logger: Logger, opts: IAMCredentialsClientParameters) {
+    this.#logger = logger.withNamespace(this.constructor.name);
+    this.#httpClient = new HttpClient(userAgent);
+
+    this.#authToken = opts.authToken;
+
+    const endpoints = this.#endpoints;
+    for (const key of Object.keys(this.#endpoints) as Array<keyof typeof endpoints>) {
+      this.#endpoints[key] = expandEndpoint(this.#endpoints[key], this.#universe);
     }
+    this.#logger.debug(`Computed endpoints`, this.#endpoints);
   }
 
   /**
-   * googleAccessToken generates a Google Cloud access token for the provided
-   * service account email or unique id.
+   * generateAccessToken generates a new OAuth 2.0 Access Token for a service
+   * account.
    */
-  async googleAccessToken(
-    token: string,
-    { serviceAccount, delegates, scopes, lifetime }: GoogleAccessTokenParameters,
-  ): Promise<GoogleAccessTokenResponse> {
-    const pth = `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`;
+  async generateAccessToken({
+    serviceAccount,
+    delegates,
+    scopes,
+    lifetime,
+  }: GenerateAccessTokenParameters): Promise<string> {
+    const pth = `${this.#endpoints.iamcredentials}/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`;
 
-    const data: Record<string, string | Array<string>> = {};
+    const headers = { Authorization: `Bearer ${this.#authToken}` };
+
+    const body: Record<string, string | Array<string>> = {};
     if (delegates && delegates.length > 0) {
-      data.delegates = delegates;
+      body.delegates = delegates;
     }
     if (scopes && scopes.length > 0) {
       // Not a typo, the API expects the field to be "scope" (singular).
-      data.scope = scopes;
+      body.scope = scopes;
     }
     if (lifetime && lifetime > 0) {
-      data.lifetime = `${lifetime}s`;
+      body.lifetime = `${lifetime}s`;
     }
 
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
+    this.#logger.withNamespace('generateAccessToken').debug({
+      method: `POST`,
+      path: pth,
+      headers: headers,
+      body: body,
+    });
 
     try {
-      const resp = await this.client.request('POST', pth, JSON.stringify(data), headers);
-      const body = await resp.readBody();
-      const statusCode = resp.message.statusCode || 500;
-      if (statusCode >= 400) {
-        throw new Error(`(${statusCode}) ${body}`);
+      const resp = await this.#httpClient.postJson<{ accessToken: string }>(pth, body, headers);
+      const statusCode = resp.statusCode || 500;
+      if (statusCode < 200 || statusCode > 299) {
+        throw new Error(`Failed to call ${pth}: HTTP ${statusCode}: ${resp.result || '[no body]'}`);
       }
-      const parsed = JSON.parse(body);
-      return {
-        accessToken: parsed['accessToken'],
-        expiration: parsed['expireTime'],
-      };
+
+      const result = resp.result;
+      if (!result) {
+        throw new Error(`Successfully called ${pth}, but the result was empty`);
+      }
+      return result.accessToken;
     } catch (err) {
-      throw new Error(`Failed to generate Google Cloud access token for ${serviceAccount}: ${err}`);
+      throw new Error(
+        `Failed to generate Google Cloud OAuth 2.0 Access Token for ${serviceAccount}: ${err}`,
+      );
     }
   }
 
-  /**
-   * googleOAuthToken generates a Google Cloud OAuth token using the legacy
-   * OAuth endpoints.
-   *
-   * @param assertion A signed JWT.
-   */
-  async googleOAuthToken(assertion: string): Promise<GoogleAccessTokenResponse> {
-    const pth = `https://oauth2.googleapis.com/token`;
+  async generateDomainWideDelegationAccessToken(assertion: string): Promise<string> {
+    const pth = `${this.#endpoints.oauth2}/token`;
 
     const headers = {
       'Accept': 'application/json',
       'Content-Type': 'application/x-www-form-urlencoded',
     };
 
-    const data = new URLSearchParams();
-    data.append('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
-    data.append('assertion', assertion);
+    const body = new URLSearchParams();
+    body.append('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
+    body.append('assertion', assertion);
+
+    this.#logger.withNamespace('generateDomainWideDelegationAccessToken').debug({
+      method: `POST`,
+      path: pth,
+      headers: headers,
+      body: body,
+    });
 
     try {
-      const resp = await this.client.request('POST', pth, data.toString(), headers);
-      const body = await resp.readBody();
+      const resp = await this.#httpClient.post(pth, body.toString(), headers);
+      const respBody = await resp.readBody();
       const statusCode = resp.message.statusCode || 500;
-      if (statusCode >= 400) {
-        throw new Error(`(${statusCode}) ${body}`);
+      if (statusCode < 200 || statusCode > 299) {
+        throw new Error(`Failed to call ${pth}: HTTP ${statusCode}: ${respBody || '[no body]'}`);
       }
-      const parsed = JSON.parse(body);
-
-      // Normalize the expiration to be a timestamp like the iamcredentials API.
-      // This API returns the number of seconds until expiration, so convert
-      // that into a date.
-      const expiration = new Date(new Date().getTime() + parsed['expires_in'] * 10000);
-
-      return {
-        accessToken: parsed['access_token'],
-        expiration: expiration.toISOString(),
-      };
+      const parsed = JSON.parse(respBody) as { accessToken: string };
+      return parsed.accessToken;
     } catch (err) {
-      throw new Error(`Failed to generate Google Cloud OAuth token: ${err}`);
+      throw new Error(
+        `Failed to generate Google Cloud Domain Wide Delegation OAuth 2.0 Access Token: ${err}`,
+      );
+    }
+  }
+
+  /**
+   * generateIDToken generates a new OpenID Connect ID token for a service
+   * account.
+   */
+  async generateIDToken({
+    serviceAccount,
+    audience,
+    delegates,
+    includeEmail,
+  }: GenerateIDTokenParameters): Promise<string> {
+    const pth = `${this.#endpoints.iamcredentials}/projects/-/serviceAccounts/${serviceAccount}:generateIdToken`;
+
+    const headers = { Authorization: `Bearer ${this.#authToken}` };
+
+    const body: Record<string, string | string[] | boolean> = {
+      audience: audience,
+      includeEmail: includeEmail ? true : false,
+    };
+    if (delegates && delegates.length > 0) {
+      body.delegates = delegates;
+    }
+
+    this.#logger.withNamespace('generateIDToken').debug({
+      method: `POST`,
+      path: pth,
+      headers: headers,
+      body: body,
+    });
+
+    try {
+      const resp = await this.#httpClient.postJson<{ token: string }>(pth, body, headers);
+      const statusCode = resp.statusCode || 500;
+      if (statusCode < 200 || statusCode > 299) {
+        throw new Error(`Failed to call ${pth}: HTTP ${statusCode}: ${resp.result || '[no body]'}`);
+      }
+
+      const result = resp.result;
+      if (!result) {
+        throw new Error(`Successfully called ${pth}, but the result was empty`);
+      }
+      return result.token;
+    } catch (err) {
+      throw new Error(
+        `Failed to generate Google Cloud OpenID Connect ID token for ${serviceAccount}: ${err}`,
+      );
     }
   }
 }
+
+export { AuthClient } from './client/auth_client';
+export {
+  ServiceAccountKeyClientParameters,
+  ServiceAccountKeyClient,
+} from './client/credentials_json_client';
+export {
+  WorkloadIdentityFederationClientParameters,
+  WorkloadIdentityFederationClient,
+} from './client/workload_identity_client';

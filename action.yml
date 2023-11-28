@@ -168,14 +168,14 @@ outputs:
     description: |-
       Path on the local filesystem where the generated credentials file resides.
       This is only available if "create_credentials_file" was set to true.
+  auth_token:
+    description: |-
+      The intermediate authentication token, which could be used to call other
+      Google Cloud APIs, depending on how you configured IAM.
   access_token:
     description: |-
       The Google Cloud access token for calling other Google Cloud APIs. This is
       only available when "token_format" is "access_token".
-  access_token_expiration:
-    description: |-
-      The RFC3339 UTC "Zulu" format timestamp for the access token. This is only
-      available when "token_format" is "access_token".
   id_token:
     description: |-
       The Google Cloud ID token. This is only available when "token_format" is

@@ -15,10 +15,17 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
-import { buildDomainWideDelegationJWT, generateCredentialsFilename } from '../src/utils';
+import {
+  buildDomainWideDelegationJWT,
+  computeProjectID,
+  computeServiceAccountEmail,
+  expandEndpoint,
+  generateCredentialsFilename,
+  projectIDFromServiceAccountEmail,
+} from '../src/utils';
 
-describe('Utils', () => {
-  describe('#buildDomainWideDelegationJWT', () => {
+describe('Utils', async () => {
+  describe('#buildDomainWideDelegationJWT', async () => {
     const cases = [
       {
         name: 'default',
@@ -57,7 +64,152 @@ describe('Utils', () => {
     });
   });
 
-  describe('#generateCredentialsFilename', () => {
+  describe('#computeProjectID', async () => {
+    const cases = [
+      {
+        name: 'directly given',
+        projectID: 'my-project',
+        exp: 'my-project',
+      },
+      {
+        name: 'from service account email',
+        serviceAccountEmail: 'my-account@my-project.iam.gserviceaccount.com',
+        exp: 'my-project',
+      },
+      {
+        name: 'from json credential',
+        serviceAccountKeyJSON: '{"type":"service_account", "project_id": "my-project"}',
+        exp: 'my-project',
+      },
+      {
+        name: 'from json credential invalid',
+        serviceAccountKeyJSON: '{"nope": "foo@bar.com"}',
+        exp: undefined,
+      },
+    ];
+
+    cases.forEach(async (tc) => {
+      it(tc.name, async () => {
+        const result = computeProjectID(
+          tc.projectID,
+          tc.serviceAccountEmail,
+          tc.serviceAccountKeyJSON,
+        );
+        assert.deepStrictEqual(result, tc.exp);
+      });
+    });
+  });
+
+  describe('#computeServiceAccountEmail', async () => {
+    const cases = [
+      {
+        name: 'directly given',
+        serviceAccountEmail: 'foo@bar.com',
+        exp: 'foo@bar.com',
+      },
+      {
+        name: 'from json credential',
+        serviceAccountKeyJSON: '{"type":"service_account", "client_email": "foo@bar.com"}',
+        exp: 'foo@bar.com',
+      },
+      {
+        name: 'invalid json credential',
+        serviceAccountKeyJSON: '{"nope": "foo@bar.com"}',
+        exp: undefined,
+      },
+      {
+        name: 'nothing',
+        exp: undefined,
+      },
+    ];
+
+    cases.forEach(async (tc) => {
+      it(tc.name, async () => {
+        const result = computeServiceAccountEmail(tc.serviceAccountEmail, tc.serviceAccountKeyJSON);
+        assert.deepStrictEqual(result, tc.exp);
+      });
+    });
+  });
+
+  describe('#projectIDFromServiceAccountEmail', async () => {
+    const cases = [
+      {
+        name: 'empty',
+        input: '',
+        exp: null,
+      },
+      {
+        name: 'not an email',
+        input: 'not a service account',
+        exp: null,
+      },
+      {
+        name: 'invalid email',
+        input: 'foo@abc',
+        exp: null,
+      },
+      {
+        name: 'returns project',
+        input: 'test-sa@my-project.iam.gserviceaccount.com',
+        exp: 'my-project',
+      },
+    ];
+
+    cases.forEach(async (tc) => {
+      it(tc.name, async () => {
+        const result = projectIDFromServiceAccountEmail(tc.input);
+        assert.deepStrictEqual(result, tc.exp);
+      });
+    });
+  });
+
+  describe('#expandEndpoint', async () => {
+    const cases = [
+      {
+        name: 'empty',
+        endpoint: '',
+        universe: '',
+        exp: '',
+      },
+      {
+        name: 'no match',
+        endpoint: 'https://www.googleapis.com',
+        universe: 'foobar',
+        exp: 'https://www.googleapis.com',
+      },
+      {
+        name: 'removes trailing slash',
+        endpoint: 'https://www.googleapis.com/',
+        exp: 'https://www.googleapis.com',
+      },
+      {
+        name: 'removes trailing slashes',
+        endpoint: 'https://www.googleapis.com/////',
+        exp: 'https://www.googleapis.com',
+      },
+      {
+        name: 'replaces {universe}',
+        endpoint: 'https://www.{universe}',
+        universe: 'foo.bar',
+        exp: 'https://www.foo.bar',
+      },
+      {
+        name: 'replaces multiple {universe}',
+        endpoint: 'https://www.{universe}.{universe}',
+        universe: 'foo.bar',
+        exp: 'https://www.foo.bar.foo.bar',
+      },
+    ];
+
+    cases.forEach(async (tc) => {
+      it(tc.name, async () => {
+        const result = expandEndpoint(tc.endpoint, tc.universe || '');
+        assert.deepStrictEqual(result, tc.exp);
+      });
+    });
+  });
+
+  describe('#generateCredentialsFilename', async () => {
     it('returns a string matching the regex', () => {
       for (let i = 0; i < 10; i++) {
         const filename = generateCredentialsFilename();

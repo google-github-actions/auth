@@ -27,6 +27,10 @@ concurrency:
   group: '${{ github.workflow }}-${{ github.head_ref || github.ref }}'
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: 'bash'
+
 jobs:
   unit:
     name: 'unit'
@@ -48,9 +52,13 @@ jobs:
       - name: 'npm test'
         run: 'npm run test'
 
-  credentials_json:
+
+  #
+  # Direct Workload Identity Federation
+  #
+  direct_workload_identity_federation:
     if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
-    name: 'credentials_json'
+    name: 'direct_workload_identity_federation'
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
@@ -59,6 +67,9 @@ jobs:
           - 'ubuntu-latest'
           - 'windows-latest'
           - 'macos-latest'
+
+    permissions:
+      id-token: 'write'
 
     steps:
       - uses: 'actions/checkout@v4'
@@ -74,56 +85,33 @@ jobs:
         name: 'auth-default'
         uses: './'
         with:
-          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
+          project_id: '${{ vars.PROJECT_ID }}'
+          workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
 
-      - id: 'setup-gcloud'
-        name: 'setup-gcloud'
-        uses: 'google-github-actions/setup-gcloud@main'
+      - uses: 'google-github-actions/setup-gcloud@main'
+        with:
+          version: '>= 363.0.0'
 
-      - id: 'gcloud'
-        name: 'gcloud'
-        shell: 'bash'
+      - name: 'gcloud'
         run: |-
           gcloud secrets versions access "latest" --secret "${{ vars.SECRET_NAME }}"
 
-      - id: 'auth-access-token'
-        name: 'auth-access-token'
-        uses: './'
-        with:
-          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
-          token_format: 'access_token'
-
-      - id: 'access-token'
-        name: 'access-token'
-        shell: 'bash'
+      - id: 'oauth-federated-token'
+        name: 'oauth-federated-token'
         run: |-
-          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ vars.SECRET_NAME }}/versions/latest:access \
+          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-default.outputs.project_id }}/secrets/${{ vars.SECRET_NAME }}/versions/latest:access \
             --silent \
             --show-error \
             --fail \
-            --header "Authorization: Bearer ${{ steps.auth-access-token.outputs.access_token }}"
+            --header "Authorization: Bearer ${{ steps.auth-default.outputs.auth_token }}"
 
-      - id: 'auth-id-token'
-        name: 'auth-id-token'
-        uses: './'
-        with:
-          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
-          token_format: 'id_token'
-          id_token_audience: 'https://secretmanager.googleapis.com/'
-          id_token_include_email: true
 
-      - id: 'auth-sa-retries'
-        name: 'auth-sa-retries'
-        uses: './'
-        with:
-          retries: '2'
-          backoff: '200'
-          backoff_limit: '1000'
-          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
-
-  workload_identity_federation:
+  #
+  # Workload Identity Federation through a Service Account
+  #
+  workload_identity_federation_through_service_account:
     if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
-    name: 'workload_identity_federation'
+    name: 'workload_identity_federation_through_service_account'
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false
@@ -153,13 +141,11 @@ jobs:
           workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
           service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
 
-      - id: 'setup-gcloud'
-        name: 'setup-gcloud'
-        uses: 'google-github-actions/setup-gcloud@main'
+      - uses: 'google-github-actions/setup-gcloud@main'
+        with:
+          version: '>= 363.0.0'
 
-      - id: 'gcloud'
-        name: 'gcloud'
-        shell: 'bash'
+      - name: 'gcloud'
         run: |-
           gcloud secrets versions access "latest" --secret "${{ vars.SECRET_NAME }}"
 
@@ -171,9 +157,74 @@ jobs:
           service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
           token_format: 'access_token'
 
+      - id: 'oauth-token'
+        name: 'oauth-token'
+        run: |-
+          curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ vars.SECRET_NAME }}/versions/latest:access \
+            --silent \
+            --show-error \
+            --fail \
+            --header "Authorization: Bearer ${{ steps.auth-access-token.outputs.access_token }}"
+
+      - id: 'id-token'
+        name: 'id-token'
+        uses: './'
+        with:
+          workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
+          service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
+          token_format: 'id_token'
+          id_token_audience: 'https://secretmanager.googleapis.com/'
+          id_token_include_email: true
+
+
+  #
+  # Service Account Key JSON
+  #
+  credentials_json:
+    if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
+    name: 'credentials_json'
+    runs-on: '${{ matrix.os }}'
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - 'ubuntu-latest'
+          - 'windows-latest'
+          - 'macos-latest'
+
+    steps:
+      - uses: 'actions/checkout@v4'
+
+      - uses: 'actions/setup-node@v4'
+        with:
+          node-version: '20.x'
+
+      - name: 'npm build'
+        run: 'npm ci && npm run build'
+
+      - id: 'auth-default'
+        name: 'auth-default'
+        uses: './'
+        with:
+          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
+
+      - uses: 'google-github-actions/setup-gcloud@main'
+        with:
+          version: '>= 363.0.0'
+
+      - name: 'gcloud'
+        run: |-
+          gcloud secrets versions access "latest" --secret "${{ vars.SECRET_NAME }}"
+
+      - id: 'auth-access-token'
+        name: 'auth-access-token'
+        uses: './'
+        with:
+          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
+          token_format: 'access_token'
+
       - id: 'access-token'
         name: 'access-token'
-        shell: 'bash'
         run: |-
           curl https://secretmanager.googleapis.com/v1/projects/${{ steps.auth-access-token.outputs.project_id }}/secrets/${{ vars.SECRET_NAME }}/versions/latest:access \
             --silent \
@@ -185,26 +236,26 @@ jobs:
         name: 'auth-id-token'
         uses: './'
         with:
-          workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
-          service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
+          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
           token_format: 'id_token'
           id_token_audience: 'https://secretmanager.googleapis.com/'
           id_token_include_email: true
 
-      - id: 'auth-wif-retries'
-        name: 'auth-wif-retries'
+      - id: 'auth-sa-retries'
+        name: 'auth-sa-retries'
         uses: './'
         with:
           retries: '2'
           backoff: '200'
           backoff_limit: '1000'
-          workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
-          service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
+          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
 
+  #
   # This test ensures that the GOOGLE_APPLICATION_CREDENTIALS environment
   # variable is shared with the container and that the path of the file is on
   # the shared filesystem with the container and that the USER for the container
   # has permissions to read the file.
+  #
   docker:
     if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
     name: 'docker'

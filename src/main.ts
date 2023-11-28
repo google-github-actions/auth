@@ -4,6 +4,7 @@ import { join as pathjoin } from 'path';
 
 import {
   debug as logDebug,
+  error as logError,
   exportVariable,
   getBooleanInput,
   getIDToken,
@@ -45,6 +46,17 @@ const oidcWarning =
  * Executes the main action.
  */
 async function run(): Promise<void> {
+  // v0 is deprecated and is no longer supported per our "two major versions"
+  // policy.
+  logError(
+    `The v0 series of google-github-actions/auth is no longer maintained. It ` +
+      `will not receive updates, improvements, or security patches. Please ` +
+      `upgrade to the latest supported versions: ` +
+      `\n` +
+      `\n` +
+      `    https://github.com/google-github-actions/auth`,
+  );
+
   // Warn if pinned to HEAD
   if (isPinnedToHead()) {
     logWarning(pinnedToHeadWarning('v0'));

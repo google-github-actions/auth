@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eEuo pipefail
+set -eEuxo pipefail
 
 #
 # As of Node 20, the --test parameter does not support globbing, and it does not
@@ -13,7 +13,4 @@ set -eEuo pipefail
 # fed to the caller.
 #
 
-FILES="$(node -e "process.stdout.write(require('node:fs').readdirSync('./', { recursive: true }).filter((e) => {return e.endsWith('.test.ts') && !e.startsWith('node_modules');}).sort().join(' '));")"
-
-set -x
-exec node --require ts-node/register --test-reporter spec --test ${FILES}
+exec node --require ts-node/register --test ./tests/client/credentials_json_client.test.ts ./tests/client/workload_identity_client.test.ts ./tests/utils.test.ts

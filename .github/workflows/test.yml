@@ -18,9 +18,11 @@ on:
   push:
     branches:
       - 'main'
+      - 'release/**/*'
   pull_request:
     branches:
       - 'main'
+      - 'release/**/*'
   workflow_dispatch:
 
 concurrency:
@@ -37,7 +39,7 @@ jobs:
 
       - uses: 'actions/setup-node@v4'
         with:
-          node-version: '20.x'
+          node-version: '16.x'
 
       - name: 'npm build'
         run: 'npm ci && npm run build'
@@ -65,7 +67,7 @@ jobs:
 
       - uses: 'actions/setup-node@v4'
         with:
-          node-version: '20.x'
+          node-version: '16.x'
 
       - name: 'npm build'
         run: 'npm ci && npm run build'
@@ -141,7 +143,7 @@ jobs:
 
       - uses: 'actions/setup-node@v4'
         with:
-          node-version: '20.x'
+          node-version: '16.x'
 
       - name: 'npm build'
         run: 'npm ci && npm run build'
@@ -216,7 +218,7 @@ jobs:
 
       - uses: 'actions/setup-node@v4'
         with:
-          node-version: '20.x'
+          node-version: '16.x'
 
       - name: 'npm build'
         run: 'npm ci && npm run build'

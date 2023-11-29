@@ -22,7 +22,7 @@ import { tmpdir } from 'os';
 import { randomFilename } from '@google-github-actions/actions-utils';
 
 import { NullLogger } from '../../src/logger';
-import { ServiceAccountKeyClient } from '../../src/client/credentials_json_client';
+import { ServiceAccountKeyClient } from '../../src/client/service_account_key_json';
 
 // Yes, this is a real private key. No, it's not valid for authenticating
 // Google Cloud.
@@ -45,7 +45,9 @@ describe('ServiceAccountKeyClient', () => {
   describe('#parseServiceAccountKeyJSON', () => {
     it('throws exception on invalid json', async () => {
       assert.rejects(async () => {
-        new ServiceAccountKeyClient(new NullLogger(), {
+        new ServiceAccountKeyClient({
+          logger: new NullLogger(),
+          universe: 'googleapis.com',
           serviceAccountKey: 'invalid json',
         });
       }, SyntaxError);
@@ -53,7 +55,9 @@ describe('ServiceAccountKeyClient', () => {
 
     it('handles base64', async () => {
       assert.rejects(async () => {
-        new ServiceAccountKeyClient(new NullLogger(), {
+        new ServiceAccountKeyClient({
+          logger: new NullLogger(),
+          universe: 'googleapis.com',
           serviceAccountKey: 'base64',
         });
       }, SyntaxError);
@@ -62,7 +66,9 @@ describe('ServiceAccountKeyClient', () => {
 
   describe('#getToken', () => {
     it('gets a token', async () => {
-      const client = new ServiceAccountKeyClient(new NullLogger(), {
+      const client = new ServiceAccountKeyClient({
+        logger: new NullLogger(),
+        universe: 'googleapis.com',
         serviceAccountKey: credentialsJSON,
       });
 
@@ -73,7 +79,9 @@ describe('ServiceAccountKeyClient', () => {
 
   describe('#signJWT', () => {
     it('signs a jwt', async () => {
-      const client = new ServiceAccountKeyClient(new NullLogger(), {
+      const client = new ServiceAccountKeyClient({
+        logger: new NullLogger(),
+        universe: 'googleapis.com',
         serviceAccountKey: credentialsJSON,
       });
 
@@ -85,7 +93,9 @@ describe('ServiceAccountKeyClient', () => {
   describe('#createCredentialsFile', () => {
     it('writes the file', async () => {
       const outputFile = pathjoin(tmpdir(), randomFilename());
-      const client = new ServiceAccountKeyClient(new NullLogger(), {
+      const client = new ServiceAccountKeyClient({
+        logger: new NullLogger(),
+        universe: 'googleapis.com',
         serviceAccountKey: credentialsJSON,
       });
 

@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { HttpClient } from '@actions/http-client';
+import { errorMessage, writeSecureFile } from '@google-github-actions/actions-utils';
 
-import { writeSecureFile } from '@google-github-actions/actions-utils';
-
-import { AuthClient } from './auth_client';
-import { expandEndpoint, userAgent } from '../utils';
+import { AuthClient, Client } from './client';
 import { Logger } from '../logger';
 
 /**
@@ -25,6 +22,9 @@ import { Logger } from '../logger';
  * WorkloadIdentityFederationClient.
  */
 export interface WorkloadIdentityFederationClientParameters {
+  readonly logger: Logger;
+  readonly universe: string;
+
   readonly githubOIDCToken: string;
   readonly githubOIDCTokenRequestURL: string;
   readonly githubOIDCTokenRequestToken: string;
@@ -38,32 +38,24 @@ export interface WorkloadIdentityFederationClientParameters {
  * WorkloadIdentityFederationClient is an authentication client that configures
  * a Workload Identity authentication scheme.
  */
-export class WorkloadIdentityFederationClient implements AuthClient {
-  readonly #logger: Logger;
-  readonly #httpClient: HttpClient;
-
+export class WorkloadIdentityFederationClient extends Client implements AuthClient {
   readonly #githubOIDCToken: string;
   readonly #githubOIDCTokenRequestURL: string;
   readonly #githubOIDCTokenRequestToken: string;
   readonly #githubOIDCTokenAudience: string;
   readonly #workloadIdentityProviderName: string;
   readonly #serviceAccount?: string;
+  readonly #audience: string;
 
   #cachedToken?: string;
   #cachedAt?: number;
 
-  readonly #universe: string = 'googleapis.com';
-  readonly #endpoints = {
-    iam: 'https://iam.{universe}/v1',
-    iamcredentials: 'https://iamcredentials.{universe}/v1',
-    sts: 'https://sts.{universe}/v1',
-    www: 'https://www.{universe}',
-  };
-  readonly #audience: string;
-
-  constructor(logger: Logger, opts: WorkloadIdentityFederationClientParameters) {
-    this.#logger = logger.withNamespace(this.constructor.name);
-    this.#httpClient = new HttpClient(userAgent);
+  constructor(opts: WorkloadIdentityFederationClientParameters) {
+    super({
+      logger: opts.logger,
+      universe: opts.universe,
+      child: `WorkloadIdentityFederationClient`,
+    });
 
     this.#githubOIDCToken = opts.githubOIDCToken;
     this.#githubOIDCTokenRequestURL = opts.githubOIDCTokenRequestURL;
@@ -72,15 +64,9 @@ export class WorkloadIdentityFederationClient implements AuthClient {
     this.#workloadIdentityProviderName = opts.workloadIdentityProviderName;
     this.#serviceAccount = opts.serviceAccount;
 
-    const endpoints = this.#endpoints;
-    for (const key of Object.keys(this.#endpoints) as Array<keyof typeof endpoints>) {
-      this.#endpoints[key] = expandEndpoint(this.#endpoints[key], this.#universe);
-    }
-    this.#logger.debug(`Computed endpoints`, this.#endpoints);
-
-    const iamHost = new URL(this.#endpoints.iam).host;
+    const iamHost = new URL(this._endpoints.iam).host;
     this.#audience = `//${iamHost}/${this.#workloadIdentityProviderName}`;
-    this.#logger.debug(`Computed audience`, this.#audience);
+    this._logger.debug(`Computed audience`, this.#audience);
   }
 
   /**
@@ -91,31 +77,36 @@ export class WorkloadIdentityFederationClient implements AuthClient {
    * impersonation.
    */
   async getToken(): Promise<string> {
+    const logger = this._logger.withNamespace(`getToken`);
+
     const now = new Date().getTime();
     if (this.#cachedToken && this.#cachedAt && now - this.#cachedAt > 60_000) {
-      this.#logger.debug(`Using cached token`);
+      logger.debug(`Using cached token`, {
+        now: now,
+        cachedAt: this.#cachedAt,
+      });
       return this.#cachedToken;
     }
 
-    const pth = `${this.#endpoints.sts}/token`;
+    const pth = `${this._endpoints.sts}/token`;
 
     const body = {
       audience: this.#audience,
       grantType: `urn:ietf:params:oauth:grant-type:token-exchange`,
       requestedTokenType: `urn:ietf:params:oauth:token-type:access_token`,
-      scope: `${this.#endpoints.www}/auth/cloud-platform`,
+      scope: `${this._endpoints.www}/auth/cloud-platform`,
       subjectTokenType: `urn:ietf:params:oauth:token-type:jwt`,
       subjectToken: this.#githubOIDCToken,
     };
 
-    this.#logger.withNamespace('getToken').debug({
+    logger.debug(`Built request`, {
       method: `POST`,
       path: pth,
       body: body,
     });
 
     try {
-      const resp = await this.#httpClient.postJson<{ access_token: string }>(pth, body);
+      const resp = await this._httpClient.postJson<{ access_token: string }>(pth, body);
       const statusCode = resp.statusCode || 500;
       if (statusCode < 200 || statusCode > 299) {
         throw new Error(`Failed to call ${pth}: HTTP ${statusCode}: ${resp.result || '[no body]'}`);
@@ -130,8 +121,9 @@ export class WorkloadIdentityFederationClient implements AuthClient {
       this.#cachedAt = now;
       return result.access_token;
     } catch (err) {
+      const msg = errorMessage(err);
       throw new Error(
-        `Failed to generate Google Cloud federated token for ${this.#audience}: ${err}`,
+        `Failed to generate Google Cloud federated token for ${this.#audience}: ${msg}`,
       );
     }
   }
@@ -140,11 +132,13 @@ export class WorkloadIdentityFederationClient implements AuthClient {
    * signJWT signs a JWT using the Service Account's private key.
    */
   async signJWT(claims: any): Promise<string> {
+    const logger = this._logger.withNamespace(`signJWT`);
+
     if (!this.#serviceAccount) {
       throw new Error(`Cannot sign JWTs without specifying a service account`);
     }
 
-    const pth = `${this.#endpoints.iamcredentials}/projects/-/serviceAccounts/${this.#serviceAccount}:signJwt`;
+    const pth = `${this._endpoints.iamcredentials}/projects/-/serviceAccounts/${this.#serviceAccount}:signJwt`;
 
     const headers = {
       Authorization: `Bearer ${this.getToken()}`,
@@ -154,7 +148,7 @@ export class WorkloadIdentityFederationClient implements AuthClient {
       payload: claims,
     };
 
-    this.#logger.withNamespace('signJWT').debug({
+    logger.debug(`Built request`, {
       method: `POST`,
       path: pth,
       headers: headers,
@@ -162,7 +156,7 @@ export class WorkloadIdentityFederationClient implements AuthClient {
     });
 
     try {
-      const resp = await this.#httpClient.postJson<{ signedJwt: string }>(pth, body, headers);
+      const resp = await this._httpClient.postJson<{ signedJwt: string }>(pth, body, headers);
       const statusCode = resp.statusCode || 500;
       if (statusCode < 200 || statusCode > 299) {
         throw new Error(`Failed to call ${pth}: HTTP ${statusCode}: ${resp.result || '[no body]'}`);
@@ -174,7 +168,8 @@ export class WorkloadIdentityFederationClient implements AuthClient {
       }
       return result.signedJwt;
     } catch (err) {
-      throw new Error(`Failed to sign JWT using ${this.#serviceAccount}: ${err}`);
+      const msg = errorMessage(err);
+      throw new Error(`Failed to sign JWT using ${this.#serviceAccount}: ${msg}`);
     }
   }
 
@@ -183,6 +178,8 @@ export class WorkloadIdentityFederationClient implements AuthClient {
    * to disk at the specific outputPath.
    */
   async createCredentialsFile(outputPath: string): Promise<string> {
+    const logger = this._logger.withNamespace(`createCredentialsFile`);
+
     const requestURL = new URL(this.#githubOIDCTokenRequestURL);
 
     // Append the audience value to the request.
@@ -194,7 +191,7 @@ export class WorkloadIdentityFederationClient implements AuthClient {
       type: `external_account`,
       audience: this.#audience,
       subject_token_type: `urn:ietf:params:oauth:token-type:jwt`,
-      token_url: `${this.#endpoints.sts}/token`,
+      token_url: `${this._endpoints.sts}/token`,
       credential_source: {
         url: requestURL,
         headers: {
@@ -210,10 +207,15 @@ export class WorkloadIdentityFederationClient implements AuthClient {
     // Only request impersonation if a service account was given, otherwise use
     // the WIF identity directly.
     if (this.#serviceAccount) {
-      data.service_account_impersonation_url = `${this.#endpoints.iamcredentials}/projects/-/serviceAccounts/${this.#serviceAccount}:generateAccessToken`;
+      const impersonationURL = `${this._endpoints.iamcredentials}/projects/-/serviceAccounts/${this.#serviceAccount}:generateAccessToken`;
+      logger.debug(`Enabling service account impersonation via ${impersonationURL}`);
+      data.service_account_impersonation_url = impersonationURL;
     }
 
-    this.#logger.withNamespace('createCredentialsFile').debug({ outputPath: outputPath });
+    logger.debug(`Creating credentials`, {
+      outputPath: outputPath,
+    });
+
     return await writeSecureFile(outputPath, JSON.stringify(data));
   }
 }

@@ -273,6 +273,18 @@ regardless of the authentication mechanism.
     identities to use for impersonation in the chain. By default there are no
     delegates.
 
+-   `universe`: (Optional) The Google Cloud universe to use for constructing API
+    endpoints. The default universe is "googleapis.com", which corresponds to
+    https://cloud.google.com. Trusted Partner Cloud and Google Distributed
+    Hosted Cloud should set this to their universe address.
+
+    You can also override individual API endpoints by setting the environment variable `GHA_ENDPOINT_OVERRIDE_<endpoint>` where endpoint is the API endpoint to override. This only applies to the `auth` action and does not persist to other steps. For example:
+
+    ```yaml
+    env:
+      GHA_ENDPOINT_OVERRIDE_oauth2: 'https://oauth2.myapi.endpoint/v1'
+    ```
+
 -   `cleanup_credentials`: (Optional) If true, the action will remove any
     created credentials from the filesystem upon completion. This only applies
     if "create_credentials_file" is true. The default is true.

@@ -39,7 +39,7 @@ import {
   IAMCredentialsClient,
   ServiceAccountKeyClient,
   WorkloadIdentityFederationClient,
-} from './base';
+} from './client/client';
 import { Logger } from './logger';
 import {
   buildDomainWideDelegationJWT,
@@ -112,6 +112,7 @@ async function main(logger: Logger) {
   const exportEnvironmentVariables = getBooleanInput(`export_environment_variables`);
   const tokenFormat = getInput(`token_format`);
   const delegates = parseCSV(getInput(`delegates`));
+  const universe = getInput(`universe`);
 
   // Ensure exactly one of workload_identity_provider and credentials_json was
   // provided.
@@ -138,7 +139,10 @@ async function main(logger: Logger) {
     }
 
     const oidcToken = await getIDToken(oidcTokenAudience);
-    client = new WorkloadIdentityFederationClient(logger, {
+    client = new WorkloadIdentityFederationClient({
+      logger: logger,
+      universe: universe,
+
       githubOIDCToken: oidcToken,
       githubOIDCTokenRequestURL: oidcTokenRequestURL,
       githubOIDCTokenRequestToken: oidcTokenRequestToken,
@@ -148,7 +152,10 @@ async function main(logger: Logger) {
     });
   } else {
     logger.debug(`Using credentials JSON`);
-    client = new ServiceAccountKeyClient(logger, {
+    client = new ServiceAccountKeyClient({
+      logger: logger,
+      universe: universe,
+
       serviceAccountKey: credentialsJSON,
     });
   }
@@ -245,7 +252,10 @@ async function main(logger: Logger) {
   setOutput('auth_token', authToken);
 
   // Create the credential client, we might not use it, but it's basically free.
-  const iamCredentialsClient = new IAMCredentialsClient(logger, {
+  const iamCredentialsClient = new IAMCredentialsClient({
+    logger: logger,
+    universe: universe,
+
     authToken: authToken,
   });
 

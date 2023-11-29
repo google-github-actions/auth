@@ -15,6 +15,7 @@
 import { createSign } from 'crypto';
 
 import {
+  errorMessage,
   isServiceAccountKey,
   parseCredential,
   ServiceAccountKey,
@@ -22,8 +23,7 @@ import {
   writeSecureFile,
 } from '@google-github-actions/actions-utils';
 
-import { AuthClient } from './auth_client';
-import { expandEndpoint } from '../utils';
+import { AuthClient, Client } from './client';
 import { Logger } from '../logger';
 
 /**
@@ -31,6 +31,9 @@ import { Logger } from '../logger';
  * ServiceAccountKeyClient.
  */
 export interface ServiceAccountKeyClientParameters {
+  readonly logger: Logger;
+  readonly universe: string;
+
   readonly serviceAccountKey: string;
 }
 
@@ -38,33 +41,26 @@ export interface ServiceAccountKeyClientParameters {
  * ServiceAccountKeyClient is an authentication client that expects a Service
  * Account Key JSON file.
  */
-export class ServiceAccountKeyClient implements AuthClient {
-  readonly #logger: Logger;
+export class ServiceAccountKeyClient extends Client implements AuthClient {
   readonly #serviceAccountKey: ServiceAccountKey;
-
-  readonly #universe: string = 'googleapis.com';
-  readonly #endpoints = {
-    iamcredentials: 'https://iamcredentials.{universe}/v1',
-  };
   readonly #audience: string;
 
-  constructor(logger: Logger, opts: ServiceAccountKeyClientParameters) {
-    this.#logger = logger.withNamespace(this.constructor.name);
+  constructor(opts: ServiceAccountKeyClientParameters) {
+    super({
+      logger: opts.logger,
+      universe: opts.universe,
+      child: `ServiceAccountKeyClient`,
+    });
 
     const serviceAccountKey = parseCredential(opts.serviceAccountKey);
     if (!isServiceAccountKey(serviceAccountKey)) {
       throw new Error(`Provided credential is not a valid Google Service Account Key JSON`);
     }
     this.#serviceAccountKey = serviceAccountKey;
+    this._logger.debug(`Parsed service account key`, serviceAccountKey.client_email);
 
-    const endpoints = this.#endpoints;
-    for (const key of Object.keys(this.#endpoints) as Array<keyof typeof endpoints>) {
-      this.#endpoints[key] = expandEndpoint(this.#endpoints[key], this.#universe);
-    }
-    this.#logger.debug(`Computed endpoints`, this.#endpoints);
-
-    this.#audience = new URL(this.#endpoints.iamcredentials).origin + `/`;
-    this.#logger.debug(`Computed audience`, this.#audience);
+    this.#audience = new URL(this._endpoints.iamcredentials).origin + `/`;
+    this._logger.debug(`Computed audience`, this.#audience);
   }
 
   /**
@@ -74,25 +70,28 @@ export class ServiceAccountKeyClient implements AuthClient {
    * use the JWT to call other endpoints without calling iamcredentials.
    */
   async getToken(): Promise<string> {
+    const logger = this._logger.withNamespace('getToken');
+
+    const now = Math.floor(new Date().getTime() / 1000);
+
+    const claims = {
+      iss: this.#serviceAccountKey.client_email,
+      sub: this.#serviceAccountKey.client_email,
+      aud: this.#audience,
+      iat: now,
+      exp: now + 3599,
+    };
+
+    logger.debug(`Built jwt`, {
+      claims: claims,
+    });
+
     try {
-      const now = Math.floor(new Date().getTime() / 1000);
-
-      const claims = {
-        iss: this.#serviceAccountKey.client_email,
-        sub: this.#serviceAccountKey.client_email,
-        aud: this.#audience,
-        iat: now,
-        exp: now + 3599,
-      };
-
-      this.#logger.withNamespace('getToken').debug({
-        claims: claims,
-      });
-
       return await this.signJWT(claims);
     } catch (err) {
+      const msg = errorMessage(err);
       throw new Error(
-        `Failed to sign auth token using ${this.#serviceAccountKey.client_email}: ${err}`,
+        `Failed to sign auth token using ${this.#serviceAccountKey.client_email}: ${msg}`,
       );
     }
   }
@@ -101,6 +100,8 @@ export class ServiceAccountKeyClient implements AuthClient {
    * signJWT signs a JWT using the Service Account's private key.
    */
   async signJWT(claims: any): Promise<string> {
+    const logger = this._logger.withNamespace('signJWT');
+
     const header = {
       alg: `RS256`,
       typ: `JWT`,
@@ -109,18 +110,25 @@ export class ServiceAccountKeyClient implements AuthClient {
 
     const message = toBase64(JSON.stringify(header)) + `.` + toBase64(JSON.stringify(claims));
 
-    this.#logger.withNamespace('signJWT').debug({
+    logger.debug(`Built jwt`, {
       header: header,
       claims: claims,
       message: message,
     });
 
-    const signer = createSign(`RSA-SHA256`);
-    signer.write(message);
-    signer.end();
+    try {
+      const signer = createSign(`RSA-SHA256`);
+      signer.write(message);
+      signer.end();
 
-    const signature = signer.sign(this.#serviceAccountKey.private_key);
-    return message + '.' + toBase64(signature);
+      const signature = signer.sign(this.#serviceAccountKey.private_key);
+      return message + '.' + toBase64(signature);
+    } catch (err) {
+      const msg = errorMessage(err);
+      throw new Error(
+        `Failed to sign jwt using private key for ${this.#serviceAccountKey.client_email}: ${msg}`,
+      );
+    }
   }
 
   /**
@@ -128,7 +136,12 @@ export class ServiceAccountKeyClient implements AuthClient {
    * the specified outputPath.
    */
   async createCredentialsFile(outputPath: string): Promise<string> {
-    this.#logger.withNamespace('createCredentialsFile').debug({ outputPath: outputPath });
+    const logger = this._logger.withNamespace('createCredentialsFile');
+
+    logger.debug(`Creating credentials`, {
+      outputPath: outputPath,
+    });
+
     return await writeSecureFile(outputPath, JSON.stringify(this.#serviceAccountKey));
   }
 }

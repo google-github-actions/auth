@@ -18,6 +18,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'release/**/*'
 
 jobs:
   release:

@@ -19,7 +19,6 @@ import {
   buildDomainWideDelegationJWT,
   computeProjectID,
   computeServiceAccountEmail,
-  expandEndpoint,
   generateCredentialsFilename,
   projectIDFromServiceAccountEmail,
 } from '../src/utils';
@@ -158,52 +157,6 @@ describe('Utils', async () => {
     cases.forEach(async (tc) => {
       it(tc.name, async () => {
         const result = projectIDFromServiceAccountEmail(tc.input);
-        assert.deepStrictEqual(result, tc.exp);
-      });
-    });
-  });
-
-  describe('#expandEndpoint', async () => {
-    const cases = [
-      {
-        name: 'empty',
-        endpoint: '',
-        universe: '',
-        exp: '',
-      },
-      {
-        name: 'no match',
-        endpoint: 'https://www.googleapis.com',
-        universe: 'foobar',
-        exp: 'https://www.googleapis.com',
-      },
-      {
-        name: 'removes trailing slash',
-        endpoint: 'https://www.googleapis.com/',
-        exp: 'https://www.googleapis.com',
-      },
-      {
-        name: 'removes trailing slashes',
-        endpoint: 'https://www.googleapis.com/////',
-        exp: 'https://www.googleapis.com',
-      },
-      {
-        name: 'replaces {universe}',
-        endpoint: 'https://www.{universe}',
-        universe: 'foo.bar',
-        exp: 'https://www.foo.bar',
-      },
-      {
-        name: 'replaces multiple {universe}',
-        endpoint: 'https://www.{universe}.{universe}',
-        universe: 'foo.bar',
-        exp: 'https://www.foo.bar.foo.bar',
-      },
-    ];
-
-    cases.forEach(async (tc) => {
-      it(tc.name, async () => {
-        const result = expandEndpoint(tc.endpoint, tc.universe || '');
         assert.deepStrictEqual(result, tc.exp);
       });
     });

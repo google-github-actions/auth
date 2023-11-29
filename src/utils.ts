@@ -135,13 +135,6 @@ export function projectIDFromServiceAccountEmail(serviceAccount?: string): strin
 }
 
 /**
- * expandEndpoint expands the input url relative to the universe.
- */
-export function expandEndpoint(input: string, universe: string): string {
-  return (input || '').replace(/{universe}/g, universe).replace(/\/+$/, '');
-}
-
-/**
  * generateCredentialsFilename creates a predictable filename under which
  * credentials are written. This string is the filename, not the filepath. It must match the format:
  *

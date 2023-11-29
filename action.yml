@@ -94,6 +94,14 @@ inputs:
       impersonation in the chain.
     default: ''
     required: false
+  universe:
+    description: |-
+      The Google Cloud universe to use for constructing API endpoints. The
+      default universe is "googleapis.com", which corresponds to
+      https://cloud.google.com. Trusted Partner Cloud and Google Distributed
+      Hosted Cloud should set this to their universe address.
+    required: false
+    default: 'googleapis.com'
   cleanup_credentials:
     description: |-
       If true, the action will remove any created credentials from the

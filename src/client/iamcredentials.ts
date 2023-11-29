@@ -14,10 +14,10 @@
 
 import { URLSearchParams } from 'url';
 
-import { HttpClient } from '@actions/http-client';
+import { errorMessage } from '@google-github-actions/actions-utils';
 
-import { Logger } from './logger';
-import { expandEndpoint, userAgent } from './utils';
+import { Client } from './client';
+import { Logger } from '../logger';
 
 /**
  * GenerateAccessTokenParameters are the inputs to the generateAccessToken call.
@@ -43,6 +43,9 @@ export interface GenerateIDTokenParameters {
  * IAMCredentialsClientParameters are the inputs to the IAM client.
  */
 export interface IAMCredentialsClientParameters {
+  readonly logger: Logger;
+  readonly universe: string;
+
   readonly authToken: string;
 }
 
@@ -50,28 +53,17 @@ export interface IAMCredentialsClientParameters {
  * IAMCredentialsClient is a thin HTTP client around the Google Cloud IAM
  * Credentials API.
  */
-export class IAMCredentialsClient {
-  readonly #logger: Logger;
-  readonly #httpClient: HttpClient;
+export class IAMCredentialsClient extends Client {
   readonly #authToken: string;
 
-  readonly #universe: string = 'googleapis.com';
-  readonly #endpoints = {
-    iamcredentials: 'https://iamcredentials.{universe}/v1',
-    oauth2: 'https://oauth2.{universe}',
-  };
-
-  constructor(logger: Logger, opts: IAMCredentialsClientParameters) {
-    this.#logger = logger.withNamespace(this.constructor.name);
-    this.#httpClient = new HttpClient(userAgent);
+  constructor(opts: IAMCredentialsClientParameters) {
+    super({
+      logger: opts.logger,
+      universe: opts.universe,
+      child: `IAMCredentialsClient`,
+    });
 
     this.#authToken = opts.authToken;
-
-    const endpoints = this.#endpoints;
-    for (const key of Object.keys(this.#endpoints) as Array<keyof typeof endpoints>) {
-      this.#endpoints[key] = expandEndpoint(this.#endpoints[key], this.#universe);
-    }
-    this.#logger.debug(`Computed endpoints`, this.#endpoints);
   }
 
   /**
@@ -84,7 +76,9 @@ export class IAMCredentialsClient {
     scopes,
     lifetime,
   }: GenerateAccessTokenParameters): Promise<string> {
-    const pth = `${this.#endpoints.iamcredentials}/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`;
+    const logger = this._logger.withNamespace('generateAccessToken');
+
+    const pth = `${this._endpoints.iamcredentials}/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`;
 
     const headers = { Authorization: `Bearer ${this.#authToken}` };
 
@@ -100,7 +94,7 @@ export class IAMCredentialsClient {
       body.lifetime = `${lifetime}s`;
     }
 
-    this.#logger.withNamespace('generateAccessToken').debug({
+    logger.debug(`Built request`, {
       method: `POST`,
       path: pth,
       headers: headers,
@@ -108,7 +102,7 @@ export class IAMCredentialsClient {
     });
 
     try {
-      const resp = await this.#httpClient.postJson<{ accessToken: string }>(pth, body, headers);
+      const resp = await this._httpClient.postJson<{ accessToken: string }>(pth, body, headers);
       const statusCode = resp.statusCode || 500;
       if (statusCode < 200 || statusCode > 299) {
         throw new Error(`Failed to call ${pth}: HTTP ${statusCode}: ${resp.result || '[no body]'}`);
@@ -120,14 +114,17 @@ export class IAMCredentialsClient {
       }
       return result.accessToken;
     } catch (err) {
+      const msg = errorMessage(err);
       throw new Error(
-        `Failed to generate Google Cloud OAuth 2.0 Access Token for ${serviceAccount}: ${err}`,
+        `Failed to generate Google Cloud OAuth 2.0 Access Token for ${serviceAccount}: ${msg}`,
       );
     }
   }
 
   async generateDomainWideDelegationAccessToken(assertion: string): Promise<string> {
-    const pth = `${this.#endpoints.oauth2}/token`;
+    const logger = this._logger.withNamespace('generateDomainWideDelegationAccessToken');
+
+    const pth = `${this._endpoints.oauth2}/token`;
 
     const headers = {
       'Accept': 'application/json',
@@ -138,7 +135,7 @@ export class IAMCredentialsClient {
     body.append('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
     body.append('assertion', assertion);
 
-    this.#logger.withNamespace('generateDomainWideDelegationAccessToken').debug({
+    logger.debug(`Built request`, {
       method: `POST`,
       path: pth,
       headers: headers,
@@ -146,7 +143,7 @@ export class IAMCredentialsClient {
     });
 
     try {
-      const resp = await this.#httpClient.post(pth, body.toString(), headers);
+      const resp = await this._httpClient.post(pth, body.toString(), headers);
       const respBody = await resp.readBody();
       const statusCode = resp.message.statusCode || 500;
       if (statusCode < 200 || statusCode > 299) {
@@ -155,8 +152,9 @@ export class IAMCredentialsClient {
       const parsed = JSON.parse(respBody) as { accessToken: string };
       return parsed.accessToken;
     } catch (err) {
+      const msg = errorMessage(err);
       throw new Error(
-        `Failed to generate Google Cloud Domain Wide Delegation OAuth 2.0 Access Token: ${err}`,
+        `Failed to generate Google Cloud Domain Wide Delegation OAuth 2.0 Access Token: ${msg}`,
       );
     }
   }
@@ -171,7 +169,9 @@ export class IAMCredentialsClient {
     delegates,
     includeEmail,
   }: GenerateIDTokenParameters): Promise<string> {
-    const pth = `${this.#endpoints.iamcredentials}/projects/-/serviceAccounts/${serviceAccount}:generateIdToken`;
+    const logger = this._logger.withNamespace('generateIDToken');
+
+    const pth = `${this._endpoints.iamcredentials}/projects/-/serviceAccounts/${serviceAccount}:generateIdToken`;
 
     const headers = { Authorization: `Bearer ${this.#authToken}` };
 
@@ -183,7 +183,7 @@ export class IAMCredentialsClient {
       body.delegates = delegates;
     }
 
-    this.#logger.withNamespace('generateIDToken').debug({
+    logger.debug(`Built request`, {
       method: `POST`,
       path: pth,
       headers: headers,
@@ -191,7 +191,7 @@ export class IAMCredentialsClient {
     });
 
     try {
-      const resp = await this.#httpClient.postJson<{ token: string }>(pth, body, headers);
+      const resp = await this._httpClient.postJson<{ token: string }>(pth, body, headers);
       const statusCode = resp.statusCode || 500;
       if (statusCode < 200 || statusCode > 299) {
         throw new Error(`Failed to call ${pth}: HTTP ${statusCode}: ${resp.result || '[no body]'}`);
@@ -203,19 +203,10 @@ export class IAMCredentialsClient {
       }
       return result.token;
     } catch (err) {
+      const msg = errorMessage(err);
       throw new Error(
-        `Failed to generate Google Cloud OpenID Connect ID token for ${serviceAccount}: ${err}`,
+        `Failed to generate Google Cloud OpenID Connect ID token for ${serviceAccount}: ${msg}`,
       );
     }
   }
 }
-
-export { AuthClient } from './client/auth_client';
-export {
-  ServiceAccountKeyClientParameters,
-  ServiceAccountKeyClient,
-} from './client/credentials_json_client';
-export {
-  WorkloadIdentityFederationClientParameters,
-  WorkloadIdentityFederationClient,
-} from './client/workload_identity_client';

@@ -22,13 +22,16 @@ import { readFileSync } from 'fs';
 import { randomFilename } from '@google-github-actions/actions-utils';
 
 import { NullLogger } from '../../src/logger';
-import { WorkloadIdentityFederationClient } from '../../src/client/workload_identity_client';
+import { WorkloadIdentityFederationClient } from '../../src/client/workload_identity_federation';
 
 describe('WorkloadIdentityFederationClient', () => {
   describe('#createCredentialsFile', () => {
     it('writes the file', async () => {
       const outputFile = pathjoin(tmpdir(), randomFilename());
-      const client = new WorkloadIdentityFederationClient(new NullLogger(), {
+      const client = new WorkloadIdentityFederationClient({
+        logger: new NullLogger(),
+        universe: 'googleapis.com',
+
         githubOIDCToken: 'my-token',
         githubOIDCTokenRequestURL: 'https://example.com/',
         githubOIDCTokenRequestToken: 'token',
@@ -62,7 +65,10 @@ describe('WorkloadIdentityFederationClient', () => {
 
     it('writes the file with impersonation', async () => {
       const outputFile = pathjoin(tmpdir(), randomFilename());
-      const client = new WorkloadIdentityFederationClient(new NullLogger(), {
+      const client = new WorkloadIdentityFederationClient({
+        logger: new NullLogger(),
+        universe: 'googleapis.com',
+
         githubOIDCToken: 'my-token',
         githubOIDCTokenRequestURL: 'https://example.com/',
         githubOIDCTokenRequestToken: 'token',

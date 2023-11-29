@@ -232,9 +232,9 @@ cat credentials.json | jq -r tostring
 
 ## Organizational Policy Constraints
 
-**⚠️ NOTE!** Your Google Cloud organization administrator controls these
-policies. You must work with your internal IT department to resolve OrgPolicy
-violations and constraints.
+> **⚠️ NOTE!** Your Google Cloud organization administrator controls these
+> policies. You must work with your internal IT department to resolve OrgPolicy
+> violations and constraints.
 
 ### Workload Identity Providers
 

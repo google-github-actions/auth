@@ -142,7 +142,7 @@ default, this action does not generate any tokens.
     my-service-account@my-project.iam.gserviceaccount.com
     ```
 
--   `token_format`: (Required) This value must be `"access_token"` to generate
+-   `token_format`: (Optional) This value must be `"access_token"` to generate
     OAuth 2.0 access tokens.
 
 -   `access_token_lifetime`: (Optional) Desired lifetime duration of the access

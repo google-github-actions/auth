@@ -149,9 +149,8 @@ default, this action does not generate any tokens.
     token, in seconds. This must be specified as the number of seconds with a
     trailing "s" (e.g. 30s). The default value is 1 hour (3600s). The maximum
     value is 1 hour, unless the
-    [`constraints/iam.allowServiceAccountCredentialLifetimeExtension`
-    organization policy][orgpolicy-creds-lifetime] is enabled, in which case the
-    maximum value is 12 hours.
+    `constraints/iam.allowServiceAccountCredentialLifetimeExtension`
+    organization policy is enabled, in which case the maximum value is 12 hours.
 
 -   `access_token_scopes`: (Optional) List of OAuth 2.0 access scopes to be
     included in the generated token. This is only valid when "token_format" is
@@ -164,8 +163,8 @@ default, this action does not generate any tokens.
 -   `access_token_subject`: (Optional) Email address of a user to impersonate
     for [Domain-Wide Delegation][dwd]. Access tokens created for Domain-Wide
     Delegation cannot have a lifetime beyond 1 hour, even if the
-    [`constraints/iam.allowServiceAccountCredentialLifetimeExtension`
-    organization policy][orgpolicy-creds-lifetime] is enabled.
+    `constraints/iam.allowServiceAccountCredentialLifetimeExtension`
+    organization policy is enabled.
 
     In order to support Domain-Wide Delegation via Workload Identity Federation,
     you must grant the external identity ("principalSet")

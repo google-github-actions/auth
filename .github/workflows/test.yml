@@ -90,7 +90,7 @@ jobs:
           project_id: '${{ vars.PROJECT_ID }}'
           workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
 
-      - uses: 'google-github-actions/setup-gcloud@main'
+      - uses: 'google-github-actions/setup-gcloud@v2'
         with:
           version: '>= 363.0.0'
 
@@ -143,7 +143,7 @@ jobs:
           workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
           service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
 
-      - uses: 'google-github-actions/setup-gcloud@main'
+      - uses: 'google-github-actions/setup-gcloud@v2'
         with:
           version: '>= 363.0.0'
 
@@ -210,7 +210,7 @@ jobs:
         with:
           credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
 
-      - uses: 'google-github-actions/setup-gcloud@main'
+      - uses: 'google-github-actions/setup-gcloud@v2'
         with:
           version: '>= 363.0.0'
 

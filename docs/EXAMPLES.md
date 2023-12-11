@@ -106,7 +106,7 @@ jobs:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
 
     - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v1'
+      uses: 'google-github-actions/setup-gcloud@v2'
 ```
 
 ### Generating an OAuth 2.0 Access Token

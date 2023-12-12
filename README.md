@@ -225,8 +225,10 @@ The following inputs are for controlling the behavior of this GitHub Actions,
 regardless of the authentication mechanism.
 
 -   `project_id`: (Optional) Custom project ID to use for authentication and
-    exporting into other steps. If unspecified, the project ID will be extracted
-    from the Workload Identity Provider or the Service Account Key JSON.
+    exporting into other steps. If unspecified, we will attempt to extract the
+    project ID from the Workload Identity Provider, Service Account email, or
+    the Service Account Key JSON. If this fails, you will need to specify the
+    project ID manually.
 
 -   `create_credentials_file`: (Optional) If true, the action will securely
     generate a credentials file which can be used for authentication via gcloud

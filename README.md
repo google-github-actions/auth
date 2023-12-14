@@ -550,6 +550,7 @@ These instructions use the [gcloud][gcloud] command-line tool.
     ```yaml
     - uses: 'google-github-actions/auth@v2'
       with:
+        service_account: '...' # my-service-account@my-project.iam.gserviceaccount.com
         workload_identity_provider: '...' # "projects/123456789/locations/global/workloadIdentityPools/github/providers/my-repo"
     ```
 

@@ -62,9 +62,10 @@ jobs:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
 ```
 
-> **⚠️ NOTE!** Changing the `permissions` block may remove some default
-> permissions. See the [permissions documentation][github-perms] for more
-> information.
+> [!NOTE]
+>
+> Changing the `permissions` block may remove some default permissions. See the
+> [permissions documentation][github-perms] for more information.
 
 For more usage options, see the [examples](docs/EXAMPLES.md).
 
@@ -73,9 +74,11 @@ For more usage options, see the [examples](docs/EXAMPLES.md).
 
 ### Inputs: Workload Identity Federation
 
-> **⚠️ WARNING!** This option is [not supported by Firebase Admin
-> SDK](https://github.com/firebase/firebase-admin-node/issues/1377). Use
-> Service Account Key JSON authentication instead.
+> [!WARNING]
+>
+> This option is [not supported by Firebase Admin
+> SDK](https://github.com/firebase/firebase-admin-node/issues/1377). Use Service
+> Account Key JSON authentication instead.
 
 The following inputs are for _authenticating_ to Google Cloud via Workload
 Identity Federation.
@@ -108,8 +111,10 @@ Identity Federation.
 
 ### Inputs: Service Account Key JSON
 
-> **⚠️ WARNING!** Service Account Key JSON credentials are long-lived
-> credentials and must be treated like a password.
+> [!CAUTION]
+>
+> Service Account Key JSON credentials are long-lived credentials and must be
+> treated like a password.
 
 The following inputs are for _authenticating_ to Google Cloud via a Service
 Account Key JSON.
@@ -319,10 +324,12 @@ This section describes the three configuration options:
 1. [Workload Identity Federation through a Service Account](#indirect-wif)
 1. [Service Account Key JSON](#sake)
 
-> **⚠️ NOTE!** It can take up to 5 minutes for Workload Identity Pools, Workload
-> Identity Providers, and IAM permissions to propagate. Please wait at least
-> five minutes and follow all [Troubleshooting steps](docs/TROUBLESHOOTING.md)
-> before opening an issue.
+> [!IMPORTANT]
+>
+> It can take up to 5 minutes for Workload Identity Pools, Workload Identity
+> Providers, and IAM permissions to propagate. Please wait at least five minutes
+> and follow all [Troubleshooting steps](docs/TROUBLESHOOTING.md) before opening
+> an issue.
 
 
 <a name="direct-wif" id="direct-wif"></a>
@@ -337,8 +344,10 @@ information.
 
 [![Authenticate to Google Cloud from GitHub Actions with Direct Workload Identity Federation](docs/google-github-actions-auth-direct-workload-identity-federation.svg)](docs/google-github-actions-auth-direct-workload-identity-federation.svg)
 
-> **⚠️ NOTE!** To generate OAuth 2.0 access tokens or ID tokens, you _must_
-> provide a service account email, and the Workload Identity Pool must have
+> [!IMPORTANT]
+>
+> To generate OAuth 2.0 access tokens or ID tokens, you _must_ provide a service
+> account email, and the Workload Identity Pool must have
 > `roles/iam.workloadIdentityUser` permissions on the target Google Cloud
 > Service Account. Follow the steps for Workload Identity Federation through a
 > Service Account instead.
@@ -389,9 +398,10 @@ These instructions use the [gcloud][gcloud] command-line tool.
     the principal invoking the GitHub Action). These can be used to further
     restrict the authentication using `--attribute-condition` flags.
 
-    > **❗️ NOTE!** You must map any claims in the incoming token to attributes
-    > before you can assert on those attributes in a CEL expression or IAM
-    > policy!**
+    > [!IMPORTANT]
+    >
+    > You must map any claims in the incoming token to attributes before you can
+    > assert on those attributes in a CEL expression or IAM policy!
 
 1.  Extract the Workload Identity **Provider** resource name:
 
@@ -413,10 +423,12 @@ These instructions use the [gcloud][gcloud] command-line tool.
         workload_identity_provider: '...' # "projects/123456789/locations/global/workloadIdentityPools/github/providers/my-repo"
     ```
 
-    > **⚠️ NOTE!** The `project_id` input is optional, but may be required by
-    > downstream authentication systems such as the `gcloud` CLI. Unfortunately
-    > we cannot extract the project ID from the Workload Identity Provider,
-    > since it requires the project _number_.
+    > [!IMPORTANT]
+    >
+    > The `project_id` input is optional, but may be required by downstream
+    > authentication systems such as the `gcloud` CLI. Unfortunately we cannot
+    > extract the project ID from the Workload Identity Provider, since it
+    > requires the project _number_.
     >
     > It is technically possible to convert a project _number_ into a project
     > _ID_, but it requires permissions to call Cloud Resource Manager, and we
@@ -512,9 +524,10 @@ These instructions use the [gcloud][gcloud] command-line tool.
     the principal invoking the GitHub Action). These can be used to further
     restrict the authentication using `--attribute-condition` flags.
 
-    > **❗️ NOTE!** You must map any claims in the incoming token to attributes
-    > before you can assert on those attributes in a CEL expression or IAM
-    > policy!**
+    > [!IMPORTANT]
+    >
+    > You must map any claims in the incoming token to attributes before you can
+    > assert on those attributes in a CEL expression or IAM policy!**
 
 1.  Allow authentications from the Workload Identity Pool to your Google Cloud
     Service Account.
@@ -576,7 +589,9 @@ as a secret.
 
 [![Authenticate to Google Cloud from GitHub Actions with a Service Account Key](docs/google-github-actions-auth-service-account-key-export.svg)](docs/google-github-actions-auth-service-account-key-export.svg)
 
-> **❗️ WARNING!** Google Cloud Service Account Key JSON files must be secured
+> [!CAUTION]
+>
+> Google Cloud Service Account Key JSON files must be secured
 > and treated like a password. Anyone with acess to the JSON key can
 > authenticate to Google Cloud as the underlying Service Account. By default,
 > these credentials never expire, which is why the former authentication options

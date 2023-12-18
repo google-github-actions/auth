@@ -114,13 +114,16 @@ jobs:
 This example demonstrates using this GitHub Action to generate an OAuth 2.0
 Access Token for authenticating to Google Cloud.
 
-> **⚠️ NOTE!** The default lifetime is 1 hour, but you can request up to 12
-> hours if you set the
-> [`constraints/iam.allowServiceAccountCredentialLifetimeExtension` organization
-> policy][orgpolicy-creds-lifetime].
+> [!NOTE]
+>
+> The default lifetime is 1 hour, but you can request up to 12 hours if you set
+> the [`constraints/iam.allowServiceAccountCredentialLifetimeExtension`
+> organization policy][orgpolicy-creds-lifetime].
 
-> **⚠️ NOTE!** If you authenticate via `credentials_json`, the service account
-> must have `roles/iam.serviceAccountTokenCreator` on itself.
+> [!IMPORTANT]
+>
+> If you authenticate via `credentials_json`, the service account must have
+> `roles/iam.serviceAccountTokenCreator` on itself.
 
 ```yaml
 jobs:
@@ -154,8 +157,10 @@ This example demonstrates using this GitHub Action to generate a Google Cloud ID
 Token for authenticating to Google Cloud. This is commonly used when invoking a
 Cloud Run service.
 
-> **⚠️ NOTE!** If you authenticate via `credentials_json`, the service account
-> must have `roles/iam.serviceAccountTokenCreator` on itself.
+> [!IMPORTANT]
+>
+> If you authenticate via `credentials_json`, the service account must have
+> `roles/iam.serviceAccountTokenCreator` on itself.
 
 ```yaml
 jobs:

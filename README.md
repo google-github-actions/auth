@@ -27,7 +27,7 @@ support](https://cloud.google.com/support).**
     unable to authenticate.
 
 -   To create binaries, containers, pull requests, or other releases, add the
-    following to your `.gitignore`, `.dockerignore` or similar to prevent
+    following to your `.gitignore`, `.dockerignore` and similar files to prevent
     accidentally committing credentials to your release artifact:
 
     ```text

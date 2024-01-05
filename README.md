@@ -352,8 +352,8 @@ information.
 > Service Account. Follow the steps for Workload Identity Federation through a
 > Service Account instead.
 
-<details>
-  <summary>Click here to show detailed instructions for configuring GitHub authentication to Google Cloud via a direct Workload Identity Federation.</summary>
+<a name="direct-wif" id="direct-wif"></a>
+### Configuring GitHub authentication to Google Cloud via direct Workload Identity Federation
 
 These instructions use the [gcloud][gcloud] command-line tool.
 
@@ -456,8 +456,6 @@ These instructions use the [gcloud][gcloud] command-line tool.
     Review the [GitHub documentation][github-oidc] for a complete list of
     options and values. This GitHub repository does not seek to enumerate every
     possible combination.
-</details>
-
 
 <a name="indirect-wif" id="indirect-wif"></a>
 ### Workload Identity Federation through a Service Account

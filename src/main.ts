@@ -28,7 +28,7 @@ import {
   exactlyOneOf,
   isEmptyDir,
   isPinnedToHead,
-  parseCSV,
+  parseMultilineCSV,
   parseDuration,
   pinnedToHeadWarning,
   withRetries,
@@ -111,7 +111,7 @@ async function main(logger: Logger) {
   const createCredentialsFile = getBooleanInput(`create_credentials_file`);
   const exportEnvironmentVariables = getBooleanInput(`export_environment_variables`);
   const tokenFormat = getInput(`token_format`);
-  const delegates = parseCSV(getInput(`delegates`));
+  const delegates = parseMultilineCSV(getInput(`delegates`));
   const universe = getInput(`universe`);
 
   // Ensure exactly one of workload_identity_provider and credentials_json was
@@ -270,7 +270,7 @@ async function main(logger: Logger) {
       logger.debug(`Creating access token`);
 
       const accessTokenLifetime = parseDuration(getInput('access_token_lifetime'));
-      const accessTokenScopes = parseCSV(getInput('access_token_scopes'));
+      const accessTokenScopes = parseMultilineCSV(getInput('access_token_scopes'));
       const accessTokenSubject = getInput('access_token_subject');
 
       // Ensure a service_account was provided if using WIF.

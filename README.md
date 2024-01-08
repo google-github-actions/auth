@@ -165,6 +165,8 @@ default, this action does not generate any tokens.
     https://www.googleapis.com/auth/cloud-platform
     ```
 
+    This can be specified as a comma-separated or newline-separated list.
+
 -   `access_token_subject`: (Optional) Email address of a user to impersonate
     for [Domain-Wide Delegation][dwd]. Access tokens created for Domain-Wide
     Delegation cannot have a lifetime beyond 1 hour, even if the
@@ -277,7 +279,8 @@ regardless of the authentication mechanism.
 
 -   `delegates`: (Optional) List of additional service account emails or unique
     identities to use for impersonation in the chain. By default there are no
-    delegates.
+    delegates. This can be specified as a comma-separated or newline-separated
+    list.
 
 -   `universe`: (Optional) The Google Cloud universe to use for constructing API
     endpoints. The default universe is "googleapis.com", which corresponds to

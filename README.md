@@ -159,7 +159,8 @@ default, this action does not generate any tokens.
 
 -   `access_token_scopes`: (Optional) List of OAuth 2.0 access scopes to be
     included in the generated token. This is only valid when "token_format" is
-    "access_token". The default value is:
+    "access_token". Multiple values should be input as a single comma-separated
+    string. The default value is:
 
     ```text
     https://www.googleapis.com/auth/cloud-platform

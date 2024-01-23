@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { describe, it } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert';
 
 import { tmpdir } from 'os';
@@ -24,83 +24,81 @@ import { randomFilename } from '@google-github-actions/actions-utils';
 import { NullLogger } from '../../src/logger';
 import { WorkloadIdentityFederationClient } from '../../src/client/workload_identity_federation';
 
-describe('WorkloadIdentityFederationClient', () => {
-  describe('#createCredentialsFile', () => {
-    it('writes the file', async () => {
-      const outputFile = pathjoin(tmpdir(), randomFilename());
-      const client = new WorkloadIdentityFederationClient({
-        logger: new NullLogger(),
-        universe: 'googleapis.com',
+test('#createCredentialsFile', { concurrency: true }, async (suite) => {
+  await suite.test('writes the file', async () => {
+    const outputFile = pathjoin(tmpdir(), randomFilename());
+    const client = new WorkloadIdentityFederationClient({
+      logger: new NullLogger(),
+      universe: 'googleapis.com',
 
-        githubOIDCToken: 'my-token',
-        githubOIDCTokenRequestURL: 'https://example.com/',
-        githubOIDCTokenRequestToken: 'token',
-        githubOIDCTokenAudience: 'my-aud',
-        workloadIdentityProviderName: 'my-provider',
-      });
-
-      const exp = {
-        audience: '//iam.googleapis.com/my-provider',
-        credential_source: {
-          format: {
-            subject_token_field_name: 'value',
-            type: 'json',
-          },
-          headers: {
-            Authorization: 'Bearer token',
-          },
-          url: 'https://example.com/?audience=my-aud',
-        },
-        subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
-        token_url: 'https://sts.googleapis.com/v1/token',
-        type: 'external_account',
-      };
-
-      const pth = await client.createCredentialsFile(outputFile);
-      const data = readFileSync(pth);
-      const got = JSON.parse(data.toString('utf8'));
-
-      assert.deepStrictEqual(got, exp);
+      githubOIDCToken: 'my-token',
+      githubOIDCTokenRequestURL: 'https://example.com/',
+      githubOIDCTokenRequestToken: 'token',
+      githubOIDCTokenAudience: 'my-aud',
+      workloadIdentityProviderName: 'my-provider',
     });
 
-    it('writes the file with impersonation', async () => {
-      const outputFile = pathjoin(tmpdir(), randomFilename());
-      const client = new WorkloadIdentityFederationClient({
-        logger: new NullLogger(),
-        universe: 'googleapis.com',
-
-        githubOIDCToken: 'my-token',
-        githubOIDCTokenRequestURL: 'https://example.com/',
-        githubOIDCTokenRequestToken: 'token',
-        githubOIDCTokenAudience: 'my-aud',
-        workloadIdentityProviderName: 'my-provider',
-        serviceAccount: 'my-service@my-project.iam.gserviceaccount.com',
-      });
-
-      const exp = {
-        audience: '//iam.googleapis.com/my-provider',
-        credential_source: {
-          format: {
-            subject_token_field_name: 'value',
-            type: 'json',
-          },
-          headers: {
-            Authorization: 'Bearer token',
-          },
-          url: 'https://example.com/?audience=my-aud',
+    const exp = {
+      audience: '//iam.googleapis.com/my-provider',
+      credential_source: {
+        format: {
+          subject_token_field_name: 'value',
+          type: 'json',
         },
-        service_account_impersonation_url:
-          'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/my-service@my-project.iam.gserviceaccount.com:generateAccessToken',
-        subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
-        token_url: 'https://sts.googleapis.com/v1/token',
-        type: 'external_account',
-      };
+        headers: {
+          Authorization: 'Bearer token',
+        },
+        url: 'https://example.com/?audience=my-aud',
+      },
+      subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+      token_url: 'https://sts.googleapis.com/v1/token',
+      type: 'external_account',
+    };
 
-      const pth = await client.createCredentialsFile(outputFile);
-      const data = readFileSync(pth);
-      const got = JSON.parse(data.toString('utf8'));
+    const pth = await client.createCredentialsFile(outputFile);
+    const data = readFileSync(pth);
+    const got = JSON.parse(data.toString('utf8'));
 
-      assert.deepStrictEqual(got, exp);
+    assert.deepStrictEqual(got, exp);
+  });
+
+  await suite.test('writes the file with impersonation', async () => {
+    const outputFile = pathjoin(tmpdir(), randomFilename());
+    const client = new WorkloadIdentityFederationClient({
+      logger: new NullLogger(),
+      universe: 'googleapis.com',
+
+      githubOIDCToken: 'my-token',
+      githubOIDCTokenRequestURL: 'https://example.com/',
+      githubOIDCTokenRequestToken: 'token',
+      githubOIDCTokenAudience: 'my-aud',
+      workloadIdentityProviderName: 'my-provider',
+      serviceAccount: 'my-service@my-project.iam.gserviceaccount.com',
     });
+
+    const exp = {
+      audience: '//iam.googleapis.com/my-provider',
+      credential_source: {
+        format: {
+          subject_token_field_name: 'value',
+          type: 'json',
+        },
+        headers: {
+          Authorization: 'Bearer token',
+        },
+        url: 'https://example.com/?audience=my-aud',
+      },
+      service_account_impersonation_url:
+        'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/my-service@my-project.iam.gserviceaccount.com:generateAccessToken',
+      subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+      token_url: 'https://sts.googleapis.com/v1/token',
+      type: 'external_account',
+    };
+
+    const pth = await client.createCredentialsFile(outputFile);
+    const data = readFileSync(pth);
+    const got = JSON.parse(data.toString('utf8'));
+
+    assert.deepStrictEqual(got, exp);
   });
 });

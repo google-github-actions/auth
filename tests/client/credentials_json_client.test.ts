@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { describe, it } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert';
 
 import { join as pathjoin } from 'path';
@@ -41,71 +41,69 @@ const credentialsJSON = `
 }
 `;
 
-describe('ServiceAccountKeyClient', () => {
-  describe('#parseServiceAccountKeyJSON', () => {
-    it('throws exception on invalid json', async () => {
-      assert.rejects(async () => {
-        new ServiceAccountKeyClient({
-          logger: new NullLogger(),
-          universe: 'googleapis.com',
-          serviceAccountKey: 'invalid json',
-        });
-      }, SyntaxError);
-    });
-
-    it('handles base64', async () => {
-      assert.rejects(async () => {
-        new ServiceAccountKeyClient({
-          logger: new NullLogger(),
-          universe: 'googleapis.com',
-          serviceAccountKey: 'base64',
-        });
-      }, SyntaxError);
-    });
-  });
-
-  describe('#getToken', () => {
-    it('gets a token', async () => {
-      const client = new ServiceAccountKeyClient({
+test('#parseServiceAccountKeyJSON', { concurrency: true }, async (suite) => {
+  await suite.test('throws exception on invalid json', async () => {
+    await assert.rejects(async () => {
+      new ServiceAccountKeyClient({
         logger: new NullLogger(),
         universe: 'googleapis.com',
-        serviceAccountKey: credentialsJSON,
+        serviceAccountKey: 'invalid json',
       });
-
-      const token = await client.getToken();
-      assert.ok(token);
-    });
+    }, SyntaxError);
   });
 
-  describe('#signJWT', () => {
-    it('signs a jwt', async () => {
-      const client = new ServiceAccountKeyClient({
+  await suite.test('handles base64', async () => {
+    await assert.rejects(async () => {
+      new ServiceAccountKeyClient({
         logger: new NullLogger(),
         universe: 'googleapis.com',
-        serviceAccountKey: credentialsJSON,
+        serviceAccountKey: 'base64',
       });
-
-      const token = await client.signJWT('thisismy.jwt');
-      assert.ok(token);
-    });
+    }, SyntaxError);
   });
+});
 
-  describe('#createCredentialsFile', () => {
-    it('writes the file', async () => {
-      const outputFile = pathjoin(tmpdir(), randomFilename());
-      const client = new ServiceAccountKeyClient({
-        logger: new NullLogger(),
-        universe: 'googleapis.com',
-        serviceAccountKey: credentialsJSON,
-      });
-
-      const exp = JSON.parse(credentialsJSON);
-
-      const pth = await client.createCredentialsFile(outputFile);
-      const data = readFileSync(pth);
-      const got = JSON.parse(data.toString('utf8'));
-
-      assert.deepStrictEqual(got, exp);
+test('#getToken', { concurrency: true }, async (suite) => {
+  await suite.test('gets a token', async () => {
+    const client = new ServiceAccountKeyClient({
+      logger: new NullLogger(),
+      universe: 'googleapis.com',
+      serviceAccountKey: credentialsJSON,
     });
+
+    const token = await client.getToken();
+    assert.ok(token);
+  });
+});
+
+test('#signJWT', { concurrency: true }, async (suite) => {
+  await suite.test('signs a jwt', async () => {
+    const client = new ServiceAccountKeyClient({
+      logger: new NullLogger(),
+      universe: 'googleapis.com',
+      serviceAccountKey: credentialsJSON,
+    });
+
+    const token = await client.signJWT('thisismy.jwt');
+    assert.ok(token);
+  });
+});
+
+test('#createCredentialsFile', { concurrency: true }, async (suite) => {
+  await suite.test('writes the file', async () => {
+    const outputFile = pathjoin(tmpdir(), randomFilename());
+    const client = new ServiceAccountKeyClient({
+      logger: new NullLogger(),
+      universe: 'googleapis.com',
+      serviceAccountKey: credentialsJSON,
+    });
+
+    const exp = JSON.parse(credentialsJSON);
+
+    const pth = await client.createCredentialsFile(outputFile);
+    const data = readFileSync(pth);
+    const got = JSON.parse(data.toString('utf8'));
+
+    assert.deepStrictEqual(got, exp);
   });
 });

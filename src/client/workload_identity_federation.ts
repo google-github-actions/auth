@@ -80,7 +80,7 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
     const logger = this._logger.withNamespace(`getToken`);
 
     const now = new Date().getTime();
-    if (this.#cachedToken && this.#cachedAt && now - this.#cachedAt > 60_000) {
+    if (this.#cachedToken && this.#cachedAt && now - this.#cachedAt < 30_000) {
       logger.debug(`Using cached token`, {
         now: now,
         cachedAt: this.#cachedAt,
@@ -141,7 +141,7 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
     const pth = `${this._endpoints.iamcredentials}/projects/-/serviceAccounts/${this.#serviceAccount}:signJwt`;
 
     const headers = {
-      Authorization: `Bearer ${this.getToken()}`,
+      Authorization: `Bearer ${await this.getToken()}`,
     };
 
     const body = {

@@ -18,46 +18,39 @@ import { errorMessage, forceRemove } from '@google-github-actions/actions-utils'
 
 import { Logger } from './logger';
 
-/**
- * Executes the post action, documented inline.
- */
-export async function run() {
-  const logger = new Logger();
-
+export async function run(logger: Logger) {
   try {
-    main(logger);
+    const createCredentials = getBooleanInput('create_credentials_file');
+    if (!createCredentials) {
+      logger.info(`Skipping credential cleanup - "create_credentials_file" is false.`);
+      return;
+    }
+
+    const cleanupCredentials = getBooleanInput('cleanup_credentials');
+    if (!cleanupCredentials) {
+      logger.info(`Skipping credential cleanup - "cleanup_credentials" is false.`);
+      return;
+    }
+
+    // Look up the credentials path, if one exists. Note that we only check the
+    // environment variable set by our action, since we don't want to
+    // accidentially clean up if someone set GOOGLE_APPLICATION_CREDENTIALS or
+    // another environment variable manually.
+    const credentialsPath = process.env['GOOGLE_GHA_CREDS_PATH'];
+    if (!credentialsPath) {
+      logger.info(`Skipping credential cleanup - $GOOGLE_GHA_CREDS_PATH is not set.`);
+      return;
+    }
+
+    // Remove the file.
+    await forceRemove(credentialsPath);
+    logger.info(`Removed exported credentials at "${credentialsPath}".`);
   } catch (err) {
     const msg = errorMessage(err);
     setFailed(`google-github-actions/auth post failed with: ${msg}`);
   }
 }
 
-async function main(logger: Logger) {
-  const createCredentials = getBooleanInput('create_credentials_file');
-  if (!createCredentials) {
-    logger.info(`Skipping credential cleanup - "create_credentials_file" is false.`);
-    return;
-  }
-
-  const cleanupCredentials = getBooleanInput('cleanup_credentials');
-  if (!cleanupCredentials) {
-    logger.info(`Skipping credential cleanup - "cleanup_credentials" is false.`);
-    return;
-  }
-
-  // Look up the credentials path, if one exists. Note that we only check the
-  // environment variable set by our action, since we don't want to
-  // accidentially clean up if someone set GOOGLE_APPLICATION_CREDENTIALS or
-  // another environment variable manually.
-  const credentialsPath = process.env['GOOGLE_GHA_CREDS_PATH'];
-  if (!credentialsPath) {
-    logger.info(`Skipping credential cleanup - $GOOGLE_GHA_CREDS_PATH is not set.`);
-    return;
-  }
-
-  // Remove the file.
-  await forceRemove(credentialsPath);
-  logger.info(`Removed exported credentials at "${credentialsPath}".`);
+if (require.main === module) {
+  run(new Logger());
 }
-
-run();

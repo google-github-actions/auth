@@ -132,24 +132,28 @@ inputs:
     default: ''
     required: false
 
-  # retries
+  # retries - TODO - remove in v3.0
   retries:
     description: |-
       Number of times to retry a failed authentication attempt. This is useful
       for automated pipelines that may execute before IAM permissions are fully
       propogated.
-    default: '3'
+    deprecationMessage: |-
+      This field is no longer used and will be removed in a future release.
     required: false
   backoff:
     description: |-
       Delay time before trying another authentication attempt. This is
       implemented using a fibonacci backoff method (e.g. 1-1-2-3-5). The default
       value is 250 milliseconds.
-    default: '250'
+    deprecationMessage: |-
+      This field is no longer used and will be removed in a future release.
     required: false
   backoff_limit:
     description: |-
       Limits the retry backoff to the specified value.
+    deprecationMessage: |-
+      This field is no longer used and will be removed in a future release.
     required: false
 
   # id token params

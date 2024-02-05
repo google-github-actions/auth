@@ -139,7 +139,7 @@ export class IAMCredentialsClient extends Client {
       method: `POST`,
       path: pth,
       headers: headers,
-      body: body,
+      body: body.toString(),
     });
 
     try {
@@ -149,8 +149,8 @@ export class IAMCredentialsClient extends Client {
       if (statusCode < 200 || statusCode > 299) {
         throw new Error(`Failed to call ${pth}: HTTP ${statusCode}: ${respBody || '[no body]'}`);
       }
-      const parsed = JSON.parse(respBody) as { accessToken: string };
-      return parsed.accessToken;
+      const parsed = JSON.parse(respBody) as { access_token: string };
+      return parsed.access_token;
     } catch (err) {
       const msg = errorMessage(err);
       throw new Error(

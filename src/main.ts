@@ -253,11 +253,14 @@ export async function run(logger: Logger) {
           );
         }
 
+        let accessToken: string;
+
         // If a subject was provided, use the traditional OAuth 2.0 flow to
         // perform Domain-Wide Delegation. Otherwise, use the modern IAM
         // Credentials endpoints.
-        let accessToken;
         if (accessTokenSubject) {
+          logger.debug(`Using Domain-Wide Delegation flow`);
+
           if (accessTokenLifetime > 3600) {
             logger.info(
               `An access token subject was specified, triggering Domain-Wide ` +
@@ -273,10 +276,10 @@ export async function run(logger: Logger) {
             accessTokenLifetime,
           );
           const signedJWT = await client.signJWT(unsignedJWT);
-
           accessToken =
             await iamCredentialsClient.generateDomainWideDelegationAccessToken(signedJWT);
         } else {
+          logger.debug(`Using normal access token flow`);
           accessToken = await iamCredentialsClient.generateAccessToken({
             serviceAccount,
             delegates,

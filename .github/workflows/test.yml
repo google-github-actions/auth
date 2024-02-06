@@ -243,15 +243,6 @@ jobs:
           id_token_audience: 'https://secretmanager.googleapis.com/'
           id_token_include_email: true
 
-      - id: 'auth-sa-retries'
-        name: 'auth-sa-retries'
-        uses: './'
-        with:
-          retries: '2'
-          backoff: '200'
-          backoff_limit: '1000'
-          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
-
   #
   # This test ensures that the GOOGLE_APPLICATION_CREDENTIALS environment
   # variable is shared with the container and that the path of the file is on

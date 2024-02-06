@@ -208,24 +208,6 @@ generate any tokens.
     will contain "email" and "email_verified" claims. This is only valid when
     "token_format" is "id_token". The default value is false.
 
-### Inputs: Retry options
-
-The following inputs are for controlling retry behavior. By default, this GitHub
-Action will retry API calls in an attempt to reduce transient failures. You can
-control and disable the retry behavior with these inputs.
-
--   `retries`: (Optional) Number of times to retry a failed authentication
-    attempt. This is useful for automated pipelines that may execute before IAM
-    permissions are fully propogated or intermittent connectivity failures. The
-    default value is "3".
-
--   `backoff`: (Optional) Delay time before trying another authentication
-    attempt. This is implemented using a fibonacci backoff method (e.g.
-    1-1-2-3-5). This value defaults to 250 milliseconds.
-
--   `backoff_limit`: (Optional) Limits the retry backoff to the specified value.
-    The default value is no limit.
-
 ### Inputs: Miscellaneous
 
 The following inputs are for controlling the behavior of this GitHub Actions,

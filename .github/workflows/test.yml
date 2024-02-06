@@ -90,14 +90,6 @@ jobs:
           project_id: '${{ vars.PROJECT_ID }}'
           workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
 
-      - uses: 'google-github-actions/setup-gcloud@v2'
-        with:
-          version: '>= 363.0.0'
-
-      - name: 'gcloud'
-        run: |-
-          gcloud secrets versions access "latest" --secret "${{ vars.SECRET_NAME }}"
-
       - id: 'oauth-federated-token'
         name: 'oauth-federated-token'
         run: |-
@@ -106,6 +98,14 @@ jobs:
             --show-error \
             --fail \
             --header "Authorization: Bearer ${{ steps.auth-default.outputs.auth_token }}"
+
+      - uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          version: '>= 363.0.0'
+
+      - name: 'gcloud'
+        run: |-
+          gcloud secrets versions access "latest" --secret "${{ vars.SECRET_NAME }}"
 
 
   #
@@ -242,15 +242,6 @@ jobs:
           token_format: 'id_token'
           id_token_audience: 'https://secretmanager.googleapis.com/'
           id_token_include_email: true
-
-      - id: 'auth-sa-retries'
-        name: 'auth-sa-retries'
-        uses: './'
-        with:
-          retries: '2'
-          backoff: '200'
-          backoff_limit: '1000'
-          credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
 
   #
   # This test ensures that the GOOGLE_APPLICATION_CREDENTIALS environment

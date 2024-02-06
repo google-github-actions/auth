@@ -90,14 +90,6 @@ jobs:
           project_id: '${{ vars.PROJECT_ID }}'
           workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
 
-      - uses: 'google-github-actions/setup-gcloud@v2'
-        with:
-          version: '>= 363.0.0'
-
-      - name: 'gcloud'
-        run: |-
-          gcloud secrets versions access "latest" --secret "${{ vars.SECRET_NAME }}"
-
       - id: 'oauth-federated-token'
         name: 'oauth-federated-token'
         run: |-
@@ -106,6 +98,14 @@ jobs:
             --show-error \
             --fail \
             --header "Authorization: Bearer ${{ steps.auth-default.outputs.auth_token }}"
+
+      - uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          version: '>= 363.0.0'
+
+      - name: 'gcloud'
+        run: |-
+          gcloud secrets versions access "latest" --secret "${{ vars.SECRET_NAME }}"
 
 
   #

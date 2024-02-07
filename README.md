@@ -345,6 +345,8 @@ These instructions use the [gcloud][gcloud] command-line tool.
 1.  Create a Workload Identity Pool:
 
     ```sh
+    # TODO: replace ${PROJECT_ID} with your value below.
+
     gcloud iam workload-identity-pools create "github" \
       --project="${PROJECT_ID}" \
       --location="global" \
@@ -354,6 +356,8 @@ These instructions use the [gcloud][gcloud] command-line tool.
 1.  Get the full ID of the Workload Identity **Pool**:
 
     ```sh
+    # TODO: replace ${PROJECT_ID} with your value below.
+
     gcloud iam workload-identity-pools describe "github" \
       --project="${PROJECT_ID}" \
       --location="global" \
@@ -368,29 +372,35 @@ These instructions use the [gcloud][gcloud] command-line tool.
 
 1.  Create a Workload Identity **Provider** in that pool:
 
+    **🛑 CAUTION!** Always add an Attribute Condition to restrict entry into the
+    Workload Identity Pool. You can further restrict access in IAM Bindings, but
+    always add a basic condition that restricts admission into the pool. A good
+    default option is to restrict admission based on your GitHub organization as
+    demonstrated below. Please see the [security
+    considerations][security-considerations] for more details.
+
     ```sh
+    # TODO: replace ${PROJECT_ID} and ${GITHUB_ORG} with your values below.
+
     gcloud iam workload-identity-pools providers create-oidc "my-repo" \
       --project="${PROJECT_ID}" \
       --location="global" \
       --workload-identity-pool="github" \
       --display-name="My GitHub repo Provider" \
-      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
+      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner" \
+      --attribute-condition="assertion.repository_owner == '${GITHUB_ORG}'" \
       --issuer-uri="https://token.actions.githubusercontent.com"
     ```
 
-    The attribute mappings map claims in the GitHub Actions JWT to assertions
-    you can make about the request (like the repository or GitHub username of
-    the principal invoking the GitHub Action). These can be used to further
-    restrict the authentication using `--attribute-condition` flags.
-
-    > [!IMPORTANT]
-    >
-    > You must map any claims in the incoming token to attributes before you can
-    > assert on those attributes in a CEL expression or IAM policy!
+    > **❗️ IMPORTANT** You must map any claims in the incoming token to
+    > attributes before you can assert on those attributes in a CEL expression
+    > or IAM policy!
 
 1.  Extract the Workload Identity **Provider** resource name:
 
     ```sh
+    # TODO: replace ${PROJECT_ID} with your value below.
+
     gcloud iam workload-identity-pools providers describe "my-repo" \
       --project="${PROJECT_ID}" \
       --location="global" \
@@ -408,12 +418,10 @@ These instructions use the [gcloud][gcloud] command-line tool.
         workload_identity_provider: '...' # "projects/123456789/locations/global/workloadIdentityPools/github/providers/my-repo"
     ```
 
-    > [!IMPORTANT]
-    >
-    > The `project_id` input is optional, but may be required by downstream
-    > authentication systems such as the `gcloud` CLI. Unfortunately we cannot
-    > extract the project ID from the Workload Identity Provider, since it
-    > requires the project _number_.
+    > **❗️ IMPORTANT** The `project_id` input is optional, but may be required
+    > by downstream authentication systems such as the `gcloud` CLI.
+    > Unfortunately we cannot extract the project ID from the Workload Identity
+    > Provider, since it requires the project _number_.
     >
     > It is technically possible to convert a project _number_ into a project
     > _ID_, but it requires permissions to call Cloud Resource Manager, and we
@@ -428,9 +436,14 @@ These instructions use the [gcloud][gcloud] command-line tool.
     specific repository a secret in Google Secret Manager.
 
     ```sh
-    # TODO(developer): Update this value to your GitHub repository.
-    export REPO="username/name" # e.g. "google/chrome"
-    export WORKLOAD_IDENTITY_POOL_ID="value/from/above" # e.g. "projects/123456789/locations/global/workloadIdentityPools/github"
+    # TODO: replace ${PROJECT_ID}, ${WORKLOAD_IDENTITY_POOL_ID}, and ${REPO}
+    # with your values below.
+    #
+    # ${REPO} is the full repo name including the parent GitHub organization,
+    # such as "my-org/my-repo".
+    #
+    # ${WORKLOAD_IDENTITY_POOL_ID} is the full pool id, such as
+    # "projects/123456789/locations/global/workloadIdentityPools/github".
 
     gcloud secrets add-iam-policy-binding "my-secret" \
       --project="${PROJECT_ID}" \
@@ -464,6 +477,8 @@ These instructions use the [gcloud][gcloud] command-line tool.
     Service Account, take note of the email address and skip this step.
 
     ```sh
+    # TODO: replace ${PROJECT_ID} with your value below.
+
     gcloud iam service-accounts create "my-service-account" \
       --project "${PROJECT_ID}"
     ```
@@ -471,6 +486,8 @@ These instructions use the [gcloud][gcloud] command-line tool.
 1.  Create a Workload Identity Pool:
 
     ```sh
+    # TODO: replace ${PROJECT_ID} with your value below.
+
     gcloud iam workload-identity-pools create "github" \
       --project="${PROJECT_ID}" \
       --location="global" \
@@ -480,6 +497,8 @@ These instructions use the [gcloud][gcloud] command-line tool.
 1.  Get the full ID of the Workload Identity **Pool**:
 
     ```sh
+    # TODO: replace ${PROJECT_ID} with your value below.
+
     gcloud iam workload-identity-pools describe "github" \
       --project="${PROJECT_ID}" \
       --location="global" \
@@ -494,33 +513,42 @@ These instructions use the [gcloud][gcloud] command-line tool.
 
 1.  Create a Workload Identity **Provider** in that pool:
 
+    **🛑 CAUTION!** Always add an Attribute Condition to restrict entry into the
+    Workload Identity Pool. You can further restrict access in IAM Bindings, but
+    always add a basic condition that restricts admission into the pool. A good
+    default option is to restrict admission based on your GitHub organization as
+    demonstrated below. Please see the [security
+    considerations][security-considerations] for more details.
+
     ```sh
+    # TODO: replace ${PROJECT_ID} and ${GITHUB_ORG} with your values below.
+
     gcloud iam workload-identity-pools providers create-oidc "my-repo" \
       --project="${PROJECT_ID}" \
       --location="global" \
       --workload-identity-pool="github" \
       --display-name="My GitHub repo Provider" \
-      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
+      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner" \
+      --attribute-condition="assertion.repository_owner == '${GITHUB_ORG}'" \
       --issuer-uri="https://token.actions.githubusercontent.com"
     ```
 
-    The attribute mappings map claims in the GitHub Actions JWT to assertions
-    you can make about the request (like the repository or GitHub username of
-    the principal invoking the GitHub Action). These can be used to further
-    restrict the authentication using `--attribute-condition` flags.
-
-    > [!IMPORTANT]
-    >
-    > You must map any claims in the incoming token to attributes before you can
-    > assert on those attributes in a CEL expression or IAM policy!**
+    > **❗️ IMPORTANT** You must map any claims in the incoming token to
+    > attributes before you can assert on those attributes in a CEL expression
+    > or IAM policy!
 
 1.  Allow authentications from the Workload Identity Pool to your Google Cloud
     Service Account.
 
     ```sh
-    # TODO(developer): Update this value to your GitHub repository.
-    export REPO="username/name" # e.g. "google/chrome"
-    export WORKLOAD_IDENTITY_POOL_ID="value/from/above" # e.g. "projects/123456789/locations/global/workloadIdentityPools/github"
+    # TODO: replace ${PROJECT_ID}, ${WORKLOAD_IDENTITY_POOL_ID}, and ${REPO}
+    # with your values below.
+    #
+    # ${REPO} is the full repo name including the parent GitHub organization,
+    # such as "my-org/my-repo".
+    #
+    # ${WORKLOAD_IDENTITY_POOL_ID} is the full pool id, such as
+    # "projects/123456789/locations/global/workloadIdentityPools/github".
 
     gcloud iam service-accounts add-iam-policy-binding "my-service-account@${PROJECT_ID}.iam.gserviceaccount.com" \
       --project="${PROJECT_ID}" \
@@ -535,6 +563,8 @@ These instructions use the [gcloud][gcloud] command-line tool.
 1.  Extract the Workload Identity **Provider** resource name:
 
     ```sh
+    # TODO: replace ${PROJECT_ID} with your value below.
+
     gcloud iam workload-identity-pools providers describe "my-repo" \
       --project="${PROJECT_ID}" \
       --location="global" \
@@ -557,6 +587,8 @@ These instructions use the [gcloud][gcloud] command-line tool.
     shows granting access to a secret in Google Secret Manager.
 
     ```sh
+    # TODO: replace ${PROJECT_ID} with your value below.
+
     gcloud secrets add-iam-policy-binding "my-secret" \
       --project="${PROJECT_ID}" \
       --role="roles/secretmanager.secretAccessor" \
@@ -591,6 +623,8 @@ These instructions use the [gcloud][gcloud] command-line tool.
     Service Account, take note of the email address and skip this step.
 
     ```sh
+    # TODO: replace ${PROJECT_ID} with your value below.
+
     gcloud iam service-accounts create "my-service-account" \
       --project "${PROJECT_ID}"
     ```
@@ -598,6 +632,8 @@ These instructions use the [gcloud][gcloud] command-line tool.
 1.  Create a Service Account Key JSON for the Service Account.
 
     ```sh
+    # TODO: replace ${PROJECT_ID} with your value below.
+
     gcloud iam service-accounts keys create "key.json" \
       --iam-account "my-service-account@${PROJECT_ID}.iam.gserviceaccount.com"
     ```
@@ -621,3 +657,4 @@ These instructions use the [gcloud][gcloud] command-line tool.
 [github-perms]: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#permissions
 [map-external]: https://cloud.google.com/iam/docs/access-resources-oidc#impersonate
 [wif]: https://cloud.google.com/iam/docs/workload-identity-federation
+[security-considerations]: docs/SECURITY_CONSIDERATIONS.md

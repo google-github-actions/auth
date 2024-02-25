@@ -163,8 +163,8 @@ export async function run(logger: Logger) {
       // repository.
       const githubWorkspaceIsEmpty = await isEmptyDir(githubWorkspace);
       if (githubWorkspaceIsEmpty) {
-        logger.warning(
-          `The "create_credentials_file" option is true, but the current ` +
+        logger.info(
+          `⚠️ The "create_credentials_file" option is true, but the current ` +
             `GitHub workspace is empty. Did you forget to use ` +
             `"actions/checkout" before this step? If you do not intend to ` +
             `share authentication with future steps in this job, set ` +
@@ -198,9 +198,11 @@ export async function run(logger: Logger) {
 
     // Set the project ID environment variables to the computed values.
     if (!projectID) {
-      logger.warning(
-        `Unable to compute project ID from inputs, skipping export. Please ` +
-          `specify the "project_id" input directly.`,
+      logger.info(
+        `⚠️ Failed to a project ID from the given inputs. Neither the ` +
+          `"project_id" output nor any environment variables will be ` +
+          `exported. If you require these values in other steps, specify the ` +
+          `"project_id" input directly.`,
       );
     } else {
       setOutput('project_id', projectID);

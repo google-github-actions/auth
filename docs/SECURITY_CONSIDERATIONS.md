@@ -40,7 +40,7 @@ curl -sfL -H "Accept: application/json" "https://api.github.com/repos/${REPO}" |
 These can be used in an Attribute Condition:
 
 ```cel
-assertion.repository_owner_id == 1342004 && assertion.repository_id == 260064828
+assertion.repository_owner_id == '1342004' && assertion.repository_id == '260064828'
 ```
 
 [cybersquatting]: https://en.wikipedia.org/wiki/Cybersquatting

@@ -641,7 +641,7 @@ These instructions use the [gcloud][gcloud] command-line tool.
 1.  Upload the contents of this file as a [GitHub Actions
     Secret](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions).
 
-    Use the name of the GitHub Actios secret as the `credentials_json` value in
+    Use the name of the GitHub Actions secret as the `credentials_json` value in
     the GitHub Actions YAML:
 
     ```yaml

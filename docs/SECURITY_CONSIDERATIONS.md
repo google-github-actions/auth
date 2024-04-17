@@ -19,6 +19,52 @@ assertion.repository_owner == 'my-github-org'
 Never use a "*" in an IAM Binding unless you absolutely know what you are doing!
 
 
+## Set up Repository & Branch Protection
+
+An attribute condition checking just the `repository_owner` assertion is most likely insufficient. Since your workflow may access secrets and other sensitive cloud resources, it should only be run on trusted code. Untrusted code can come from other repositories in the same organization, or even unreviewed branches in the same repository. The only code that should be trusted is code that has been reviewed and merged into a protected main branch.
+
+To restrict access to a workflow on your main branch, you'll need to do the following:
+
+1. Map the necessary GitHub assertions to Google STS token attributes.
+2. Create attribute conditions that are verified whenever a GitHub OIDC token is exchanged for a Google STS token.
+
+### Mapping GitHub Assertions to Google STS Token Attributes
+
+You can use the following mappings to provide Google with enough information to verify the GitHub OIDC token.
+
+```
+attribute.repository = assertion.repository
+attribute.event_name = assertion.event_name
+attribute.base_ref   = assertion.base_ref
+attribute.ref        = assertion.ref
+attribute.workflow   = assertion.workflow
+```
+
+More information about each claim from the GitHub OIDC token can be found [here](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#configuring-the-oidc-trust-with-the-cloud).
+
+### Create Attribute Conditions for Protected Main Branch
+
+Once the GitHub assertions have been mapped to Google STS token attributes, you can create attribute conditions to verify that the caller is coming from a trusted source. For example, the following conditions verify that the GitHub OIDC token was generated after a push to the `main` branch of the `octo-org/octo-repo` repository.
+
+```
+attribute.repository == "octo-org/octo-repo" && \
+  attribute.event_name == "push" && \
+  attribute.ref == "refs/heads/main"
+```
+
+You can also use the `workflow` attribute if you want to restrict access to specific workflows.
+
+### Create Attribute Conditions for Pull Requests
+
+You may wish to access cloud resources using a less privileged service account when code is submitted as a pull request to the repository. In this case, simply create another set of attribute conditions that allow the caller to retrieve a token to impersonate the less privileged service account.
+
+```
+attribute.repository == "octo-org/octo-repo" && \
+  attribute.event_name == "pull_request_target" && \
+  attribute.base_ref == "master"
+```
+
+
 ## Use GitHub's Numeric, Immutable Values
 
 Using "name" fields in Attribute Conditions or IAM Bindings like `repository` and `repository_owner` increase the chances of [cybersquatting][] and [typosquatting][] attacks. If you delete your GitHub repository or GitHub organization, someone could claim that same name and establish an identity. To protect against this situation, use the numeric `*_id` fields instead, which GitHub guarantees to be unique and never re-used.

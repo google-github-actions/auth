@@ -54,6 +54,20 @@ attribute.repository == "octo-org/octo-repo" && \
 
 You can also use the `workflow` attribute if you want to restrict access to specific workflows.
 
+### Scalably Granting Access to Multiple Protected Branches
+
+As your repository grows in complexity, you might create multiple protected branches that access the same cloud resources. Manually adding protected branch names to the attribute conditions can be cumbersome and error-prone. You can simplify the attribute conditions by checking for GitHub Environment names instead of individual branch names.
+
+Suppose you have multiple protected branches (including `main`) that can deploy to a GitHub Environment called `Production`. To trigger a workflow whenever code is pushed to those branches, set a condition in your workflow like this:
+
+```if: github.ref_protected == true && github.event_name == 'push'```
+
+Then, when verifying the claims in Google Cloud, map the `sub` assertion to a `sub` attribute and check this attribute for the `Production` Environment. This will look something like this:
+
+```attribute.sub == "repo:octo-org/octo-repo:environment:Production"```
+
+Since the `Production` environment is a superset of all the protected branches, all the protected branches will have access.
+
 ### Create Attribute Conditions for Pull Requests
 
 You may wish to access cloud resources using a less privileged service account when code is submitted as a pull request to the repository. In this case, simply create another set of attribute conditions that allow the caller to retrieve a token to impersonate the less privileged service account.
@@ -61,7 +75,7 @@ You may wish to access cloud resources using a less privileged service account w
 ```
 attribute.repository == "octo-org/octo-repo" && \
   attribute.event_name == "pull_request_target" && \
-  attribute.base_ref == "master"
+  attribute.base_ref == "main"
 ```
 
 

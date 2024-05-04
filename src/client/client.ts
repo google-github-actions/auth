@@ -14,6 +14,8 @@
 
 import { HttpClient } from '@actions/http-client';
 
+import { expandUniverseEndpoints } from '@google-github-actions/actions-utils';
+
 import { Logger } from '../logger';
 import { userAgent } from '../utils';
 
@@ -57,7 +59,6 @@ export class Client {
     sts: 'https://sts.{universe}/v1',
     www: 'https://www.{universe}',
   };
-  protected readonly _universe;
 
   constructor(opts: ClientParameters) {
     this._logger = opts.logger.withNamespace(opts.child);
@@ -71,26 +72,7 @@ export class Client {
       maxRetries: 3,
     });
 
-    // Expand universe to support TPC and custom endpoints.
-    this._universe = opts.universe;
-    for (const key of Object.keys(this._endpoints) as Array<keyof typeof this._endpoints>) {
-      this._endpoints[key] = this.expandEndpoint(key);
-    }
-    this._logger.debug(`Computed endpoints for universe ${this._universe}`, this._endpoints);
-  }
-
-  expandEndpoint(key: keyof typeof this._endpoints): string {
-    const envOverrideKey = `GHA_ENDPOINT_OVERRIDE_${key}`;
-    const envOverrideValue = process.env[envOverrideKey];
-    if (envOverrideValue && envOverrideValue !== '') {
-      this._logger.debug(
-        `Overriding API endpoint for ${key} because ${envOverrideKey} is set`,
-        envOverrideValue,
-      );
-      return envOverrideValue.replace(/\/+$/, '');
-    }
-
-    return (this._endpoints[key] || '').replace(/{universe}/g, this._universe).replace(/\/+$/, '');
+    this._endpoints = expandUniverseEndpoints(this._endpoints, opts.universe);
   }
 }
 export { IAMCredentialsClient, IAMCredentialsClientParameters } from './iamcredentials';

@@ -269,12 +269,21 @@ regardless of the authentication mechanism.
     https://cloud.google.com. Trusted Partner Cloud and Google Distributed
     Hosted Cloud should set this to their universe address.
 
-    You can also override individual API endpoints by setting the environment variable `GHA_ENDPOINT_OVERRIDE_<endpoint>` where endpoint is the API endpoint to override. This only applies to the `auth` action and does not persist to other steps. For example:
+    You can also override individual API endpoints by setting the environment
+    variable `GHA_ENDPOINT_OVERRIDE_<endpoint>` where endpoint is the API
+    endpoint to override. This only applies to the `auth` action and does not
+    persist to other steps. For example:
 
     ```yaml
     env:
       GHA_ENDPOINT_OVERRIDE_oauth2: 'https://oauth2.myapi.endpoint/v1'
     ```
+
+-   `request_reason`: (Optional) An optional Reason Request [System
+    Parameter](https://cloud.google.com/apis/docs/system-parameters) for each
+    API call made by the GitHub Action. This will inject the
+    "X-Goog-Request-Reason" HTTP header, which will provide user-supplied
+    information in Google Cloud audit logs.
 
 -   `cleanup_credentials`: (Optional) If true, the action will remove any
     created credentials from the filesystem upon completion. This only applies

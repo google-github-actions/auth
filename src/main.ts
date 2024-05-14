@@ -84,6 +84,7 @@ export async function run(logger: Logger) {
     const tokenFormat = getInput(`token_format`);
     const delegates = parseMultilineCSV(getInput(`delegates`));
     const universe = getInput(`universe`);
+    const requestReason = getInput(`request_reason`);
 
     // Ensure exactly one of workload_identity_provider and credentials_json was
     // provided.
@@ -113,6 +114,7 @@ export async function run(logger: Logger) {
       client = new WorkloadIdentityFederationClient({
         logger: logger,
         universe: universe,
+        requestReason: requestReason,
 
         githubOIDCToken: oidcToken,
         githubOIDCTokenRequestURL: oidcTokenRequestURL,
@@ -126,6 +128,7 @@ export async function run(logger: Logger) {
       client = new ServiceAccountKeyClient({
         logger: logger,
         universe: universe,
+        requestReason: requestReason,
 
         serviceAccountKey: credentialsJSON,
       });

@@ -45,12 +45,13 @@ export interface AuthClient {
 export interface ClientParameters {
   logger: Logger;
   universe: string;
-  child: string;
+  requestReason?: string;
 }
 
-export class Client {
+export abstract class Client {
   protected readonly _logger: Logger;
   protected readonly _httpClient: HttpClient;
+  private readonly _requestReason: string | undefined;
 
   protected readonly _endpoints = {
     iam: 'https://iam.{universe}/v1',
@@ -60,8 +61,8 @@ export class Client {
     www: 'https://www.{universe}',
   };
 
-  constructor(opts: ClientParameters) {
-    this._logger = opts.logger.withNamespace(opts.child);
+  constructor(child: string, opts: ClientParameters) {
+    this._logger = opts.logger.withNamespace(child);
 
     // Create the http client with our user agent.
     this._httpClient = new HttpClient(userAgent, undefined, {
@@ -73,6 +74,18 @@ export class Client {
     });
 
     this._endpoints = expandUniverseEndpoints(this._endpoints, opts.universe);
+    this._requestReason = opts.requestReason;
+  }
+
+  /**
+   * _headers returns any added headers to apply to HTTP API calls.
+   */
+  protected _headers(): Record<string, string> {
+    const headers: Record<string, string> = {};
+    if (this._requestReason) {
+      headers['X-Goog-Request-Reason'] = this._requestReason;
+    }
+    return headers;
   }
 }
 export { IAMCredentialsClient, IAMCredentialsClientParameters } from './iamcredentials';

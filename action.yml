@@ -102,6 +102,12 @@ inputs:
       Hosted Cloud should set this to their universe address.
     required: false
     default: 'googleapis.com'
+  request_reason:
+    description: |-
+      An optional Reason Request System Parameter for each API call made by the
+      GitHub Action. This will inject the "X-Goog-Request-Reason" HTTP header,
+      which will provide user-supplied information in Google Cloud audit logs.
+    required: false
   cleanup_credentials:
     description: |-
       If true, the action will remove any created credentials from the

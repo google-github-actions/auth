@@ -14,17 +14,13 @@
 
 import { errorMessage, writeSecureFile } from '@google-github-actions/actions-utils';
 
-import { AuthClient, Client } from './client';
-import { Logger } from '../logger';
+import { AuthClient, Client, ClientParameters } from './client';
 
 /**
  * WorkloadIdentityFederationClientParameters is used as input to the
  * WorkloadIdentityFederationClient.
  */
-export interface WorkloadIdentityFederationClientParameters {
-  readonly logger: Logger;
-  readonly universe: string;
-
+export interface WorkloadIdentityFederationClientParameters extends ClientParameters {
   readonly githubOIDCToken: string;
   readonly githubOIDCTokenRequestURL: string;
   readonly githubOIDCTokenRequestToken: string;
@@ -51,11 +47,7 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
   #cachedAt?: number;
 
   constructor(opts: WorkloadIdentityFederationClientParameters) {
-    super({
-      logger: opts.logger,
-      universe: opts.universe,
-      child: `WorkloadIdentityFederationClient`,
-    });
+    super('WorkloadIdentityFederationClient', opts);
 
     this.#githubOIDCToken = opts.githubOIDCToken;
     this.#githubOIDCTokenRequestURL = opts.githubOIDCTokenRequestURL;
@@ -90,6 +82,8 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
 
     const pth = `${this._endpoints.sts}/token`;
 
+    const headers = Object.assign(this._headers(), {});
+
     const body = {
       audience: this.#audience,
       grantType: `urn:ietf:params:oauth:grant-type:token-exchange`,
@@ -106,7 +100,7 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
     });
 
     try {
-      const resp = await this._httpClient.postJson<{ access_token: string }>(pth, body);
+      const resp = await this._httpClient.postJson<{ access_token: string }>(pth, body, headers);
       const statusCode = resp.statusCode || 500;
       if (statusCode < 200 || statusCode > 299) {
         throw new Error(`Failed to call ${pth}: HTTP ${statusCode}: ${resp.result || '[no body]'}`);
@@ -140,9 +134,9 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
 
     const pth = `${this._endpoints.iamcredentials}/projects/-/serviceAccounts/${this.#serviceAccount}:signJwt`;
 
-    const headers = {
+    const headers = Object.assign(this._headers(), {
       Authorization: `Bearer ${await this.getToken()}`,
-    };
+    });
 
     const body = {
       payload: claims,

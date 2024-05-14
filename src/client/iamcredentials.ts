@@ -16,8 +16,7 @@ import { URLSearchParams } from 'url';
 
 import { errorMessage } from '@google-github-actions/actions-utils';
 
-import { Client } from './client';
-import { Logger } from '../logger';
+import { Client, ClientParameters } from './client';
 
 /**
  * GenerateAccessTokenParameters are the inputs to the generateAccessToken call.
@@ -42,10 +41,7 @@ export interface GenerateIDTokenParameters {
 /**
  * IAMCredentialsClientParameters are the inputs to the IAM client.
  */
-export interface IAMCredentialsClientParameters {
-  readonly logger: Logger;
-  readonly universe: string;
-
+export interface IAMCredentialsClientParameters extends ClientParameters {
   readonly authToken: string;
 }
 
@@ -57,11 +53,7 @@ export class IAMCredentialsClient extends Client {
   readonly #authToken: string;
 
   constructor(opts: IAMCredentialsClientParameters) {
-    super({
-      logger: opts.logger,
-      universe: opts.universe,
-      child: `IAMCredentialsClient`,
-    });
+    super('IAMCredentialsClient', opts);
 
     this.#authToken = opts.authToken;
   }
@@ -80,7 +72,9 @@ export class IAMCredentialsClient extends Client {
 
     const pth = `${this._endpoints.iamcredentials}/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`;
 
-    const headers = { Authorization: `Bearer ${this.#authToken}` };
+    const headers = Object.assign(this._headers(), {
+      Authorization: `Bearer ${this.#authToken}`,
+    });
 
     const body: Record<string, string | Array<string>> = {};
     if (delegates && delegates.length > 0) {
@@ -126,10 +120,10 @@ export class IAMCredentialsClient extends Client {
 
     const pth = `${this._endpoints.oauth2}/token`;
 
-    const headers = {
+    const headers = Object.assign(this._headers(), {
       'Accept': 'application/json',
       'Content-Type': 'application/x-www-form-urlencoded',
-    };
+    });
 
     const body = new URLSearchParams();
     body.append('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
@@ -173,7 +167,9 @@ export class IAMCredentialsClient extends Client {
 
     const pth = `${this._endpoints.iamcredentials}/projects/-/serviceAccounts/${serviceAccount}:generateIdToken`;
 
-    const headers = { Authorization: `Bearer ${this.#authToken}` };
+    const headers = Object.assign(this._headers(), {
+      Authorization: `Bearer ${this.#authToken}`,
+    });
 
     const body: Record<string, string | string[] | boolean> = {
       audience: audience,

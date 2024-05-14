@@ -23,17 +23,13 @@ import {
   writeSecureFile,
 } from '@google-github-actions/actions-utils';
 
-import { AuthClient, Client } from './client';
-import { Logger } from '../logger';
+import { AuthClient, Client, ClientParameters } from './client';
 
 /**
  * ServiceAccountKeyClientParameters is used as input to the
  * ServiceAccountKeyClient.
  */
-export interface ServiceAccountKeyClientParameters {
-  readonly logger: Logger;
-  readonly universe: string;
-
+export interface ServiceAccountKeyClientParameters extends ClientParameters {
   readonly serviceAccountKey: string;
 }
 
@@ -46,11 +42,7 @@ export class ServiceAccountKeyClient extends Client implements AuthClient {
   readonly #audience: string;
 
   constructor(opts: ServiceAccountKeyClientParameters) {
-    super({
-      logger: opts.logger,
-      universe: opts.universe,
-      child: `ServiceAccountKeyClient`,
-    });
+    super('ServiceAccountKeyClient', opts);
 
     const serviceAccountKey = parseCredential(opts.serviceAccountKey);
     if (!isServiceAccountKey(serviceAccountKey)) {

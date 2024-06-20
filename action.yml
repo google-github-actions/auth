@@ -143,7 +143,7 @@ inputs:
     description: |-
       Number of times to retry a failed authentication attempt. This is useful
       for automated pipelines that may execute before IAM permissions are fully
-      propogated.
+      propagated.
     deprecationMessage: |-
       This field is no longer used and will be removed in a future release.
     required: false

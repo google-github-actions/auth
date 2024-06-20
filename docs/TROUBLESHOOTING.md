@@ -9,7 +9,7 @@
     > [!CAUTION]
     >
     > Enabling debug logging increases the chances of a secret
-    > being accidentially logged. While GitHub Actions will scrub secrets,
+    > being accidentally logged. While GitHub Actions will scrub secrets,
     > please take extra caution when sharing these debug logs in publicly
     > accessible places like GitHub issues.
     >
@@ -81,7 +81,7 @@
         token", it means admission into the Workload Identity Pool failed. Check
         your [**Attribute Conditions**][attribute-conditions].
 
-    -   If the error message inclues "Failed to generate OAuth 2.0 Access
+    -   If the error message includes "Failed to generate OAuth 2.0 Access
         Token", it means Service Account Impersonation failed. Check your
         [**Service Account Impersonation**][sa-impersonation] settings and
         ensure the principalSet is correct.

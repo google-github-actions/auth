@@ -618,7 +618,7 @@ as a secret.
 > [!CAUTION]
 >
 > Google Cloud Service Account Key JSON files must be secured
-> and treated like a password. Anyone with acess to the JSON key can
+> and treated like a password. Anyone with access to the JSON key can
 > authenticate to Google Cloud as the underlying Service Account. By default,
 > these credentials never expire, which is why the former authentication options
 > are much preferred.

@@ -25,6 +25,7 @@ import {
  * LoggerFunction is the type signature of a log function for the GitHub Actions
  * SDK.
  */
+// eslint-disable-next-line no-unused-vars
 type LoggerFunction = (message: string, properties?: AnnotationProperties) => void;
 
 /**

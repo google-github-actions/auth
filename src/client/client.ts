@@ -34,12 +34,12 @@ export interface AuthClient {
    * other Google Cloud tools) that instructs the tool how to perform identity
    * federation.
    */
-  createCredentialsFile(outputPath: string): Promise<string>;
+  createCredentialsFile(outputPath: string): Promise<string>; // eslint-disable-line no-unused-vars
 
   /**
    * signJWT signs a JWT using the auth provider.
    */
-  signJWT(claims: any): Promise<string>;
+  signJWT(claims: any): Promise<string>; // eslint-disable-line no-unused-vars
 }
 
 export interface ClientParameters {

@@ -3,9 +3,7 @@
     "alwaysStrict": true,
     "target": "es6",
     "module": "commonjs",
-    "lib": [
-      "es6"
-    ],
+    "lib": ["es6"],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,

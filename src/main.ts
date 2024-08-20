@@ -202,7 +202,7 @@ export async function run(logger: Logger) {
     // Set the project ID environment variables to the computed values.
     if (!projectID) {
       logger.info(
-        `⚠️ Failed to a project ID from the given inputs. Neither the ` +
+        `⚠️ Failed to compute a project ID from the given inputs. Neither the ` +
           `"project_id" output nor any environment variables will be ` +
           `exported. If you require these values in other steps, specify the ` +
           `"project_id" input directly.`,

@@ -14,6 +14,10 @@ Action to authenticate to Google Cloud:
 1. [Workload Identity Federation through a Service Account](#indirect-wif)
 1. [Service Account Key JSON](#sake)
 
+> [!IMPORTANT]
+> The `gsutil` command will **not** use the credentials exported by this GitHub
+> Action. Customers should use `gcloud storage` instead.
+
 **This is not an officially supported Google product, and it is not covered by a
 Google Cloud support contract. To report bugs or request features in a Google
 Cloud product, please contact [Google Cloud
@@ -34,9 +38,6 @@ support](https://cloud.google.com/support).**
     # Ignore generated credentials from google-github-actions/auth
     gha-creds-*.json
     ```
-
--   To use the `bq` or `gsutil` tools, use the Google Cloud SDK version 390.0.0
-    or newer.
 
 -   This action runs using Node 20. Use a [runner
     version](https://github.com/actions/virtual-environments) that supports this

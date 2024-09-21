@@ -43,5 +43,7 @@ These can be used in an Attribute Condition:
 assertion.repository_owner_id == '1342004' && assertion.repository_id == '260064828'
 ```
 
+The Attribute Mapping must continue to include `attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner` when using numeric organization and repository ID values. Adding mappings for the ID values (i.e. `attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner,attribute.repository_id=assertion.repository_id,attribute.repository_owner_id=assertion.repository_owner_id`) will work but it is redundant.
+
 [cybersquatting]: https://en.wikipedia.org/wiki/Cybersquatting
 [typosquatting]: https://en.wikipedia.org/wiki/Typosquatting

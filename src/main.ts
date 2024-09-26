@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { join as pathjoin } from 'path';
+import path, { join as pathjoin } from 'path';
 
 import {
   exportVariable,
@@ -28,10 +28,11 @@ import {
   exactlyOneOf,
   isEmptyDir,
   isPinnedToHead,
-  parseMultilineCSV,
   parseDuration,
+  parseMultilineCSV,
   pinnedToHeadWarning,
 } from '@google-github-actions/actions-utils';
+import fs, { readFileSync } from 'fs';
 
 import {
   AuthClient,
@@ -85,6 +86,7 @@ export async function run(logger: Logger) {
     const delegates = parseMultilineCSV(getInput(`delegates`));
     const universe = getInput(`universe`);
     const requestReason = getInput(`request_reason`);
+    const oidcTokenFile = getInput(`oidc_token_file`);
 
     // Ensure exactly one of workload_identity_provider and credentials_json was
     // provided.
@@ -100,26 +102,42 @@ export async function run(logger: Logger) {
     let client: AuthClient;
     if (workloadIdentityProvider) {
       logger.debug(`Using workload identity provider "${workloadIdentityProvider}"`);
+      let oidcToken: string;
+      let oidcTokenRequestToken, oidcTokenRequestURL: string | undefined;
+      let oidTokenFilePath: string | undefined;
+      if (oidcTokenFile) {
+        const githubWorkspace = process.env.GITHUB_WORKSPACE;
+        if (!githubWorkspace) {
+          throw new Error(`$GITHUB_WORKSPACE is not set`);
+        }
+        oidTokenFilePath = path.isAbsolute(oidcTokenFile)
+          ? oidcTokenFile
+          : path.join(githubWorkspace, oidcTokenFile);
+        if (!fs.existsSync(oidTokenFilePath)) {
+          throw new Error(`Unable to find token file in ${oidTokenFilePath}`);
+        }
+        oidcToken = readFileSync(oidTokenFilePath, 'utf8');
+      } else {
+        // If we're going to do the OIDC dance, we need to make sure these values
+        // are set. If they aren't, core.getIDToken() will fail and so will
+        // generating the credentials file.
+        oidcTokenRequestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+        oidcTokenRequestURL = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+        if (!oidcTokenRequestToken || !oidcTokenRequestURL) {
+          throw new Error(oidcWarning);
+        }
 
-      // If we're going to do the OIDC dance, we need to make sure these values
-      // are set. If they aren't, core.getIDToken() will fail and so will
-      // generating the credentials file.
-      const oidcTokenRequestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-      const oidcTokenRequestURL = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-      if (!oidcTokenRequestToken || !oidcTokenRequestURL) {
-        throw new Error(oidcWarning);
+        oidcToken = await getIDToken(oidcTokenAudience);
       }
-
-      const oidcToken = await getIDToken(oidcTokenAudience);
       client = new WorkloadIdentityFederationClient({
         logger: logger,
         universe: universe,
         requestReason: requestReason,
-
         githubOIDCToken: oidcToken,
         githubOIDCTokenRequestURL: oidcTokenRequestURL,
         githubOIDCTokenRequestToken: oidcTokenRequestToken,
         githubOIDCTokenAudience: oidcTokenAudience,
+        oidcTokenFilePath: oidTokenFilePath,
         workloadIdentityProviderName: workloadIdentityProvider,
         serviceAccount: serviceAccount,
       });

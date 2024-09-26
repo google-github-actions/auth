@@ -25,6 +25,10 @@ inputs:
       unspecified, this action will attempt to extract the value from other
       inputs such as "service_account" or "credentials_json".
     required: false
+  oidc_token_file:
+    description: |-
+      File containing the JWT token to be used instead of Github token.
+    required: false
   workload_identity_provider:
     description: |-
       The full identifier of the Workload Identity Provider, including the

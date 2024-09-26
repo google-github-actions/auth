@@ -20,14 +20,35 @@ import { AuthClient, Client, ClientParameters } from './client';
  * WorkloadIdentityFederationClientParameters is used as input to the
  * WorkloadIdentityFederationClient.
  */
-export interface WorkloadIdentityFederationClientParameters extends ClientParameters {
+export interface WorkloadIdentityFederationClientParametersBase extends ClientParameters {
   readonly githubOIDCToken: string;
+  readonly workloadIdentityProviderName: string;
+  readonly serviceAccount?: string;
+}
+
+export interface WorkloadIdentityFederationClientTokenFileParameters
+  extends WorkloadIdentityFederationClientParametersBase {
+  readonly oidcTokenFilePath?: string;
+}
+
+export interface WorkloadIdentityFederationClientURLParameters
+  extends WorkloadIdentityFederationClientParametersBase {
   readonly githubOIDCTokenRequestURL: string;
   readonly githubOIDCTokenRequestToken: string;
   readonly githubOIDCTokenAudience: string;
-  readonly workloadIdentityProviderName: string;
   readonly audience?: string;
-  readonly serviceAccount?: string;
+}
+
+export type WorkloadIdentityFederationClientParameters =
+  | WorkloadIdentityFederationClientTokenFileParameters
+  | WorkloadIdentityFederationClientURLParameters;
+
+function isTokenFileParameters(
+  opts: WorkloadIdentityFederationClientParameters,
+): opts is WorkloadIdentityFederationClientTokenFileParameters {
+  return (
+    (opts as WorkloadIdentityFederationClientTokenFileParameters).oidcTokenFilePath !== undefined
+  );
 }
 
 /**
@@ -36,9 +57,10 @@ export interface WorkloadIdentityFederationClientParameters extends ClientParame
  */
 export class WorkloadIdentityFederationClient extends Client implements AuthClient {
   readonly #githubOIDCToken: string;
-  readonly #githubOIDCTokenRequestURL: string;
-  readonly #githubOIDCTokenRequestToken: string;
-  readonly #githubOIDCTokenAudience: string;
+  readonly #githubOIDCTokenRequestURL?: string;
+  readonly #githubOIDCTokenRequestToken?: string;
+  readonly #githubOIDCTokenAudience?: string;
+  readonly #oidcTokenFile?: string;
   readonly #workloadIdentityProviderName: string;
   readonly #serviceAccount?: string;
   readonly #audience: string;
@@ -50,9 +72,14 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
     super('WorkloadIdentityFederationClient', opts);
 
     this.#githubOIDCToken = opts.githubOIDCToken;
-    this.#githubOIDCTokenRequestURL = opts.githubOIDCTokenRequestURL;
-    this.#githubOIDCTokenRequestToken = opts.githubOIDCTokenRequestToken;
-    this.#githubOIDCTokenAudience = opts.githubOIDCTokenAudience;
+    if (isTokenFileParameters(opts)) {
+      this._logger.debug(`Using token file in ${opts.oidcTokenFilePath}`);
+      this.#oidcTokenFile = opts.oidcTokenFilePath;
+    } else {
+      this.#githubOIDCTokenRequestURL = opts.githubOIDCTokenRequestURL;
+      this.#githubOIDCTokenRequestToken = opts.githubOIDCTokenRequestToken;
+      this.#githubOIDCTokenAudience = opts.githubOIDCTokenAudience;
+    }
     this.#workloadIdentityProviderName = opts.workloadIdentityProviderName;
     this.#serviceAccount = opts.serviceAccount;
 
@@ -175,19 +202,18 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
   async createCredentialsFile(outputPath: string): Promise<string> {
     const logger = this._logger.withNamespace(`createCredentialsFile`);
 
-    const requestURL = new URL(this.#githubOIDCTokenRequestURL);
+    let credentialSource;
+    if (this.#oidcTokenFile) {
+      credentialSource = { file: this.#oidcTokenFile };
+    } else {
+      const requestURL = new URL(this.#githubOIDCTokenRequestURL!);
 
-    // Append the audience value to the request.
-    const params = requestURL.searchParams;
-    params.set('audience', this.#githubOIDCTokenAudience);
-    requestURL.search = params.toString();
+      // Append the audience value to the request.
+      const params = requestURL.searchParams;
+      params.set('audience', this.#githubOIDCTokenAudience!);
+      requestURL.search = params.toString();
 
-    const data: Record<string, any> = {
-      type: `external_account`,
-      audience: this.#audience,
-      subject_token_type: `urn:ietf:params:oauth:token-type:jwt`,
-      token_url: `${this._endpoints.sts}/token`,
-      credential_source: {
+      credentialSource = {
         url: requestURL,
         headers: {
           Authorization: `Bearer ${this.#githubOIDCTokenRequestToken}`,
@@ -196,7 +222,15 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
           type: `json`,
           subject_token_field_name: `value`,
         },
-      },
+      };
+    }
+
+    const data: Record<string, any> = {
+      type: `external_account`,
+      audience: this.#audience,
+      subject_token_type: `urn:ietf:params:oauth:token-type:jwt`,
+      token_url: `${this._endpoints.sts}/token`,
+      credential_source: credentialSource,
     };
 
     // Only request impersonation if a service account was given, otherwise use

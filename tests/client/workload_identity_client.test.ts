@@ -12,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { test } from 'node:test';
 import assert from 'node:assert';
+import { test } from 'node:test';
 
+import { readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join as pathjoin } from 'path';
-import { readFileSync } from 'fs';
 
 import { randomFilename } from '@google-github-actions/actions-utils';
 
-import { NullLogger } from '../../src/logger';
 import { WorkloadIdentityFederationClient } from '../../src/client/workload_identity_federation';
+import { NullLogger } from '../../src/logger';
 
 test('#createCredentialsFile', { concurrency: true }, async (suite) => {
-  await suite.test('writes the file', async () => {
+  await suite.test('writes the file with url credential source', async () => {
     const outputFile = pathjoin(tmpdir(), randomFilename());
     const client = new WorkloadIdentityFederationClient({
       logger: new NullLogger(),
@@ -49,6 +49,34 @@ test('#createCredentialsFile', { concurrency: true }, async (suite) => {
           Authorization: 'Bearer token',
         },
         url: 'https://example.com/?audience=my-aud',
+      },
+      subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+      token_url: 'https://sts.googleapis.com/v1/token',
+      type: 'external_account',
+    };
+
+    const pth = await client.createCredentialsFile(outputFile);
+    const data = readFileSync(pth);
+    const got = JSON.parse(data.toString('utf8'));
+
+    assert.deepStrictEqual(got, exp);
+  });
+
+  await suite.test('writes the file with file credential source', async () => {
+    const outputFile = pathjoin(tmpdir(), randomFilename());
+    const client = new WorkloadIdentityFederationClient({
+      logger: new NullLogger(),
+      universe: 'googleapis.com',
+
+      githubOIDCToken: 'my-token',
+      oidcTokenFilePath: '/tmp/token',
+      workloadIdentityProviderName: 'my-provider',
+    });
+
+    const exp = {
+      audience: '//iam.googleapis.com/my-provider',
+      credential_source: {
+        file: '/tmp/token',
       },
       subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
       token_url: 'https://sts.googleapis.com/v1/token',

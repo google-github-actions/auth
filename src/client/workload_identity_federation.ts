@@ -96,6 +96,7 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
     logger.debug(`Built request`, {
       method: `POST`,
       path: pth,
+      headers: headers,
       body: body,
     });
 

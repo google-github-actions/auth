@@ -46,7 +46,7 @@
 
     ```diff
     - projects/my-project/locations/global/workloadIdentityPools/my-pool/providers/my-provider
-    + projects/1234567890/locations/global/workloadIdentityPools/my-pool/providers/
+    + projects/1234567890/locations/global/workloadIdentityPools/my-pool/providers/my-provider
     ```
 
 1.  Ensure that you have the correct `permissions:` for the job in your

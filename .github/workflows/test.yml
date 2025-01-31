@@ -39,9 +39,9 @@ jobs:
     runs-on: 'ubuntu-latest'
 
     steps:
-      - uses: 'actions/checkout@v4'
+      - uses: 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683' # ratchet:actions/checkout@v4
 
-      - uses: 'actions/setup-node@v4'
+      - uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
         with:
           node-version: '20.x'
 
@@ -74,9 +74,9 @@ jobs:
       id-token: 'write'
 
     steps:
-      - uses: 'actions/checkout@v4'
+      - uses: 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683' # ratchet:actions/checkout@v4
 
-      - uses: 'actions/setup-node@v4'
+      - uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
         with:
           node-version: '20.x'
 
@@ -99,7 +99,7 @@ jobs:
             --fail \
             --header "Authorization: Bearer ${{ steps.auth-default.outputs.auth_token }}"
 
-      - uses: 'google-github-actions/setup-gcloud@v2'
+      - uses: 'google-github-actions/setup-gcloud@main' # ratchet:exclude
         with:
           version: '>= 363.0.0'
 
@@ -127,9 +127,9 @@ jobs:
       id-token: 'write'
 
     steps:
-      - uses: 'actions/checkout@v4'
+      - uses: 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683' # ratchet:actions/checkout@v4
 
-      - uses: 'actions/setup-node@v4'
+      - uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
         with:
           node-version: '20.x'
 
@@ -143,7 +143,7 @@ jobs:
           workload_identity_provider: '${{ vars.WIF_PROVIDER_NAME }}'
           service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
 
-      - uses: 'google-github-actions/setup-gcloud@v2'
+      - uses: 'google-github-actions/setup-gcloud@main' # ratchet:exclude
         with:
           version: '>= 363.0.0'
 
@@ -195,9 +195,9 @@ jobs:
           - 'macos-latest'
 
     steps:
-      - uses: 'actions/checkout@v4'
+      - uses: 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683' # ratchet:actions/checkout@v4
 
-      - uses: 'actions/setup-node@v4'
+      - uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
         with:
           node-version: '20.x'
 
@@ -210,7 +210,7 @@ jobs:
         with:
           credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
 
-      - uses: 'google-github-actions/setup-gcloud@v2'
+      - uses: 'google-github-actions/setup-gcloud@main' # ratchet:exclude
         with:
           version: '>= 363.0.0'
 
@@ -256,9 +256,9 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-      - uses: 'actions/checkout@v4'
+      - uses: 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683' # ratchet:actions/checkout@v4
 
-      - uses: 'actions/setup-node@v4'
+      - uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
         with:
           node-version: '20.x'
 
@@ -271,7 +271,7 @@ jobs:
           credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY_JSON }}'
 
       - name: 'docker'
-        uses: 'docker://alpine:3'
+        uses: 'docker://index.docker.io/library/alpine@sha256:56fa17d2a7e7f168a043a2712e63aed1f8543aeafdcee47c58dcffe38ed51099' # ratchet:docker://alpine:3
         with:
           entrypoint: '/bin/sh'
           args: '-euc "test -n "${GOOGLE_APPLICATION_CREDENTIALS}" && test -r "${GOOGLE_APPLICATION_CREDENTIALS}"'

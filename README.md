@@ -450,7 +450,7 @@ These instructions use the [gcloud][gcloud] command-line tool.
     configured.
 
     The following example shows granting access from a GitHub Action in a
-    specific repository a secret in Google Secret Manager.
+    specific repository to a secret in Google Secret Manager.
 
     ```sh
     # TODO: replace ${PROJECT_ID}, ${WORKLOAD_IDENTITY_POOL_ID}, and ${REPO}
@@ -467,6 +467,20 @@ These instructions use the [gcloud][gcloud] command-line tool.
       --role="roles/secretmanager.secretAccessor" \
       --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/attribute.repository/${REPO}"
     ```
+
+    Another example below illustrates how to grant the role of
+    'roles/container.clusterViewer' (as required by get-gke-credentials
+    action) to the GitHub Action principal.
+    
+    ```sh
+    # TODO: replace ${PROJECT-ID}, ${PROJECT_NUMBER}, ${POOL_ID},
+    # ${MY-ORGANISATION}, and ${MY-REPO-NAME}
+
+    gcloud projects add-iam-policy-binding ${PROJECT-ID} \
+      --role "roles/container.clusterViewer" \
+      --member "principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/attribute.repository/${MY-ORGANISATION}/${MY-REPO-NAME}"
+    ```
+
 
     Review the [GitHub documentation][github-oidc] for a complete list of
     options and values. This GitHub repository does not seek to enumerate every

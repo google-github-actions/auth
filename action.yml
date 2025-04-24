@@ -56,7 +56,7 @@ inputs:
     description: |-
       If true, the action will securely generate a credentials file which can be
       used for authentication via gcloud and Google Cloud SDKs.
-    default: true
+    default: 'true'
     required: false
   export_environment_variables:
     description: |-
@@ -79,7 +79,7 @@ inputs:
       If false, the action will not export any environment variables, meaning
       future steps are unlikely to be automatically authenticated to Google
       Cloud.
-    default: true
+    default: 'true'
     required: false
   token_format:
     description: |-
@@ -113,7 +113,7 @@ inputs:
       If true, the action will remove any created credentials from the
       filesystem upon completion. This only applies if "create_credentials_file"
       is true.
-    default: true
+    default: 'true'
     required: false
 
   # access token params
@@ -175,7 +175,7 @@ inputs:
       generated token. If true, the token will contain "email" and
       "email_verified" claims. This is only valid when "token_format" is
       "id_token".
-    default: false
+    default: 'false'
     required: false
 
 outputs:

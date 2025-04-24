@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { getBooleanInput, setFailed } from '@actions/core';
+import { getInput, setFailed } from '@actions/core';
 
-import { errorMessage, forceRemove } from '@google-github-actions/actions-utils';
+import { errorMessage, forceRemove, parseBoolean } from '@google-github-actions/actions-utils';
 
 import { Logger } from './logger';
 
 export async function run(logger: Logger) {
   try {
-    const createCredentials = getBooleanInput('create_credentials_file');
+    const createCredentials = parseBoolean(getInput('create_credentials_file'));
     if (!createCredentials) {
       logger.info(`Skipping credential cleanup - "create_credentials_file" is false.`);
       return;
     }
 
-    const cleanupCredentials = getBooleanInput('cleanup_credentials');
+    const cleanupCredentials = parseBoolean(getInput('cleanup_credentials'));
     if (!cleanupCredentials) {
       logger.info(`Skipping credential cleanup - "cleanup_credentials" is false.`);
       return;

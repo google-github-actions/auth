@@ -16,7 +16,6 @@ import { join as pathjoin } from 'path';
 
 import {
   exportVariable,
-  getBooleanInput,
   getIDToken,
   getInput,
   setFailed,
@@ -29,6 +28,7 @@ import {
   isEmptyDir,
   isPinnedToHead,
   parseMultilineCSV,
+  parseBoolean,
   parseDuration,
   pinnedToHeadWarning,
 } from '@google-github-actions/actions-utils';
@@ -79,8 +79,8 @@ export async function run(logger: Logger) {
     const oidcTokenAudience =
       getInput(`audience`) || `https://iam.googleapis.com/${workloadIdentityProvider}`;
     const credentialsJSON = getInput(`credentials_json`);
-    const createCredentialsFile = getBooleanInput(`create_credentials_file`);
-    const exportEnvironmentVariables = getBooleanInput(`export_environment_variables`);
+    const createCredentialsFile = parseBoolean(getInput(`create_credentials_file`));
+    const exportEnvironmentVariables = parseBoolean(getInput(`export_environment_variables`));
     const tokenFormat = getInput(`token_format`);
     const delegates = parseMultilineCSV(getInput(`delegates`));
     const universe = getInput(`universe`);
@@ -301,7 +301,7 @@ export async function run(logger: Logger) {
         logger.debug(`Creating id token`);
 
         const idTokenAudience = getInput('id_token_audience', { required: true });
-        const idTokenIncludeEmail = getBooleanInput('id_token_include_email');
+        const idTokenIncludeEmail = parseBoolean(getInput('id_token_include_email'));
 
         // Ensure a service_account was provided if using WIF.
         if (!serviceAccount) {

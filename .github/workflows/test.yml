@@ -33,6 +33,10 @@ defaults:
   run:
     shell: 'bash'
 
+permissions:
+  contents: 'read'
+  statuses: 'write'
+
 jobs:
   unit:
     name: 'unit'

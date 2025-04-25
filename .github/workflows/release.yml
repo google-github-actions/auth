@@ -6,6 +6,10 @@ on:
       - 'main'
       - 'release/**/*'
 
+permissions:
+  contents: 'read'
+  packages: 'write'
+
 jobs:
   release:
     uses: 'google-github-actions/.github/.github/workflows/release.yml@v3' # ratchet:exclude

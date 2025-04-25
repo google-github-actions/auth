@@ -84,6 +84,12 @@ For more usage options, see the [examples](docs/EXAMPLES.md).
 > SDK](https://github.com/firebase/firebase-admin-node/issues/1377). Use Service
 > Account Key JSON authentication instead.
 
+> [!WARNING]
+>
+> As of the time of this writing, the GitHub OIDC token expires in 5 minutes,
+> which means any derived credentials also expire in 5 minutes.
+
+
 The following inputs are for _authenticating_ to Google Cloud via Workload
 Identity Federation.
 

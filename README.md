@@ -322,30 +322,6 @@ regardless of the authentication mechanism.
     "token_format" is "id_token".
 
 
-## Python Usage Note
-
-When using Workload Identity Federation with Python libraries (e.g., `google-auth`), you may encounter errors when trying to refresh credentials to get an ID token. This is because the Google Auth library requires scopes to be set when refreshing credentials for impersonation.
-
-If you need an ID token in Python, you have two options:
-
-1. **Use the `token_format` parameter** (recommended): Generate the ID token directly with this action and use it as an environment variable in your Python code.
-
-2. **Add scopes before refreshing**: If using default credentials, add the required scopes before refreshing:
-
-```python
-from google.auth import default
-from google.auth.transport.requests import Request
-
-credentials, project = default()
-credentials = credentials.with_scopes(
-    ["https://www.googleapis.com/auth/cloud-platform"]
-)
-credentials.refresh(request=Request())
-```
-
-For more details and examples, see the [Troubleshooting guide](docs/TROUBLESHOOTING.md#cannot-refresh-credentials-to-retrieve-an-id-token) and [Examples](docs/EXAMPLES.md#using-default-credentials-with-scopes-in-python).
-
-
 <a id="setup"></a>
 ## Setup
 

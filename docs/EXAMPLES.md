@@ -194,10 +194,10 @@ jobs:
         python -c "
         import os
         import requests
-        
+
         # ID token is available as environment variable
         id_token = os.environ.get('GOOGLE_ID_TOKEN', '${{ steps.auth.outputs.id_token }}')
-        
+
         # Use the token to invoke a Cloud Run service
         response = requests.get(
             'https://myapp-uvehjacqzq.a.run.app',
@@ -209,7 +209,8 @@ jobs:
 
 ### Using Default Credentials with Scopes in Python
 
-When using Workload Identity Federation with Python libraries, you may need to add scopes before refreshing credentials:
+When using Workload Identity Federation with Python libraries, you may need to
+add scopes before refreshing credentials:
 
 ```yaml
 jobs:
@@ -232,18 +233,18 @@ jobs:
         python -c "
         from google.auth import default
         from google.auth.transport.requests import Request
-        
+
         # Get default credentials
         credentials, project = default()
-        
+
         # Add scopes before refreshing for impersonation
         credentials = credentials.with_scopes(
             ['https://www.googleapis.com/auth/cloud-platform']
         )
-        
+
         # Refresh to get the token
         credentials.refresh(request=Request())
-        
+
         # Now you can use the credentials
         print(f'Access token: {credentials.token}')
         if hasattr(credentials, 'id_token'):

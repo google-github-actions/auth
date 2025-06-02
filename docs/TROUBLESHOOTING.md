@@ -230,6 +230,53 @@ tool like `jq`:
 cat credentials.json | jq -r tostring
 ```
 
+<a name="cannot-refresh"></a>
+
+## Cannot refresh credentials to retrieve an ID token
+
+If you get an error like:
+
+```text
+google.auth.exceptions.RefreshError: ('Unable to acquire impersonated credentials', '{"error": {"code": 400, "message": "Request contains an invalid argument.", "status": "INVALID_ARGUMENT"}}')
+```
+
+when trying to refresh credentials in Python code to get an ID token, this is
+usually because the credentials are missing required scopes. The Google Auth
+library requires scopes to be set when refreshing credentials for impersonation.
+
+To fix this issue, add the required scopes before refreshing:
+
+```python
+from google.auth import default
+from google.auth.transport.requests import Request
+
+credentials, project = default()
+
+# Add scopes before refreshing
+credentials = credentials.with_scopes(
+    ["https://www.googleapis.com/auth/cloud-platform"]
+)
+credentials.refresh(request=Request())
+
+# Now you can access the ID token
+print(credentials.id_token)
+```
+
+Alternatively, you can use the `token_format` parameter of this action to
+generate an ID token directly:
+
+```yaml
+- uses: 'google-github-actions/auth@v2'
+  with:
+    workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+    service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+    token_format: 'id_token'
+    id_token_audience: 'https://example.com'
+```
+
+This will export the ID token as an environment variable that you can use in
+your Python code.
+
 ## Organizational Policy Constraints
 
 > **ℹ️ NOTE!** Your Google Cloud organization administrator controls these

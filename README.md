@@ -322,7 +322,6 @@ regardless of the authentication mechanism.
     "token_format" is "id_token".
 
 
-
 <a id="setup"></a>
 ## Setup
 

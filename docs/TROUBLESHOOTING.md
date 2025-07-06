@@ -230,6 +230,11 @@ tool like `jq`:
 cat credentials.json | jq -r tostring
 ```
 
+<<<<<<< HEAD
+=======
+<a name="cannot-refresh"></a>
+
+>>>>>>> 0920706a19e9d22c3d0da43d1db5939c6ad837a8
 ## Cannot refresh credentials to retrieve an ID token
 
 If you get an error like:
@@ -238,7 +243,13 @@ If you get an error like:
 google.auth.exceptions.RefreshError: ('Unable to acquire impersonated credentials', '{"error": {"code": 400, "message": "Request contains an invalid argument.", "status": "INVALID_ARGUMENT"}}')
 ```
 
+<<<<<<< HEAD
 when trying to refresh credentials in Python code to get an ID token, this is usually because the credentials are missing required scopes. The Google Auth library requires scopes to be set when refreshing credentials for impersonation.
+=======
+when trying to refresh credentials in Python code to get an ID token, this is
+usually because the credentials are missing required scopes. The Google Auth
+library requires scopes to be set when refreshing credentials for impersonation.
+>>>>>>> 0920706a19e9d22c3d0da43d1db5939c6ad837a8
 
 To fix this issue, add the required scopes before refreshing:
 
@@ -247,16 +258,29 @@ from google.auth import default
 from google.auth.transport.requests import Request
 
 credentials, project = default()
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0920706a19e9d22c3d0da43d1db5939c6ad837a8
 # Add scopes before refreshing
 credentials = credentials.with_scopes(
     ["https://www.googleapis.com/auth/cloud-platform"]
 )
 credentials.refresh(request=Request())
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0920706a19e9d22c3d0da43d1db5939c6ad837a8
 # Now you can access the ID token
 print(credentials.id_token)
 ```
 
+<<<<<<< HEAD
 Alternatively, you can use the `token_format` parameter of this action to generate an ID token directly:
+=======
+Alternatively, you can use the `token_format` parameter of this action to
+generate an ID token directly:
+>>>>>>> 0920706a19e9d22c3d0da43d1db5939c6ad837a8
 
 ```yaml
 - uses: 'google-github-actions/auth@v2'
@@ -267,7 +291,12 @@ Alternatively, you can use the `token_format` parameter of this action to genera
     id_token_audience: 'https://example.com'
 ```
 
+<<<<<<< HEAD
 This will export the ID token as an environment variable that you can use in your Python code.
+=======
+This will export the ID token as an environment variable that you can use in
+your Python code.
+>>>>>>> 0920706a19e9d22c3d0da43d1db5939c6ad837a8
 
 ## Organizational Policy Constraints
 

@@ -1,0 +1,187 @@
+From f34df999c1c420ee60e3a4b816f67e83786224a4 Mon Sep 17 00:00:00 2001
+From: Abhi Srivastava <bits.abhi@gmail.com>
+Date: Mon, 2 Jun 2025 16:30:33 +0530
+Subject: [PATCH] docs: Add troubleshooting for Python ID token refresh error
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This addresses issue #441 where users encounter an error when trying to refresh credentials to retrieve an ID token in Python code. The error occurs because the Google Auth library requires scopes to be set when refreshing credentials for impersonation.
+
+Changes:
+- Added new troubleshooting section explaining the ID token refresh error
+- Provided solution with code example showing how to add scopes before refreshing
+- Added Python usage note in README.md with quick reference
+- Enhanced examples with Python code demonstrating proper credential usage
+
+Fixes #441
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+---
+ README.md               | 23 +++++++++++++++
+ docs/EXAMPLES.md        | 62 +++++++++++++++++++++++++++++++++++++++++
+ docs/TROUBLESHOOTING.md | 39 ++++++++++++++++++++++++++
+ 3 files changed, 124 insertions(+)
+
+diff --git a/README.md b/README.md
+index d0116cc..a78ca31 100644
+--- a/README.md
++++ b/README.md
+@@ -322,6 +322,29 @@ regardless of the authentication mechanism.
+     "token_format" is "id_token".
+ 
+ 
++## Python Usage Note
++
++When using Workload Identity Federation with Python libraries (e.g., `google-auth`), you may encounter errors when trying to refresh credentials to get an ID token. This is because the Google Auth library requires scopes to be set when refreshing credentials for impersonation.
++
++If you need an ID token in Python, you have two options:
++
++1. **Use the `token_format` parameter** (recommended): Generate the ID token directly with this action and use it as an environment variable in your Python code.
++
++2. **Add scopes before refreshing**: If using default credentials, add the required scopes before refreshing:
++
++```python
++from google.auth import default
++from google.auth.transport.requests import Request
++
++credentials, project = default()
++credentials = credentials.with_scopes(
++    ["https://www.googleapis.com/auth/cloud-platform"]
++)
++credentials.refresh(request=Request())
++```
++
++For more details and examples, see the [Troubleshooting guide](docs/TROUBLESHOOTING.md#cannot-refresh-credentials-to-retrieve-an-id-token) and [Examples](docs/EXAMPLES.md#using-default-credentials-with-scopes-in-python).
++
+ 
+ <a id="setup"></a>
+ ## Setup
+diff --git a/docs/EXAMPLES.md b/docs/EXAMPLES.md
+index 145cb67..2f93f9d 100644
+--- a/docs/EXAMPLES.md
++++ b/docs/EXAMPLES.md
+@@ -187,6 +187,68 @@ jobs:
+       run: |-
+         curl https://myapp-uvehjacqzq.a.run.app \
+           --header "Authorization: Bearer ${{ steps.auth.outputs.id_token }}"
++
++    # Example of using ID token in Python code
++    - id: 'python-example'
++      run: |-
++        python -c "
++        import os
++        import requests
++        
++        # ID token is available as environment variable
++        id_token = os.environ.get('GOOGLE_ID_TOKEN', '${{ steps.auth.outputs.id_token }}')
++        
++        # Use the token to invoke a Cloud Run service
++        response = requests.get(
++            'https://myapp-uvehjacqzq.a.run.app',
++            headers={'Authorization': f'Bearer {id_token}'}
++        )
++        print(response.text)
++        "
++```
++
++### Using Default Credentials with Scopes in Python
++
++When using Workload Identity Federation with Python libraries, you may need to add scopes before refreshing credentials:
++
++```yaml
++jobs:
++  job_id:
++    permissions:
++      contents: 'read'
++      id-token: 'write'
++
++    steps:
++    - uses: 'actions/checkout@v4'
++
++    - id: 'auth'
++      uses: 'google-github-actions/auth@v2'
++      with:
++        workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
++        service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
++
++    - id: 'python-auth'
++      run: |-
++        python -c "
++        from google.auth import default
++        from google.auth.transport.requests import Request
++        
++        # Get default credentials
++        credentials, project = default()
++        
++        # Add scopes before refreshing for impersonation
++        credentials = credentials.with_scopes(
++            ['https://www.googleapis.com/auth/cloud-platform']
++        )
++        
++        # Refresh to get the token
++        credentials.refresh(request=Request())
++        
++        # Now you can use the credentials
++        print(f'Access token: {credentials.token}')
++        if hasattr(credentials, 'id_token'):
++            print(f'ID token: {credentials.id_token}')
++        "
+ ```
+ 
+ [github-markdown-toc]: https://github.blog/changelog/2021-04-13-table-of-contents-support-in-markdown-files/
+diff --git a/docs/TROUBLESHOOTING.md b/docs/TROUBLESHOOTING.md
+index 2bf8154..e35606e 100644
+--- a/docs/TROUBLESHOOTING.md
++++ b/docs/TROUBLESHOOTING.md
+@@ -230,6 +230,45 @@ tool like `jq`:
+ cat credentials.json | jq -r tostring
+ ```
+ 
++## Cannot refresh credentials to retrieve an ID token
++
++If you get an error like:
++
++```text
++google.auth.exceptions.RefreshError: ('Unable to acquire impersonated credentials', '{"error": {"code": 400, "message": "Request contains an invalid argument.", "status": "INVALID_ARGUMENT"}}')
++```
++
++when trying to refresh credentials in Python code to get an ID token, this is usually because the credentials are missing required scopes. The Google Auth library requires scopes to be set when refreshing credentials for impersonation.
++
++To fix this issue, add the required scopes before refreshing:
++
++```python
++from google.auth import default
++from google.auth.transport.requests import Request
++
++credentials, project = default()
++# Add scopes before refreshing
++credentials = credentials.with_scopes(
++    ["https://www.googleapis.com/auth/cloud-platform"]
++)
++credentials.refresh(request=Request())
++# Now you can access the ID token
++print(credentials.id_token)
++```
++
++Alternatively, you can use the `token_format` parameter of this action to generate an ID token directly:
++
++```yaml
++- uses: 'google-github-actions/auth@v2'
++  with:
++    workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
++    service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
++    token_format: 'id_token'
++    id_token_audience: 'https://example.com'
++```
++
++This will export the ID token as an environment variable that you can use in your Python code.
++
+ ## Organizational Policy Constraints
+ 
+ > **ℹ️ NOTE!** Your Google Cloud organization administrator controls these
+-- 
+2.49.0
+

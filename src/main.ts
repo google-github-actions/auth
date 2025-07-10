@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { join as pathjoin } from 'path';
+import { join as pathjoin } from 'node:path';
+import { mkdir } from 'node:fs/promises';
 
 import {
   exportVariable,
@@ -25,11 +26,10 @@ import {
 import {
   errorMessage,
   exactlyOneOf,
-  isEmptyDir,
   isPinnedToHead,
-  parseMultilineCSV,
   parseBoolean,
   parseDuration,
+  parseMultilineCSV,
   pinnedToHeadWarning,
 } from '@google-github-actions/actions-utils';
 
@@ -141,44 +141,31 @@ export async function run(logger: Logger) {
     if (createCredentialsFile) {
       logger.debug(`Creating credentials file`);
 
-      // Note: We explicitly and intentionally export to GITHUB_WORKSPACE
-      // instead of RUNNER_TEMP, because RUNNER_TEMP is not shared with
-      // Docker-based actions on the filesystem. Exporting to GITHUB_WORKSPACE
-      // ensures that the exported credentials are automatically available to
-      // Docker-based actions without user modification.
+      // Get the runner's temporary directory. This is cleaned up between runs
+      // automatically, but also subsets of this directory are shared with
+      // Docker-based GitHub Actions.
+      const runnerTempDir = process.env.RUNNER_TEMP;
+      if (!runnerTempDir) {
+        throw new Error('$RUNNER_TEMP is not set');
+      }
+
+      // This is an undocumented path that is shared with Docker containers as a
+      // volume and has path remapping.
       //
-      // This has the unintended side-effect of leaking credentials over time,
-      // because GITHUB_WORKSPACE is not automatically cleaned up on self-hosted
-      // runners. To mitigate this issue, this action defines a post step to
-      // remove any created credentials.
-      const githubWorkspace = process.env.GITHUB_WORKSPACE;
-      if (!githubWorkspace) {
-        throw new Error('$GITHUB_WORKSPACE is not set');
-      }
+      // https://github.com/actions/runner/blob/0d24afa114c2ee4b6451e35f2ba2cb9b96955789/src/Runner.Worker/Handlers/ContainerActionHandler.cs#L193-L202
+      const githubHomeDir = pathjoin(runnerTempDir, '_github_home');
+      logger.debug(`Computed home directory: "${githubHomeDir}"`);
 
-      // There have been a number of issues where users have not used the
-      // "actions/checkout" step before our action. Our action relies on the
-      // creation of that directory; worse, if a user puts "actions/checkout"
-      // after our action, it will delete the exported credential. This
-      // following code does a small check to see if there are any files in the
-      // directory. It emits a warning if there are no files, since there may be
-      // legitimate use cases for authenticating without checking out the
-      // repository.
-      const githubWorkspaceIsEmpty = await isEmptyDir(githubWorkspace);
-      if (githubWorkspaceIsEmpty) {
-        logger.info(
-          `⚠️ The "create_credentials_file" option is true, but the current ` +
-            `GitHub workspace is empty. Did you forget to use ` +
-            `"actions/checkout" before this step? If you do not intend to ` +
-            `share authentication with future steps in this job, set ` +
-            `"create_credentials_file" to false.`,
-        );
-      }
+      // Create the directory. Unlike $GITHUB_WORKSPACE, this directory may not
+      // yet exist.
+      await mkdir(githubHomeDir, { recursive: true });
+      logger.debug(`Created home directory: "${githubHomeDir}"`);
 
-      // Create credentials file.
-      const outputFile = generateCredentialsFilename();
-      const outputPath = pathjoin(githubWorkspace, outputFile);
-      const credentialsPath = await client.createCredentialsFile(outputPath);
+      // Generate an output file that is unique, but still coupled to the run
+      // and run attempt.
+      const credentialsPath = await client.createCredentialsFile(
+        pathjoin(githubHomeDir, generateCredentialsFilename()),
+      );
       logger.info(`Created credentials file at "${credentialsPath}"`);
 
       // Output to be available to future steps.

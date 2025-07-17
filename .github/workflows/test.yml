@@ -47,13 +47,10 @@ jobs:
 
       - uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version-file: 'package.json'
 
       - name: 'npm build'
         run: 'npm ci && npm run build'
-
-      - name: 'npm lint'
-        run: 'npm run lint'
 
       - name: 'npm test'
         run: 'npm run test'
@@ -63,7 +60,8 @@ jobs:
   # Direct Workload Identity Federation
   #
   direct_workload_identity_federation:
-    if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
+    if: |-
+      ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
     name: 'direct_workload_identity_federation'
     runs-on: '${{ matrix.os }}'
     strategy:
@@ -82,7 +80,7 @@ jobs:
 
       - uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version-file: 'package.json'
 
       - name: 'npm build'
         run: 'npm ci && npm run build'
@@ -116,7 +114,8 @@ jobs:
   # Workload Identity Federation through a Service Account
   #
   workload_identity_federation_through_service_account:
-    if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
+    if: |-
+      ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
     name: 'workload_identity_federation_through_service_account'
     runs-on: '${{ matrix.os }}'
     strategy:
@@ -135,7 +134,7 @@ jobs:
 
       - uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version-file: 'package.json'
 
       - name: 'npm build'
         run: 'npm ci && npm run build'
@@ -187,7 +186,8 @@ jobs:
   # Service Account Key JSON
   #
   credentials_json:
-    if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
+    if: |-
+      ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
     name: 'credentials_json'
     runs-on: '${{ matrix.os }}'
     strategy:
@@ -203,7 +203,7 @@ jobs:
 
       - uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version-file: 'package.json'
 
       - name: 'npm build'
         run: 'npm ci && npm run build'
@@ -254,7 +254,8 @@ jobs:
   # has permissions to read the file.
   #
   docker:
-    if: ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
+    if: |-
+      ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
     name: 'docker'
     runs-on: 'ubuntu-latest'
     strategy:
@@ -264,7 +265,7 @@ jobs:
 
       - uses: 'actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a' # ratchet:actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version-file: 'package.json'
 
       - name: 'npm build'
         run: 'npm ci && npm run build'

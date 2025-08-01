@@ -31,6 +31,7 @@ import {
   parseBoolean,
   parseDuration,
   pinnedToHeadWarning,
+  withRetries,
 } from '@google-github-actions/actions-utils';
 
 import {
@@ -110,7 +111,12 @@ export async function run(logger: Logger) {
         throw new Error(oidcWarning);
       }
 
-      const oidcToken = await getIDToken(oidcTokenAudience);
+      const oidcToken = await withRetries(
+        async (): Promise<string> => {
+          return await getIDToken(oidcTokenAudience);
+        },
+        { retries: 3 },
+      )();
       client = new WorkloadIdentityFederationClient({
         logger: logger,
         universe: universe,

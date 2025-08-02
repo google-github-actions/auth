@@ -26,19 +26,6 @@ support](https://cloud.google.com/support).**
 
 ## Prerequisites
 
--   Run the `actions/checkout@v4` step _before_ this action. Omitting the
-    checkout step or putting it after `auth` will cause future steps to be
-    unable to authenticate.
-
--   To create binaries, containers, pull requests, or other releases, add the
-    following to your `.gitignore`, `.dockerignore` and similar files to prevent
-    accidentally committing credentials to your release artifact:
-
-    ```text
-    # Ignore generated credentials from google-github-actions/auth
-    gha-creds-*.json
-    ```
-
 -   This action runs using Node 20. Use a [runner
     version](https://github.com/actions/virtual-environments) that supports this
     version of Node or newer.
@@ -237,20 +224,8 @@ regardless of the authentication mechanism.
     generate a credentials file which can be used for authentication via gcloud
     and Google Cloud SDKs in other steps in the workflow. The default is true.
 
-    The credentials file is exported into `$GITHUB_WORKSPACE`, which makes it
-    available to all future steps and filesystems (including Docker-based GitHub
-    Actions). The file is automatically removed at the end of the job via a post
-    action. In order to use exported credentials, you **must** add the
-    `actions/checkout` step before calling `auth`. This is due to how GitHub
-    Actions creates `$GITHUB_WORKSPACE`:
-
-     ```yaml
-     jobs:
-      job_id:
-        steps:
-        - uses: 'actions/checkout@v4' # Must come first!
-        - uses: 'google-github-actions/auth@v2'
-     ```
+    The credentials file is exported into the GitHub Actions temp directory,
+    outside of the current workspace.
 
 -   `export_environment_variables`: (Optional) If true, the action will export
     common environment variables which are known to be consumed by popular

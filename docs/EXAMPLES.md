@@ -20,7 +20,7 @@ jobs:
       id-token: 'write'
 
     - id: 'auth'
-      uses: 'google-github-actions/auth@v2'
+      uses: 'google-github-actions/auth@v3'
       with:
         project_id: 'my-project'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -45,7 +45,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
 
-    - uses: 'google-github-actions/auth@v2'
+    - uses: 'google-github-actions/auth@v3'
       with:
         project_id: 'my-project'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -56,7 +56,7 @@ jobs:
     # the service account, specify the 'token_format' parameter and use the
     # 'accesss_token' output.
     #
-    # - uses: 'google-github-actions/auth@v2'
+    # - uses: 'google-github-actions/auth@v3'
     #   with:
     #     workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
     #     service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
@@ -79,7 +79,7 @@ jobs:
     steps:
     - uses: 'actions/checkout@v4'
 
-    - uses: 'google-github-actions/auth@v2'
+    - uses: 'google-github-actions/auth@v3'
       with:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 ```
@@ -100,7 +100,7 @@ jobs:
     - uses: 'actions/checkout@v4'
 
     - id: 'auth'
-      uses: 'google-github-actions/auth@v2'
+      uses: 'google-github-actions/auth@v3'
       with:
         project_id: 'my-project'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -136,7 +136,7 @@ jobs:
     - uses: 'actions/checkout@v4'
 
     - id: 'auth'
-      uses: 'google-github-actions/auth@v2'
+      uses: 'google-github-actions/auth@v3'
       with:
         token_format: 'access_token' # <--
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -173,7 +173,7 @@ jobs:
     - uses: 'actions/checkout@v4'
 
     - id: 'auth'
-      uses: 'google-github-actions/auth@v2'
+      uses: 'google-github-actions/auth@v3'
       with:
         token_format: 'id_token' # <--
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -223,7 +223,7 @@ jobs:
     - uses: 'actions/checkout@v4'
 
     - id: 'auth'
-      uses: 'google-github-actions/auth@v2'
+      uses: 'google-github-actions/auth@v3'
       with:
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'

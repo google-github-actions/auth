@@ -60,7 +60,7 @@ jobs:
     steps:
     - uses: 'actions/checkout@v4'
 
-    - uses: 'google-github-actions/auth@v2'
+    - uses: 'google-github-actions/auth@v3'
       with:
         project_id: 'my-project'
         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
@@ -249,7 +249,7 @@ regardless of the authentication mechanism.
       job_id:
         steps:
         - uses: 'actions/checkout@v4' # Must come first!
-        - uses: 'google-github-actions/auth@v2'
+        - uses: 'google-github-actions/auth@v3'
      ```
 
 -   `export_environment_variables`: (Optional) If true, the action will export
@@ -434,7 +434,7 @@ These instructions use the [gcloud][gcloud] command-line tool.
     Actions YAML:
 
     ```yaml
-    - uses: 'google-github-actions/auth@v2'
+    - uses: 'google-github-actions/auth@v3'
       with:
         project_id: 'my-project'
         workload_identity_provider: '...' # "projects/123456789/locations/global/workloadIdentityPools/github/providers/my-repo"
@@ -598,7 +598,7 @@ These instructions use the [gcloud][gcloud] command-line tool.
     Actions YAML:
 
     ```yaml
-    - uses: 'google-github-actions/auth@v2'
+    - uses: 'google-github-actions/auth@v3'
       with:
         service_account: '...' # my-service-account@my-project.iam.gserviceaccount.com
         workload_identity_provider: '...' # "projects/123456789/locations/global/workloadIdentityPools/github/providers/my-repo"
@@ -667,7 +667,7 @@ These instructions use the [gcloud][gcloud] command-line tool.
     the GitHub Actions YAML:
 
     ```yaml
-    - uses: 'google-github-actions/auth@v2'
+    - uses: 'google-github-actions/auth@v3'
       with:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}' # Replace with the name of your GitHub Actions secret
     ```

@@ -10,8 +10,8 @@
     "test": "bash ./bin/runTests.sh"
   },
   "engines": {
-    "node": ">= 20.x",
-    "npm": ">= 10.x"
+    "node": ">= 24.x",
+    "npm": ">= 11.x"
   },
   "repository": {
     "type": "git",
@@ -29,7 +29,7 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/http-client": "^2.2.3",
-    "@google-github-actions/actions-utils": "^0.8.10"
+    "@google-github-actions/actions-utils": "^1.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

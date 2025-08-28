@@ -7,7 +7,7 @@
     "build": "ncc build -m src/main.ts -o dist/main && ncc build -m src/post.ts -o dist/post",
     "lint": "eslint .",
     "format": "eslint . --fix",
-    "test": "bash ./bin/runTests.sh"
+    "test": "node --require ts-node/register --test-reporter spec --test tests/**/*.test.ts"
   },
   "engines": {
     "node": ">= 24.x",

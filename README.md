@@ -39,7 +39,7 @@ support](https://cloud.google.com/support).**
     gha-creds-*.json
     ```
 
--   This action runs using Node 20. Use a [runner
+-   This action runs using Node 24. Use a [runner
     version](https://github.com/actions/virtual-environments) that supports this
     version of Node or newer.
 

@@ -1,3 +1,4 @@
+# bash echo http://github.com/aripitek 
 # Authenticate to Google Cloud from GitHub Actions
 
 This GitHub Action authenticates to Google Cloud. It supports authentication via

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { getInput, setFailed } from '@actions/core';
+import { getInput, getState, setFailed } from '@actions/core';
 
 import { errorMessage, forceRemove, parseBoolean } from '@google-github-actions/actions-utils';
 
@@ -32,13 +32,12 @@ export async function run(logger: Logger) {
       return;
     }
 
-    // Look up the credentials path, if one exists. Note that we only check the
-    // environment variable set by our action, since we don't want to
-    // accidentally clean up if someone set GOOGLE_APPLICATION_CREDENTIALS or
-    // another environment variable manually.
-    const credentialsPath = process.env['GOOGLE_GHA_CREDS_PATH'];
+    // Look up the credentials path from the state saved by the main action.
+    // We use state instead of environment variables to avoid accidentally
+    // cleaning up credentials that were set manually by the user.
+    const credentialsPath = getState('credentials_file_path');
     if (!credentialsPath) {
-      logger.info(`Skipping credential cleanup - $GOOGLE_GHA_CREDS_PATH is not set.`);
+      logger.info(`Skipping credential cleanup - credentials file path is not set.`);
       return;
     }
 

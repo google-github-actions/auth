@@ -18,6 +18,7 @@ import {
   exportVariable,
   getIDToken,
   getInput,
+  saveState,
   setFailed,
   setOutput,
   setSecret,
@@ -186,6 +187,7 @@ export async function run(logger: Logger) {
       const outputPath = pathjoin(githubWorkspace, outputFile);
       const credentialsPath = await client.createCredentialsFile(outputPath);
       logger.info(`Created credentials file at "${credentialsPath}"`);
+      saveState('credentialsPath', credentialsPath);
 
       // Output to be available to future steps.
       setOutput('credentials_file_path', credentialsPath);

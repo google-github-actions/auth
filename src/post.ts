@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { getInput, setFailed } from '@actions/core';
+import { getInput, getState, setFailed } from '@actions/core';
 
 import { errorMessage, forceRemove, parseBoolean } from '@google-github-actions/actions-utils';
 
@@ -36,7 +36,7 @@ export async function run(logger: Logger) {
     // environment variable set by our action, since we don't want to
     // accidentally clean up if someone set GOOGLE_APPLICATION_CREDENTIALS or
     // another environment variable manually.
-    const credentialsPath = process.env['GOOGLE_GHA_CREDS_PATH'];
+    const credentialsPath = getState('credentialsPath') || process.env['GOOGLE_GHA_CREDS_PATH'];
     if (!credentialsPath) {
       logger.info(`Skipping credential cleanup - $GOOGLE_GHA_CREDS_PATH is not set.`);
       return;

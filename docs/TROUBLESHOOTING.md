@@ -21,12 +21,12 @@
     to these resources are eventually consistent. Usually they happen
     immediately, but sometimes they can take up to 5 minutes to propagate.
 
-1.  Ensure `actions/checkout@v4` is **before** the `auth` action in your
+1.  Ensure `actions/checkout@v7` is **before** the `auth` action in your
     workflow.
 
     ```yaml
     steps:
-      - uses: 'actions/checkout@v4'
+      - uses: 'actions/checkout@v7'
       - uses: 'google-github-actions/auth@v3'
     ```
 

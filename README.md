@@ -26,7 +26,7 @@ support](https://cloud.google.com/support).**
 
 ## Prerequisites
 
--   Run the `actions/checkout@v4` step _before_ this action. Omitting the
+-   Run the `actions/checkout@v7` step _before_ this action. Omitting the
     checkout step or putting it after `auth` will cause future steps to be
     unable to authenticate.
 
@@ -58,7 +58,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v4'
+    - uses: 'actions/checkout@v7'
 
     - uses: 'google-github-actions/auth@v3'
       with:
@@ -248,7 +248,7 @@ regardless of the authentication mechanism.
      jobs:
       job_id:
         steps:
-        - uses: 'actions/checkout@v4' # Must come first!
+        - uses: 'actions/checkout@v7' # Must come first!
         - uses: 'google-github-actions/auth@v3'
      ```
 

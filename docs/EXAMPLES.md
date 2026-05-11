@@ -77,7 +77,7 @@ value into a GitHub Secret named 'GOOGLE_CREDENTIALS'.
 jobs:
   job_id:
     steps:
-    - uses: 'actions/checkout@v4'
+    - uses: 'actions/checkout@v7'
 
     - uses: 'google-github-actions/auth@v3'
       with:
@@ -97,7 +97,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v4'
+    - uses: 'actions/checkout@v7'
 
     - id: 'auth'
       uses: 'google-github-actions/auth@v3'
@@ -133,7 +133,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v4'
+    - uses: 'actions/checkout@v7'
 
     - id: 'auth'
       uses: 'google-github-actions/auth@v3'
@@ -170,7 +170,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v4'
+    - uses: 'actions/checkout@v7'
 
     - id: 'auth'
       uses: 'google-github-actions/auth@v3'
@@ -220,7 +220,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - uses: 'actions/checkout@v4'
+    - uses: 'actions/checkout@v7'
 
     - id: 'auth'
       uses: 'google-github-actions/auth@v3'

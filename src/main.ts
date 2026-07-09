@@ -128,6 +128,7 @@ export async function run(logger: Logger) {
         githubOIDCTokenAudience: oidcTokenAudience,
         workloadIdentityProviderName: workloadIdentityProvider,
         serviceAccount: serviceAccount,
+        audience: getInput('audience'),
       });
     } else {
       logger.debug(`Using credentials JSON`);

@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,8 +56,12 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
     this.#workloadIdentityProviderName = opts.workloadIdentityProviderName;
     this.#serviceAccount = opts.serviceAccount;
 
-    const iamHost = new URL(this._endpoints.iam).host;
-    this.#audience = `//${iamHost}/${this.#workloadIdentityProviderName}`;
+    if (opts.audience) {
+      this.#audience = opts.audience;
+    } else {
+      const iamHost = new URL(this._endpoints.iam).host;
+      this.#audience = `//${iamHost}/${this.#workloadIdentityProviderName}`;
+    }
     this._logger.debug(`Computed audience`, this.#audience);
   }
 
@@ -88,7 +92,7 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
       audience: this.#audience,
       grantType: `urn:ietf:params:oauth:grant-type:token-exchange`,
       requestedTokenType: `urn:ietf:params:oauth:token-type:access_token`,
-      scope: `${this._endpoints.www}/auth/cloud-platform`,
+      scope: `https://www.googleapis.com/auth/cloud-platform`,
       subjectTokenType: `urn:ietf:params:oauth:token-type:jwt`,
       subjectToken: this.#githubOIDCToken,
     };

@@ -16,6 +16,72 @@ import { errorMessage, writeSecureFile } from '@google-github-actions/actions-ut
 
 import { AuthClient, Client, ClientParameters } from './client';
 
+const STS_MAX_ATTEMPTS = 4;
+const STS_RETRY_BACKOFF_MILLISECONDS = 100;
+const RETRYABLE_STS_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
+const RETRYABLE_CONNECTION_ERROR_CODES = new Set(['EAI_AGAIN', 'ECONNRESET', 'ETIMEDOUT']);
+
+interface STSFailure {
+  readonly status?: number;
+  readonly errorClass: string;
+  readonly retryable: boolean;
+}
+
+function errorCode(err: unknown): string | undefined {
+  if (!err || typeof err !== 'object') {
+    return undefined;
+  }
+
+  const candidate = err as { code?: unknown; cause?: { code?: unknown } };
+  if (typeof candidate.code === 'string') {
+    return candidate.code;
+  }
+  if (typeof candidate.cause?.code === 'string') {
+    return candidate.cause.code;
+  }
+  return undefined;
+}
+
+function classifySTSFailure(err: unknown): STSFailure {
+  if (err && typeof err === 'object') {
+    const status = (err as { statusCode?: unknown }).statusCode;
+    if (typeof status === 'number') {
+      return {
+        status,
+        errorClass: RETRYABLE_STS_STATUS_CODES.has(status)
+          ? 'transient_http_response'
+          : 'non_retryable_http_response',
+        retryable: RETRYABLE_STS_STATUS_CODES.has(status),
+      };
+    }
+  }
+
+  const code = errorCode(err);
+  if (code && RETRYABLE_CONNECTION_ERROR_CODES.has(code)) {
+    return {
+      errorClass: code,
+      retryable: true,
+    };
+  }
+
+  // @actions/http-client emits an uncoded error when its socket timeout fires.
+  if (err instanceof Error && err.message.startsWith('Request timeout:')) {
+    return {
+      errorClass: 'request_timeout',
+      retryable: true,
+    };
+  }
+
+  return {
+    errorClass: 'non_retryable_error',
+    retryable: false,
+  };
+}
+
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 /**
  * WorkloadIdentityFederationClientParameters is used as input to the
  * WorkloadIdentityFederationClient.
@@ -58,7 +124,6 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
 
     const iamHost = new URL(this._endpoints.iam).host;
     this.#audience = `//${iamHost}/${this.#workloadIdentityProviderName}`;
-    this._logger.debug(`Computed audience`, this.#audience);
   }
 
   /**
@@ -93,34 +158,47 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
       subjectToken: this.#githubOIDCToken,
     };
 
-    logger.debug(`Built request`, {
-      method: `POST`,
-      path: pth,
-      headers: headers,
-      body: body,
-    });
+    const endpoint = new URL(pth).hostname;
+    for (let attempt = 1; attempt <= STS_MAX_ATTEMPTS; attempt++) {
+      try {
+        const resp = await this._httpClient.postJson<{ access_token: string }>(pth, body, headers);
+        const statusCode = resp.statusCode || 500;
+        if (statusCode < 200 || statusCode > 299) {
+          const err = new Error(`STS token exchange returned HTTP ${statusCode}`);
+          Object.assign(err, { statusCode });
+          throw err;
+        }
 
-    try {
-      const resp = await this._httpClient.postJson<{ access_token: string }>(pth, body, headers);
-      const statusCode = resp.statusCode || 500;
-      if (statusCode < 200 || statusCode > 299) {
-        throw new Error(`Failed to call ${pth}: HTTP ${statusCode}: ${resp.result || '[no body]'}`);
+        const result = resp.result;
+        if (!result) {
+          throw new Error(`STS token exchange returned an empty result`);
+        }
+
+        this.#cachedToken = result.access_token;
+        this.#cachedAt = now;
+        return result.access_token;
+      } catch (err) {
+        const failure = classifySTSFailure(err);
+        const status = failure.status ?? 'none';
+        logger.warning(
+          `STS request failed: operation=token_exchange, endpoint_class=${endpoint}, ` +
+            `status=${status}, error_class=${failure.errorClass}, ` +
+            `attempt=${attempt}/${STS_MAX_ATTEMPTS}`,
+        );
+
+        if (!failure.retryable || attempt === STS_MAX_ATTEMPTS) {
+          throw new Error(
+            `Failed to generate Google Cloud federated token: operation=token_exchange, ` +
+              `endpoint_class=${endpoint}, status=${status}, ` +
+              `error_class=${failure.errorClass}, attempt=${attempt}/${STS_MAX_ATTEMPTS}`,
+          );
+        }
+
+        await sleep(STS_RETRY_BACKOFF_MILLISECONDS * 2 ** (attempt - 1));
       }
-
-      const result = resp.result;
-      if (!result) {
-        throw new Error(`Successfully called ${pth}, but the result was empty`);
-      }
-
-      this.#cachedToken = result.access_token;
-      this.#cachedAt = now;
-      return result.access_token;
-    } catch (err) {
-      const msg = errorMessage(err);
-      throw new Error(
-        `Failed to generate Google Cloud federated token for ${this.#audience}: ${msg}`,
-      );
     }
+
+    throw new Error(`STS token exchange failed unexpectedly`);
   }
 
   /**

@@ -17,13 +17,14 @@ import { errorMessage, writeSecureFile } from '@google-github-actions/actions-ut
 import { AuthClient, Client, ClientParameters } from './client';
 
 const STS_MAX_ATTEMPTS = 4;
-const STS_RETRY_BACKOFF_MILLISECONDS = 100;
+const STS_RETRY_BACKOFF_MILLISECONDS = 500;
 const RETRYABLE_STS_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 const RETRYABLE_CONNECTION_ERROR_CODES = new Set(['EAI_AGAIN', 'ECONNRESET', 'ETIMEDOUT']);
 
 interface STSFailure {
   readonly status?: number;
   readonly errorClass: string;
+  readonly responseMessage?: string;
   readonly retryable: boolean;
 }
 
@@ -44,13 +45,26 @@ function errorCode(err: unknown): string | undefined {
 
 function classifySTSFailure(err: unknown): STSFailure {
   if (err && typeof err === 'object') {
-    const status = (err as { statusCode?: unknown }).statusCode;
+    const candidate = err as { statusCode?: unknown; result?: unknown };
+    const status = candidate.statusCode;
     if (typeof status === 'number') {
+      const result =
+        candidate.result && typeof candidate.result === 'object'
+          ? (candidate.result as {
+              error_description?: unknown;
+              error?: { message?: unknown };
+            })
+          : undefined;
+      const responseMessage = result?.error_description || result?.error?.message;
       return {
         status,
         errorClass: RETRYABLE_STS_STATUS_CODES.has(status)
           ? 'transient_http_response'
           : 'non_retryable_http_response',
+        responseMessage:
+          typeof responseMessage === 'string'
+            ? responseMessage.replace(/[\r\n]+/g, ' ').trim() || undefined
+            : undefined,
         retryable: RETRYABLE_STS_STATUS_CODES.has(status),
       };
     }
@@ -165,7 +179,7 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
         const statusCode = resp.statusCode || 500;
         if (statusCode < 200 || statusCode > 299) {
           const err = new Error(`STS token exchange returned HTTP ${statusCode}`);
-          Object.assign(err, { statusCode });
+          Object.assign(err, { statusCode, result: resp.result });
           throw err;
         }
 
@@ -187,10 +201,14 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
         );
 
         if (!failure.retryable || attempt === STS_MAX_ATTEMPTS) {
+          const responseMessage = failure.responseMessage
+            ? `, response_message=${failure.responseMessage}`
+            : '';
           throw new Error(
             `Failed to generate Google Cloud federated token: operation=token_exchange, ` +
               `endpoint_class=${endpoint}, status=${status}, ` +
-              `error_class=${failure.errorClass}, attempt=${attempt}/${STS_MAX_ATTEMPTS}`,
+              `error_class=${failure.errorClass}, attempt=${attempt}/${STS_MAX_ATTEMPTS}` +
+              responseMessage,
           );
         }
 

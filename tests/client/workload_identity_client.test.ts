@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { test } from 'node:test';
+import { test, TestContext } from 'node:test';
 import assert from 'node:assert';
 
 import { tmpdir } from 'os';
@@ -76,11 +76,25 @@ function mockTokenExchange(
   return () => calls;
 }
 
-function httpError(statusCode: number): Error {
-  return Object.assign(new Error(`sensitive response body for ${statusCode}`), { statusCode });
+function httpError(statusCode: number, result?: object): Error {
+  return Object.assign(new Error(`sensitive response body for ${statusCode}`), {
+    statusCode,
+    result,
+  });
+}
+
+function mockTimeouts(context: TestContext): number[] {
+  const delays: number[] = [];
+  context.mock.method(globalThis, 'setTimeout', ((callback: () => void, delay?: number) => {
+    delays.push(delay ?? 0);
+    callback();
+    return {} as NodeJS.Timeout;
+  }) as typeof setTimeout);
+  return delays;
 }
 
 test('#getToken retries transient STS responses', async (suite) => {
+  mockTimeouts(suite);
   for (const statusCode of [408, 429, 500, 502, 503, 504]) {
     await suite.test(`retries HTTP ${statusCode}`, async () => {
       const client = workloadIdentityClient();
@@ -137,10 +151,41 @@ test('#getToken does not retry permanent STS responses', async (suite) => {
   }
 });
 
-test('#getToken emits sanitized attempt diagnostics', async () => {
+test('#getToken includes selected STS response details in the final error', async (suite) => {
+  await suite.test('uses error_description and normalizes line breaks', async () => {
+    const client = workloadIdentityClient();
+    mockTokenExchange(client, [
+      httpError(400, {
+        error_description: 'invalid subject token\nfor audience',
+        error: { message: 'nested message should not be used' },
+      }),
+    ]);
+
+    await assert.rejects(client.getToken(), /response_message=invalid subject token for audience$/);
+  });
+
+  await suite.test('falls back to error.message', async () => {
+    const client = workloadIdentityClient();
+    mockTokenExchange(client, [httpError(400, { error: { message: 'nested STS error message' } })]);
+
+    await assert.rejects(client.getToken(), /response_message=nested STS error message$/);
+  });
+});
+
+test('#getToken emits sanitized attempt diagnostics', async (context) => {
+  mockTimeouts(context);
   const logger = new RecordingLogger();
   const client = workloadIdentityClient(logger);
-  const calls = mockTokenExchange(client, [httpError(500), httpError(400)]);
+  const calls = mockTokenExchange(client, [
+    httpError(500, {
+      error_description: 'retryable STS error',
+      ignored: 'sensitive response body',
+    }),
+    httpError(400, {
+      error: { message: 'terminal STS error' },
+      ignored: 'sensitive response body',
+    }),
+  ]);
 
   let finalError = '';
   await assert.rejects(client.getToken(), (err: Error) => {
@@ -152,6 +197,7 @@ test('#getToken emits sanitized attempt diagnostics', async () => {
     'STS request failed: operation=token_exchange, endpoint_class=sts.googleapis.com, status=500, error_class=transient_http_response, attempt=1/4',
     'STS request failed: operation=token_exchange, endpoint_class=sts.googleapis.com, status=400, error_class=non_retryable_http_response, attempt=2/4',
   ]);
+  assert.match(finalError, /response_message=terminal STS error$/);
 
   const diagnostics = [...logger.messages, finalError].join('\n');
   for (const secret of [
@@ -162,12 +208,14 @@ test('#getToken emits sanitized attempt diagnostics', async () => {
     'sensitive-service-account@example.com',
     'projects/123/locations/global/workloadIdentityPools/pool/providers/provider',
     'sensitive response body',
+    'retryable STS error',
   ]) {
     assert.ok(!diagnostics.includes(secret), `diagnostics included ${secret}`);
   }
 });
 
-test('#getToken bounds transient STS retries', async () => {
+test('#getToken bounds transient STS retries with exponential backoff', async (context) => {
+  const delays = mockTimeouts(context);
   const client = workloadIdentityClient();
   const calls = mockTokenExchange(client, [
     httpError(503),
@@ -178,6 +226,7 @@ test('#getToken bounds transient STS retries', async () => {
 
   await assert.rejects(client.getToken(), /attempt=4\/4/);
   assert.strictEqual(calls(), 4);
+  assert.deepStrictEqual(delays, [500, 1000, 2000]);
 });
 
 test('#createCredentialsFile', { concurrency: true }, async (suite) => {

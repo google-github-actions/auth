@@ -186,8 +186,7 @@ jobs:
   # Service Account Key JSON
   #
   credentials_json:
-    if: |-
-      ${{ github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name }}
+    if: false
     name: 'credentials_json'
     runs-on: '${{ matrix.os }}'
     strategy:

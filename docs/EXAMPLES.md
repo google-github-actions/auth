@@ -54,7 +54,7 @@ jobs:
     # NOTE: 'steps.auth.outputs.auth_token' will be a federated authentication
     # token, it does not correspond to the service account. To get a token for
     # the service account, specify the 'token_format' parameter and use the
-    # 'accesss_token' output.
+    # 'access_token' output.
     #
     # - uses: 'google-github-actions/auth@v3'
     #   with:

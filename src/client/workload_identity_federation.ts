@@ -295,7 +295,7 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
       },
     };
 
-    // Only request impersonation if a service account was given, otherwise use
+    // Only request impersonation if a service account was given; otherwise, use
     // the WIF identity directly.
     if (this.#serviceAccount) {
       const impersonationURL = `${this._endpoints.iamcredentials}/projects/-/serviceAccounts/${this.#serviceAccount}:generateAccessToken`;

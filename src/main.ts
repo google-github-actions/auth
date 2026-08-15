@@ -18,6 +18,7 @@ import {
   exportVariable,
   getIDToken,
   getInput,
+  saveState,
   setFailed,
   setOutput,
   setSecret,
@@ -203,6 +204,9 @@ export async function run(logger: Logger) {
         // GOOGLE_GHA_CREDS_PATH is used by other Google GitHub Actions.
         exportVariable('GOOGLE_GHA_CREDS_PATH', credentialsPath);
       }
+
+      // Save the credentials file path to state for cleanup in the post action.
+      saveState('credentials_file_path', credentialsPath);
     }
 
     // Set the project ID environment variables to the computed values.

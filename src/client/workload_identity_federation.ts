@@ -239,10 +239,14 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
       payload: claims,
     };
 
+    // Create sanitized headers for logging to avoid exposing the token
+    const logHeaders = Object.assign({}, headers);
+    logHeaders.Authorization = '[REDACTED]';
+
     logger.debug(`Built request`, {
       method: `POST`,
       path: pth,
-      headers: headers,
+      headers: logHeaders,
       body: body,
     });
 

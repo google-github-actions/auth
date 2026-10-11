@@ -39,6 +39,15 @@ inputs:
       which to generate credentials. This is required if
       "workload_identity_provider" is specified.
     required: false
+  service_account_impersonation_lifetime:
+    description: |-
+      Desired lifetime duration of service account access tokens requested using
+      the generated WIF credentials file, in seconds. Specify the number of
+      seconds with a trailing "s" (e.g. 900s), between 600s and 43200s. This
+      only applies when "workload_identity_provider" and "service_account" are
+      specified and "create_credentials_file" is true. This does not affect the
+      "access_token" output.
+    required: false
   audience:
     description: |-
       The value for the audience (aud) parameter in GitHub's generated OIDC

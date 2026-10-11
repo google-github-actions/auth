@@ -306,4 +306,46 @@ test('#createCredentialsFile', { concurrency: true }, async (suite) => {
 
     assert.deepStrictEqual(got, exp);
   });
+
+  await suite.test('writes the file with impersonation lifetime', async () => {
+    const outputFile = pathjoin(tmpdir(), randomFilename());
+    const client = new WorkloadIdentityFederationClient({
+      logger: new NullLogger(),
+      universe: 'googleapis.com',
+
+      githubOIDCToken: 'my-token',
+      githubOIDCTokenRequestURL: 'https://example.com/',
+      githubOIDCTokenRequestToken: 'token',
+      githubOIDCTokenAudience: 'my-aud',
+      workloadIdentityProviderName: 'my-provider',
+      serviceAccount: 'my-service@my-project.iam.gserviceaccount.com',
+      serviceAccountImpersonationLifetime: 900,
+    });
+
+    const exp = {
+      audience: '//iam.googleapis.com/my-provider',
+      credential_source: {
+        format: {
+          subject_token_field_name: 'value',
+          type: 'json',
+        },
+        headers: {
+          Authorization: 'Bearer token',
+        },
+        url: 'https://example.com/?audience=my-aud',
+      },
+      service_account_impersonation: { token_lifetime_seconds: 900 },
+      service_account_impersonation_url:
+        'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/my-service@my-project.iam.gserviceaccount.com:generateAccessToken',
+      subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+      token_url: 'https://sts.googleapis.com/v1/token',
+      type: 'external_account',
+    };
+
+    const pth = await client.createCredentialsFile(outputFile);
+    const data = readFileSync(pth);
+    const got = JSON.parse(data.toString('utf8'));
+
+    assert.deepStrictEqual(got, exp);
+  });
 });

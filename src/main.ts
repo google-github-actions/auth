@@ -86,6 +86,9 @@ export async function run(logger: Logger) {
     const delegates = parseMultilineCSV(getInput(`delegates`));
     const universe = getInput(`universe`);
     const requestReason = getInput(`request_reason`);
+    const serviceAccountImpersonationLifetimeInput = getInput(
+      `service_account_impersonation_lifetime`,
+    );
 
     // Ensure exactly one of workload_identity_provider and credentials_json was
     // provided.
@@ -95,6 +98,16 @@ export async function run(logger: Logger) {
           '"workload_identity_provider" or "credentials_json"! ' +
           secretsWarning,
       );
+    }
+
+    let serviceAccountImpersonationLifetime: number | undefined;
+    if (
+      workloadIdentityProvider &&
+      serviceAccount &&
+      createCredentialsFile &&
+      serviceAccountImpersonationLifetimeInput
+    ) {
+      serviceAccountImpersonationLifetime = parseDuration(serviceAccountImpersonationLifetimeInput);
     }
 
     // Instantiate the correct client based on the provided input parameters.
@@ -128,6 +141,7 @@ export async function run(logger: Logger) {
         githubOIDCTokenAudience: oidcTokenAudience,
         workloadIdentityProviderName: workloadIdentityProvider,
         serviceAccount: serviceAccount,
+        serviceAccountImpersonationLifetime: serviceAccountImpersonationLifetime,
       });
     } else {
       logger.debug(`Using credentials JSON`);

@@ -114,6 +114,19 @@ Identity Federation.
     Federation](#direct-wif). If this input is provided, the GitHub Action will use
     [Workload Identity Federation through a Service Account](#indirect-wif).
 
+-   `service_account_impersonation_lifetime`: (Optional) Desired lifetime duration
+    of service account access tokens requested using the generated WIF credentials
+    file, in seconds. Specify the number of seconds with a trailing "s"
+    (e.g. 900s). This only applies when `workload_identity_provider` and
+    `service_account` are specified and `create_credentials_file` is true.
+    If omitted, authentication libraries use their default lifetime of 1 hour
+    (3600s).
+
+    The minimum value is 600s and the maximum is 43200s. Values above 3600s require
+    the `constraints/iam.allowServiceAccountCredentialLifetimeExtension`
+    organization policy. For the Action's `access_token` output, use
+    `access_token_lifetime` instead.
+
 -   `audience`: (Optional) The value for the audience (`aud`) parameter in the
     generated GitHub Actions OIDC token. This value defaults to the value of
     `workload_identity_provider`, which is also the default value Google Cloud

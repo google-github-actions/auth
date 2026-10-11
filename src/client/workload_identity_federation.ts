@@ -108,6 +108,7 @@ export interface WorkloadIdentityFederationClientParameters extends ClientParame
   readonly workloadIdentityProviderName: string;
   readonly audience?: string;
   readonly serviceAccount?: string;
+  readonly serviceAccountImpersonationLifetime?: number;
 }
 
 /**
@@ -121,6 +122,7 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
   readonly #githubOIDCTokenAudience: string;
   readonly #workloadIdentityProviderName: string;
   readonly #serviceAccount?: string;
+  readonly #serviceAccountImpersonationLifetime?: number;
   readonly #audience: string;
 
   #cachedToken?: string;
@@ -135,6 +137,7 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
     this.#githubOIDCTokenAudience = opts.githubOIDCTokenAudience;
     this.#workloadIdentityProviderName = opts.workloadIdentityProviderName;
     this.#serviceAccount = opts.serviceAccount;
+    this.#serviceAccountImpersonationLifetime = opts.serviceAccountImpersonationLifetime;
 
     const iamHost = new URL(this._endpoints.iam).host;
     this.#audience = `//${iamHost}/${this.#workloadIdentityProviderName}`;
@@ -301,6 +304,14 @@ export class WorkloadIdentityFederationClient extends Client implements AuthClie
       const impersonationURL = `${this._endpoints.iamcredentials}/projects/-/serviceAccounts/${this.#serviceAccount}:generateAccessToken`;
       logger.debug(`Enabling service account impersonation via ${impersonationURL}`);
       data.service_account_impersonation_url = impersonationURL;
+      if (
+        this.#serviceAccountImpersonationLifetime &&
+        this.#serviceAccountImpersonationLifetime > 0
+      ) {
+        data.service_account_impersonation = {
+          token_lifetime_seconds: this.#serviceAccountImpersonationLifetime,
+        };
+      }
     }
 
     logger.debug(`Creating credentials`, {
